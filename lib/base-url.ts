@@ -32,6 +32,10 @@ export async function getBaseUrl() {
     );
   }
 
+  if (process.env.NODE_ENV !== "production") {
+    return "http://localhost:3000";
+  }
+
   const h = await headers();
   const proto = h.get("x-forwarded-proto") ?? "http";
   const host = h.get("x-forwarded-host") ?? h.get("host");

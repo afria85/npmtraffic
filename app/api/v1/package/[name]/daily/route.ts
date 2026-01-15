@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getPackageDaily } from "@/lib/package-daily";
 
+const revalidateSeconds = 60 * 60 * 6;
+export const revalidate = 21600;
+
 export async function GET(
   req: Request,
   ctx: { params: Promise<{ name: string }> }
@@ -20,7 +23,15 @@ export async function GET(
       avg7,
     }));
 
-    return NextResponse.json({ requestId: data.requestId, series }, { status: 200 });
+    return NextResponse.json(
+      { requestId: data.requestId, series },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": `public, max-age=0, s-maxage=${revalidateSeconds}, stale-while-revalidate=${revalidateSeconds}`,
+        },
+      }
+    );
   } catch (e: any) {
     const msg = String(e?.message || e);
 

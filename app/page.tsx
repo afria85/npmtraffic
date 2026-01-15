@@ -1,5 +1,20 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { POPULAR_PACKAGES } from "@/lib/constants";
+import { getBaseUrl } from "@/lib/base-url";
+import { config } from "@/lib/config";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const baseUrl = await getBaseUrl();
+
+  return {
+    title: "npmtraffic",
+    description: config.site.tagline,
+    alternates: {
+      canonical: `${baseUrl}/`,
+    },
+  };
+}
 
 export default function Home() {
   return (

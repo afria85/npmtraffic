@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
+import { config } from "@/lib/config";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -68,16 +69,22 @@ export default async function PackagePage({ params, searchParams }: Props) {
   const sp = (await searchParams) ?? {};
   if (!p?.name) notFound();
   const name = decodeURIComponent(p.name);
-  const days = clampDays(sp.days);
+  const rawDays = sp.days;
+  const days = clampDays(rawDays);
   const baseUrl = await getBaseUrl();
+  const encodedName = encodeURIComponent(name);
+
+  if (!rawDays || !ALLOWED_DAYS.has(rawDays)) {
+    redirect(`/p/${encodedName}?days=${days}`);
+  }
 
   let data: PackageDailyResponse | null = null;
   let errorText: string | null = null;
 
   try {
     const res = await fetch(
-      `${baseUrl}/api/v1/package/${encodeURIComponent(name)}/daily?days=${days}`,
-      { cache: "no-store" }
+      `${baseUrl}/api/v1/package/${encodedName}/daily?days=${days}`,
+      { next: { revalidate: config.cache.dailyTTLSeconds } }
     );
 
     if (res.status === 404 || res.status === 400) notFound();

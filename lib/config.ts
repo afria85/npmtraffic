@@ -5,7 +5,7 @@ export const config = {
     url: "https://npmtraffic.com",
   },
   cache: {
-    dailyTTLSeconds: 60 * 20, // 20 minutes
+    dailyTTLSeconds: 60 * 60 * 6, // 6 hours
     metadataTTLSeconds: 60 * 60 * 24 * 7, // 7 days
   },
   limits: {
