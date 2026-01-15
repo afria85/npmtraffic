@@ -5,7 +5,6 @@ export type DailySeriesRow = {
   downloads: number;
   delta: number | null;
   avg7: number | null;
-  deltaPct: number | null;
 };
 
 export function aggregateSeries(rows: NpmRangeRow[]): DailySeriesRow[] {
@@ -27,18 +26,11 @@ export function aggregateSeries(rows: NpmRangeRow[]): DailySeriesRow[] {
     if (window.length > 7) window.shift();
     const avg7 = window.length === 7 ? Math.round(window.reduce((a, b) => a + b, 0) / 7) : null;
 
-    // percent change vs previous day (only if prev > 0)
-    const deltaPct =
-      prev && (prev.downloads ?? 0) > 0 && delta !== null
-        ? Math.round(((delta / (prev.downloads ?? 0)) * 100) * 100) / 100
-        : null;
-
     out.push({
       date: cur.day,
       downloads,
       delta,
       avg7,
-      deltaPct,
     });
   }
 

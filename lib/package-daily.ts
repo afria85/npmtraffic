@@ -2,6 +2,7 @@ import { cacheGet, cacheSet } from "@/lib/cache";
 import { daysAgoUTC, toYYYYMMDD } from "@/lib/dates";
 import { fetchDailyDownloadsRange } from "@/lib/npm-client";
 import { aggregateSeries, type DailySeriesRow } from "@/lib/aggregate";
+import { config } from "@/lib/config";
 
 export type PackageDailyResult = {
   requestId: string;
@@ -39,8 +40,7 @@ export async function getPackageDaily(pkg: string, daysIn: number): Promise<Pack
 
   const key = `pkg:${pkg}:daily:${days}:${toYYYYMMDD(start)}:${toYYYYMMDD(end)}`;
 
-  // TTL: 6h (good enough for MVP; later we do 24h for historical)
-  const ttlSeconds = 6 * 60 * 60;
+  const ttlSeconds = config.cache.dailyTTLSeconds;
 
   const cached = cacheGet<PackageDailyResult>(key);
   if (cached.hit && cached.value) {

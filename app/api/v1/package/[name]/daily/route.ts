@@ -2,17 +2,25 @@ import { NextResponse } from "next/server";
 import { getPackageDaily } from "@/lib/package-daily";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   ctx: { params: Promise<{ name: string }> }
 ) {
   try {
-    const { name } = await ctx.params;
+    const { name: rawName } = await ctx.params;
+    const name = decodeURIComponent(rawName);
 
-    const url = new URL(_req.url);
+    const url = new URL(req.url);
     const daysParam = Number(url.searchParams.get("days") || "30");
 
     const data = await getPackageDaily(name, daysParam);
-    return NextResponse.json(data, { status: 200 });
+    const series = data.series.map(({ date, downloads, delta, avg7 }) => ({
+      date,
+      downloads,
+      delta,
+      avg7,
+    }));
+
+    return NextResponse.json({ requestId: data.requestId, series }, { status: 200 });
   } catch (e: any) {
     const msg = String(e?.message || e);
 
