@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
 
 type Props = {
-  params: { name: string };
-  searchParams?: { days?: string };
+  params: Promise<{ name: string }>;
+  searchParams?: Promise<{ days?: string }>;
 };
 
 type PackageDailyResponse = {
@@ -40,9 +40,18 @@ function formatDelta(value: number | null) {
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
-  const name = decodeURIComponent(params.name);
-  const days = clampDays(searchParams?.days);
+  const p = await params;
+  const sp = (await searchParams) ?? {};
   const baseUrl = await getBaseUrl();
+  if (!p?.name) {
+    return {
+      title: "npmtraffic",
+      description: "Daily npm download history in a GitHub-style table",
+      alternates: { canonical: `${baseUrl}/` },
+    };
+  }
+  const name = decodeURIComponent(p.name);
+  const days = clampDays(sp.days);
   const canonical = `${baseUrl}/p/${encodeURIComponent(name)}?days=${days}`;
 
   return {
@@ -55,8 +64,11 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 }
 
 export default async function PackagePage({ params, searchParams }: Props) {
-  const name = decodeURIComponent(params.name);
-  const days = clampDays(searchParams?.days);
+  const p = await params;
+  const sp = (await searchParams) ?? {};
+  if (!p?.name) notFound();
+  const name = decodeURIComponent(p.name);
+  const days = clampDays(sp.days);
   const baseUrl = await getBaseUrl();
 
   let data: PackageDailyResponse | null = null;
