@@ -1,0 +1,46 @@
+"use client";
+
+import Link from "next/link";
+import { donateLinks, projectGithubUrl } from "@/lib/donate";
+
+export default function Footer() {
+  const hasDonate = donateLinks.length > 0;
+  return (
+    <footer className="border-t border-white/10 bg-black/70 px-4 py-6 text-sm text-slate-300">
+      <div className="mx-auto flex max-w-5xl flex-col gap-4">
+        {hasDonate ? (
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Support this project</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {donateLinks.map((link) => (
+                <a
+                  key={link.label}
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.3em] text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+                >
+                  <span aria-hidden>{link.icon}</span>
+                  <span>{link.label}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        {projectGithubUrl ? (
+          <Link
+            href={projectGithubUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex max-w-fit items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.3em] text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+          >
+            ★ Star npmtraffic on GitHub
+          </Link>
+        ) : null}
+        <p className="text-xs text-slate-500">
+          npmtraffic is not affiliated with npm, Inc. Data from api.npmjs.org.
+        </p>
+      </div>
+    </footer>
+  );
+}

@@ -24,10 +24,19 @@ export const metadata: Metadata = {
   metadataBase: new URL(config.site.url),
 };
 
+import Footer from "@/components/Footer";
+import Header from "@/components/Header";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${jetBrainsMono.variable}`}>
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        <div className="flex min-h-screen flex-col">
+          <Header />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </div>
+      </body>
     </html>
   );
 }
