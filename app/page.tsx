@@ -3,7 +3,7 @@ import Link from "next/link";
 import { POPULAR_PACKAGES } from "@/lib/constants";
 import { getBaseUrl } from "@/lib/base-url";
 import { config } from "@/lib/config";
-import PackageSearch from "@/components/PackageSearch";
+import SearchBox from "@/components/SearchBox";
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getBaseUrl();
@@ -13,6 +13,11 @@ export async function generateMetadata(): Promise<Metadata> {
     description: config.site.tagline,
     alternates: {
       canonical: `${baseUrl}/`,
+    },
+    openGraph: {
+      title: "npmtraffic",
+      description: config.site.tagline,
+      url: `${baseUrl}/`,
     },
   };
 }
@@ -28,7 +33,7 @@ export default function Home() {
             npm downloads, GitHub-style traffic view
           </p>
           <div className="pt-2">
-            <PackageSearch className="max-w-md" />
+            <SearchBox className="max-w-md" />
           </div>
         </header>
 

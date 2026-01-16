@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
 import { config } from "@/lib/config";
-import PackageSearch from "@/components/PackageSearch";
+import { clampDays } from "@/lib/query";
+import SearchBox from "@/components/SearchBox";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -23,12 +24,6 @@ type PackageDailyResponse = {
 const ALLOWED_DAYS = new Set(["7", "14", "30"]);
 const RANGES = [7, 14, 30] as const;
 const numberFormatter = new Intl.NumberFormat("en-US");
-
-function clampDays(raw?: string) {
-  if (!raw) return 30;
-  if (ALLOWED_DAYS.has(raw)) return Number(raw);
-  return 30;
-}
 
 function formatNumber(value: number | null) {
   if (value == null) return "-";
@@ -62,6 +57,11 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     alternates: {
       canonical,
     },
+    openGraph: {
+      title: `${name} npm downloads (${days} days) | npmtraffic`,
+      description: `Daily npm download history for ${name} in a GitHub-style table`,
+      url: canonical,
+    },
   };
 }
 
@@ -91,7 +91,8 @@ export default async function PackagePage({ params, searchParams }: Props) {
     if (res.status === 404 || res.status === 400) notFound();
 
     if (!res.ok) {
-      errorText = `Failed to load (${res.status}).`;
+      errorText =
+        res.status === 502 ? "npm API temporarily unavailable." : "Failed to load.";
     } else {
       data = (await res.json()) as PackageDailyResponse;
     }
@@ -116,10 +117,10 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
         <div className="flex flex-col gap-3 sm:items-end">
           <div className="sm:hidden">
-            <PackageSearch variant="modal" triggerLabel="Search another package" />
+            <SearchBox variant="modal" triggerLabel="Search another package" />
           </div>
           <div className="hidden sm:block w-72">
-            <PackageSearch />
+            <SearchBox />
           </div>
           <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1">
             {RANGES.map((range) => {

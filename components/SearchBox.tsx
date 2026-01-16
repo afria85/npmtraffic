@@ -1,0 +1,353 @@
+"use client";
+
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { POPULAR_PACKAGES } from "@/lib/constants";
+import { addRecentSearch, loadRecentSearches } from "@/lib/recent-searches";
+import { normalizePackageInput } from "@/lib/package-name";
+
+type SearchResult = {
+  name: string;
+  version?: string;
+  description?: string;
+};
+
+type SearchState = "idle" | "loading" | "error";
+
+type OptionKind = "popular" | "recent" | "result";
+
+type DisplayOption = {
+  id: string;
+  kind: OptionKind;
+  label: string;
+  value: string;
+  helper?: string;
+};
+
+type SearchBoxProps = {
+  variant?: "inline" | "modal";
+  className?: string;
+  triggerLabel?: string;
+};
+
+const DEBOUNCE_MS = 300;
+const POPULAR_LIMIT = 8;
+
+function SearchPanel({
+  autoFocus,
+  onClose,
+  className,
+}: {
+  autoFocus?: boolean;
+  onClose?: () => void;
+  className?: string;
+}) {
+  const router = useRouter();
+  const listId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState("");
+  const [state, setState] = useState<SearchState>("idle");
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [recent, setRecent] = useState<string[]>([]);
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [isListOpen, setIsListOpen] = useState(false);
+
+  const normalizedQuery = normalizePackageInput(query);
+  const queryLower = normalizedQuery.toLowerCase();
+
+  useEffect(() => {
+    setRecent(loadRecentSearches());
+  }, []);
+
+  useEffect(() => {
+    if (!autoFocus) return;
+    const id = window.setTimeout(() => inputRef.current?.focus(), 0);
+    return () => window.clearTimeout(id);
+  }, [autoFocus]);
+
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [normalizedQuery]);
+
+  useEffect(() => {
+    setRequestId(null);
+    if (!normalizedQuery) {
+      setResults([]);
+      setState("idle");
+      return;
+    }
+
+    const controller = new AbortController();
+    const handle = window.setTimeout(async () => {
+      setState("loading");
+      try {
+        const res = await fetch(
+          `/api/v1/search?q=${encodeURIComponent(normalizedQuery)}&limit=10`,
+          { signal: controller.signal }
+        );
+        const payload = (await res.json()) as {
+          requestId?: string;
+          results?: SearchResult[];
+          error?: string;
+        };
+        if (!res.ok) {
+          setState("error");
+          setResults([]);
+          setRequestId(payload.requestId ?? null);
+          return;
+        }
+        setResults(payload.results ?? []);
+        setRequestId(payload.requestId ?? null);
+        setState("idle");
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setState("error");
+        setResults([]);
+      }
+    }, DEBOUNCE_MS);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(handle);
+    };
+  }, [normalizedQuery]);
+
+  const popularMatches = useMemo(() => {
+    const matches = POPULAR_PACKAGES.filter((pkg) =>
+      queryLower ? pkg.toLowerCase().includes(queryLower) : true
+    );
+    return matches.slice(0, POPULAR_LIMIT);
+  }, [queryLower]);
+
+  const recentMatches = useMemo(() => {
+    const filtered = queryLower
+      ? recent.filter((item) => item.toLowerCase().includes(queryLower))
+      : recent.slice();
+    const popularSet = new Set(popularMatches.map((item) => item.toLowerCase()));
+    return filtered.filter((item) => !popularSet.has(item.toLowerCase()));
+  }, [recent, queryLower, popularMatches]);
+
+  const options = useMemo(() => {
+    const list: DisplayOption[] = [];
+    let index = 0;
+
+    for (const name of popularMatches) {
+      list.push({
+        id: `${listId}-option-${index++}`,
+        kind: "popular",
+        label: name,
+        value: name,
+        helper: "Popular",
+      });
+    }
+
+    for (const name of recentMatches) {
+      list.push({
+        id: `${listId}-option-${index++}`,
+        kind: "recent",
+        label: name,
+        value: name,
+        helper: "Recent",
+      });
+    }
+
+    for (const item of results) {
+      list.push({
+        id: `${listId}-option-${index++}`,
+        kind: "result",
+        label: item.name,
+        value: item.name,
+        helper: item.description,
+      });
+    }
+
+    return list;
+  }, [listId, popularMatches, recentMatches, results]);
+
+  const activeOption = activeIndex >= 0 ? options[activeIndex] : null;
+  const showList = isListOpen && options.length > 0;
+
+  const selectPackage = (value: string) => {
+    const merged = addRecentSearch(value);
+    setRecent(merged);
+    setIsListOpen(false);
+    router.push(`/p/${encodeURIComponent(value)}?days=30`);
+    onClose?.();
+  };
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (!options.length) return;
+      setIsListOpen(true);
+      setActiveIndex((prev) => Math.min(prev + 1, options.length - 1));
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!options.length) return;
+      setIsListOpen(true);
+      setActiveIndex((prev) => (prev <= 0 ? 0 : prev - 1));
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (activeOption) {
+        selectPackage(activeOption.value);
+        return;
+      }
+      if (normalizedQuery) {
+        selectPackage(normalizedQuery);
+      }
+      return;
+    }
+    if (event.key === "Escape") {
+      if (onClose) {
+        onClose();
+        return;
+      }
+      setIsListOpen(false);
+    }
+  };
+
+  const statusMessage =
+    state === "loading"
+      ? "Searching npm registry..."
+      : state === "error"
+        ? "npm API temporarily unavailable."
+        : null;
+
+  return (
+    <div className={className}>
+      <div className="relative">
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setIsListOpen(true);
+          }}
+          onFocus={() => setIsListOpen(true)}
+          onBlur={() => window.setTimeout(() => setIsListOpen(false), 120)}
+          onKeyDown={handleKeyDown}
+          placeholder="Search npm packages"
+          className="h-11 w-full rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white placeholder:text-slate-400 focus:border-white/30 focus:outline-none"
+          role="combobox"
+          aria-expanded={showList}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={activeOption?.id}
+        />
+        {showList ? (
+          <div
+            className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-white/10 bg-[#0d141c] shadow-lg"
+            role="listbox"
+            id={listId}
+          >
+            <div className="max-h-72 overflow-auto p-2">
+              {options.map((option, index) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  id={option.id}
+                  role="option"
+                  aria-selected={activeOption?.id === option.id}
+                  className={[
+                    "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition",
+                    activeOption?.id === option.id
+                      ? "bg-white/10 text-white"
+                      : "text-slate-200 hover:bg-white/5",
+                  ].join(" ")}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => selectPackage(option.value)}
+                >
+                  <span>{option.label}</span>
+                  {option.helper ? (
+                    <span className="max-w-[50%] truncate text-xs text-slate-500">
+                      {option.helper}
+                    </span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      {statusMessage ? (
+        <p className="mt-2 text-xs text-slate-400" aria-live="polite">
+          {statusMessage}
+          {requestId ? ` (req ${requestId})` : ""}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+export default function SearchBox({
+  variant = "inline",
+  className,
+  triggerLabel = "Search packages",
+}: SearchBoxProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const sheetId = "searchbox-sheet";
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isOpen]);
+
+  if (variant === "inline") {
+    return <SearchPanel className={className} />;
+  }
+
+  return (
+    <div className={className}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="h-11 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+        aria-expanded={isOpen}
+        aria-controls={sheetId}
+      >
+        {triggerLabel}
+      </button>
+      {isOpen ? (
+        <div className="fixed inset-0 z-40">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setIsOpen(false)}
+          />
+          <div
+            id={sheetId}
+            role="dialog"
+            aria-modal="true"
+            className="fixed bottom-0 left-0 right-0 h-[70vh] rounded-t-2xl border border-white/10 bg-[#0b1119] p-6 shadow-2xl"
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-slate-200">Search packages</p>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="h-9 rounded-full border border-white/10 px-3 text-xs text-slate-300"
+              >
+                Close
+              </button>
+            </div>
+            <div className="mt-4">
+              <SearchPanel autoFocus onClose={() => setIsOpen(false)} />
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
