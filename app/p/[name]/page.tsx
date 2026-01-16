@@ -6,6 +6,7 @@ import { clampDays } from "@/lib/query";
 import SearchBox from "@/components/SearchBox";
 import CompareButton from "@/components/compare/CompareButton";
 import type { TrafficResponse } from "@/lib/traffic";
+import { getPackageGithubRepo } from "@/lib/npm-repo";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -136,6 +137,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
   }
 
   const updatedLabel = data ? formatUpdatedAt(data.meta.fetchedAt) : null;
+  const repoUrl = data ? await getPackageGithubRepo(name) : null;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-6">
@@ -164,11 +166,21 @@ export default async function PackagePage({ params, searchParams }: Props) {
           <div className="hidden sm:block w-72">
             <SearchBox />
           </div>
-          <div className="flex flex-wrap gap-2">
-            <CompareButton name={name} />
-            <Link
-              href={`/api/v1/package/${encodedName}/daily.csv?days=${days}`}
+        <div className="flex flex-wrap gap-2">
+          <CompareButton name={name} />
+          {repoUrl ? (
+            <a
+              href={repoUrl}
+              target="_blank"
+              rel="noreferrer"
               className="h-11 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+            >
+              Star on GitHub
+            </a>
+          ) : null}
+          <Link
+            href={`/api/v1/package/${encodedName}/daily.csv?days=${days}`}
+            className="h-11 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
             >
               Export CSV
             </Link>
