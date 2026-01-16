@@ -84,8 +84,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
       { requestId, name: decoded, exists },
       { status: exists ? 200 : 404 }
     );
-  } catch (error: any) {
-    const msg = String(error?.message || error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error ?? "");
     if (msg.startsWith("BAD_REQUEST")) {
       logApiEvent({
         requestId,

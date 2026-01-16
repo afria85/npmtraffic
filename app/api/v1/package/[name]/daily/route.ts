@@ -111,11 +111,11 @@ export async function GET(
       staleReason,
     });
     return response;
-  } catch (e: any) {
-    const status = e instanceof TrafficError ? e.status : 500;
-    upstreamStatus = e instanceof TrafficError ? e.upstreamStatus : undefined;
+  } catch (error: unknown) {
+    const status = error instanceof TrafficError ? error.status : 500;
+    upstreamStatus = error instanceof TrafficError ? error.upstreamStatus : undefined;
 
-    if (e instanceof TrafficError && e.code === "INVALID_REQUEST") {
+    if (error instanceof TrafficError && error.code === "INVALID_REQUEST") {
       logApiEvent({
         requestId,
         route,
@@ -130,7 +130,7 @@ export async function GET(
       );
     }
 
-    if (e instanceof TrafficError && e.code === "PACKAGE_NOT_FOUND") {
+    if (error instanceof TrafficError && error.code === "PACKAGE_NOT_FOUND") {
       logApiEvent({
         requestId,
         route,

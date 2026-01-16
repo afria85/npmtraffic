@@ -106,8 +106,9 @@ export async function fetchTraffic(pkgInput: string, daysInput?: string | number
 
   try {
     assertValidPackageName(pkg);
-  } catch (error: any) {
-    throw new TrafficError("INVALID_REQUEST", 400, error?.message ?? "Invalid package");
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error ?? "Invalid package");
+    throw new TrafficError("INVALID_REQUEST", 400, message);
   }
 
   const key = buildCacheKey(pkg, days);
@@ -144,8 +145,8 @@ export async function fetchTraffic(pkgInput: string, daysInput?: string | number
     };
     cacheSetWithStale(key, nextValue, FRESH_TTL_SECONDS, STALE_TTL_SECONDS);
     return buildResponse(nextValue, "MISS", null);
-  } catch (error: any) {
-    const msg = String(error?.message || error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error ?? "");
     if (msg.startsWith("NPM_NOT_FOUND")) {
       throw new TrafficError("PACKAGE_NOT_FOUND", 404, "Package not found");
     }

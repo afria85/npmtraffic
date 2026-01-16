@@ -131,7 +131,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
       staleReason,
     });
     return response;
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof TrafficError) {
       upstreamStatus = error.upstreamStatus;
       if (error.code === "INVALID_REQUEST") {

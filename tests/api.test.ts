@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { GET as getDaily } from "../app/api/v1/package/[name]/daily/route";
 import { GET as getSearch } from "../app/api/v1/search/route";
+import { GET as getCompare } from "../app/api/v1/compare/route";
 
 test("daily API returns traffic response shape", async (t) => {
   const originalFetch = globalThis.fetch;
@@ -81,4 +82,12 @@ test("search API returns normalized results", async (t) => {
   assert.equal(body.query, "react");
   assert.equal(body.items?.[0]?.name, "react");
   assert.equal(typeof body.meta?.cacheStatus, "string");
+});
+
+test("compare API requires packages", async () => {
+  const req = new Request("http://localhost/api/v1/compare");
+  const res = await getCompare(req);
+  assert.equal(res.status, 400);
+  const payload = (await res.json()) as { error?: { code?: string } };
+  assert.equal(payload.error?.code, "INVALID_REQUEST");
 });

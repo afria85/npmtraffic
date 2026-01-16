@@ -17,6 +17,30 @@ export async function GET(req: Request) {
   let daysValue: number | undefined;
 
   try {
+    const url = new URL(req.url);
+    const pkgsRaw = url.searchParams.get("packages") ?? url.searchParams.get("pkgs");
+    const pkgs = parsePackageList(pkgsRaw);
+    const daysParam = url.searchParams.get("days") ?? undefined;
+    daysValue = daysParam ? Number(daysParam) : undefined;
+
+    if (pkgs.length < 2) {
+      logApiEvent({
+        requestId,
+        route,
+        status: 400,
+        ms: Date.now() - start,
+      });
+      return NextResponse.json(
+        {
+          error: {
+            code: "INVALID_REQUEST",
+            message: "Provide at least two packages for comparison.",
+          },
+        },
+        { status: 400, headers: { "x-request-id": requestId } }
+      );
+    }
+
     const limit = await rateLimit(req, route);
     if (!limit.allowed) {
       logApiEvent({
@@ -40,13 +64,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const url = new URL(req.url);
-    const pkgsRaw = url.searchParams.get("packages") ?? url.searchParams.get("pkgs");
-    const daysParam = url.searchParams.get("days") ?? undefined;
-
-    const pkgs = parsePackageList(pkgsRaw);
     pkgList = pkgs.join(",");
-    daysValue = daysParam ? Number(daysParam) : undefined;
     const data = await buildCompareData(pkgs, daysParam);
 
     const response = NextResponse.json(
@@ -69,8 +87,8 @@ export async function GET(req: Request) {
       days: data.days,
     });
     return response;
-  } catch (error: any) {
-    const msg = String(error?.message || error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error ?? "");
     if (error instanceof TrafficError) {
       upstreamStatus = error.upstreamStatus;
     }

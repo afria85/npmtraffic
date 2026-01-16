@@ -1,17 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { buildCompareUrl, loadCompareList } from "@/lib/compare-store";
 
 export default function CompareLink() {
-  const [url, setUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    const list = loadCompareList();
-    setUrl(buildCompareUrl(list, 30));
-  }, []);
-
+  const url = buildCompareUrl(loadCompareList(), 30);
   if (!url) return null;
 
   return (

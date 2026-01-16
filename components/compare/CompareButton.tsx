@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { addToCompare, removeFromCompare, loadCompareList } from "@/lib/compare-store";
 
 type CompareButtonProps = {
@@ -8,21 +8,12 @@ type CompareButtonProps = {
 };
 
 export default function CompareButton({ name }: CompareButtonProps) {
-  const [isActive, setIsActive] = useState(false);
-
-  useEffect(() => {
-    const list = loadCompareList();
-    setIsActive(list.some((item) => item.toLowerCase() === name.toLowerCase()));
-  }, [name]);
+  const [compareList, setCompareList] = useState<string[]>(() => loadCompareList());
+  const isActive = compareList.some((item) => item.toLowerCase() === name.toLowerCase());
 
   const handleClick = () => {
-    if (isActive) {
-      const list = removeFromCompare(name);
-      setIsActive(list.some((item) => item.toLowerCase() === name.toLowerCase()));
-      return;
-    }
-    const list = addToCompare(name);
-    setIsActive(list.some((item) => item.toLowerCase() === name.toLowerCase()));
+    const nextList = isActive ? removeFromCompare(name) : addToCompare(name);
+    setCompareList(nextList);
   };
 
   return (

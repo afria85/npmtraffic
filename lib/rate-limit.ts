@@ -78,9 +78,17 @@ async function upstashRateLimit(
       },
       body: JSON.stringify(pipeline),
     });
-    const data = (await res.json()) as Array<{ result?: any; error?: string }>;
+    type PipelineResult = {
+      result?: number | string | (number | string)[];
+      error?: string;
+    };
+    const data = (await res.json()) as PipelineResult[];
     const count = Number(data?.[2]?.result ?? 0);
-    const oldestScore = Number(data?.[3]?.result?.[1] ?? now);
+    const oldestResult = data?.[3]?.result;
+    const oldestScore =
+      Array.isArray(oldestResult) && oldestResult.length > 1
+        ? Number(oldestResult[1])
+        : Number(oldestResult ?? now);
     const allowed = count <= limit;
     const retryAfter = allowed ? 0 : Math.ceil((windowMs - (now - oldestScore)) / 1000);
 

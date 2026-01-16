@@ -1,11 +1,10 @@
 type CacheEntry<T> = { value: T; expiresAt: number; staleAt?: number };
 
 declare global {
-  // eslint-disable-next-line no-var
-  var __npmtraffic_cache__: Map<string, CacheEntry<any>> | undefined;
+  var __npmtraffic_cache__: Map<string, CacheEntry<unknown>> | undefined;
 }
 
-const store: Map<string, CacheEntry<any>> =
+const store: Map<string, CacheEntry<unknown>> =
   globalThis.__npmtraffic_cache__ ?? new Map();
 
 globalThis.__npmtraffic_cache__ = store;

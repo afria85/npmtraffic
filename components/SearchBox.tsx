@@ -49,7 +49,7 @@ function SearchPanel({
   const [query, setQuery] = useState("");
   const [state, setState] = useState<SearchState>("idle");
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [recent, setRecent] = useState<string[]>([]);
+  const [recent, setRecent] = useState<string[]>(() => loadRecentSearches());
   const [requestId, setRequestId] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isListOpen, setIsListOpen] = useState(false);
@@ -58,29 +58,19 @@ function SearchPanel({
   const queryLower = normalizedQuery.toLowerCase();
 
   useEffect(() => {
-    setRecent(loadRecentSearches());
-  }, []);
-
-  useEffect(() => {
     if (!autoFocus) return;
     const id = window.setTimeout(() => inputRef.current?.focus(), 0);
     return () => window.clearTimeout(id);
   }, [autoFocus]);
 
   useEffect(() => {
-    setActiveIndex(-1);
-  }, [normalizedQuery]);
-
-  useEffect(() => {
-    setRequestId(null);
     if (!normalizedQuery) {
-      setResults([]);
-      setState("idle");
       return;
     }
 
     const controller = new AbortController();
     const handle = window.setTimeout(async () => {
+      setRequestId(null);
       setState("loading");
       try {
         const res = await fetch(
@@ -100,7 +90,7 @@ function SearchPanel({
         setResults(payload.items ?? []);
         setRequestId(res.headers.get("x-request-id"));
         setState("idle");
-      } catch (error) {
+      } catch {
         if (controller.signal.aborted) return;
         setState("error");
         setResults([]);
@@ -225,8 +215,16 @@ function SearchPanel({
           ref={inputRef}
           value={query}
           onChange={(event) => {
-            setQuery(event.target.value);
+            const nextValue = event.target.value;
+            const normalized = normalizePackageInput(nextValue);
+            setQuery(nextValue);
             setIsListOpen(true);
+            setActiveIndex(-1);
+            setRequestId(null);
+            if (!normalized) {
+              setResults([]);
+              setState("idle");
+            }
           }}
           onFocus={() => setIsListOpen(true)}
           onBlur={() => window.setTimeout(() => setIsListOpen(false), 120)}
@@ -246,7 +244,7 @@ function SearchPanel({
             id={listId}
           >
             <div className="max-h-72 overflow-auto p-2">
-              {options.map((option, index) => (
+              {options.map((option) => (
                 <button
                   key={option.id}
                   type="button"

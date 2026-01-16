@@ -50,7 +50,7 @@ export async function GET(req: Request) {
     return NextResponse.json(data, {
       headers: { "x-request-id": requestId },
     });
-  } catch (error: any) {
+  } catch {
     logApiEvent({
       requestId,
       route,
