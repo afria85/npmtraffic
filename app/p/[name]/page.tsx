@@ -125,6 +125,12 @@ export default async function PackagePage({ params, searchParams }: Props) {
           </div>
           <div className="flex flex-wrap gap-2">
             <CompareButton name={name} />
+            <Link
+              href={`/api/v1/package/${encodedName}/daily.csv?days=${days}`}
+              className="h-11 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+            >
+              Export CSV
+            </Link>
           </div>
           <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1">
             {RANGES.map((range) => {
