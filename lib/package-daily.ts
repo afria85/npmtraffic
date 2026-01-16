@@ -1,9 +1,9 @@
 import { cacheGet, cacheSet } from "@/lib/cache";
-import { daysAgoUTC, toYYYYMMDD } from "@/lib/dates";
 import { fetchDailyDownloadsRange } from "@/lib/npm-client";
 import { aggregateSeries, type DailySeriesRow } from "@/lib/aggregate";
 import { config } from "@/lib/config";
 import { assertValidPackageName } from "@/lib/package-name";
+import { rangeForDays } from "@/lib/query";
 
 export type PackageDailyResult = {
   requestId: string;
@@ -28,11 +28,8 @@ export async function getPackageDaily(pkg: string, daysIn: number): Promise<Pack
 
   assertValidPackageName(pkg);
 
-  // npm range endpoint is inclusive; for 30 rows, request start=days-1 ago
-  const end = daysAgoUTC(0);
-  const start = daysAgoUTC(days - 1);
-
-  const key = `pkg:${pkg}:daily:${days}:${toYYYYMMDD(start)}:${toYYYYMMDD(end)}`;
+  const range = rangeForDays(days);
+  const key = `pkg:${pkg}:daily:${range}`;
 
   const ttlSeconds = config.cache.dailyTTLSeconds;
 
@@ -41,7 +38,7 @@ export async function getPackageDaily(pkg: string, daysIn: number): Promise<Pack
     return { ...cached.value, requestId, cache: { status: "HIT", ttlSeconds } };
   }
 
-  const upstream = await fetchDailyDownloadsRange(pkg, start, end);
+  const upstream = await fetchDailyDownloadsRange(pkg, range);
   const series = aggregateSeries(upstream.downloads);
 
   const result: PackageDailyResult = {

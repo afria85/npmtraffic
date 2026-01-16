@@ -1,5 +1,3 @@
-import { toYYYYMMDD } from "@/lib/dates";
-
 export type NpmRangeRow = { day: string; downloads: number };
 export type NpmRangeResponse = {
   start: string;
@@ -7,6 +5,16 @@ export type NpmRangeResponse = {
   package: string;
   downloads: NpmRangeRow[];
 };
+
+export type NpmRange = "last-7-days" | "last-14-days" | "last-30-days";
+
+export class UpstreamError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
 
 function withTimeout(ms: number) {
   const ctrl = new AbortController();
@@ -17,7 +25,13 @@ function withTimeout(ms: number) {
 async function fetchJson(url: string, timeoutMs: number): Promise<Response> {
   const { ctrl, clear } = withTimeout(timeoutMs);
   try {
-    return await fetch(url, { signal: ctrl.signal, headers: { accept: "application/json" } });
+    return await fetch(url, {
+      signal: ctrl.signal,
+      headers: {
+        accept: "application/json",
+        "user-agent": "npmtraffic/0.2.0 (https://npmtraffic.com)",
+      },
+    });
   } finally {
     clear();
   }
@@ -25,46 +39,22 @@ async function fetchJson(url: string, timeoutMs: number): Promise<Response> {
 
 export async function fetchDailyDownloadsRange(
   pkg: string,
-  start: Date,
-  end: Date
+  range: NpmRange
 ): Promise<NpmRangeResponse> {
-  const s = toYYYYMMDD(start);
-  const e = toYYYYMMDD(end);
   const safePkg = encodeURIComponent(pkg);
-  const url = `https://api.npmjs.org/downloads/range/${s}:${e}/${safePkg}`;
+  const url = `https://api.npmjs.org/downloads/range/${range}/${safePkg}`;
 
-  // retry policy minimal: 2 attempts on 429/5xx
-  let lastErr: any = null;
+  const res = await fetchJson(url, 5000);
 
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    const res = await fetchJson(url, 5000).catch((e) => {
-      lastErr = e;
-      return null;
-    });
-
-    if (!res) continue;
-
-    if (res.ok) {
-      return (await res.json()) as NpmRangeResponse;
-    }
-
-    // 404: package not found on endpoint
-    if (res.status === 404) {
-      const body = await res.text().catch(() => "");
-      throw new Error(`NPM_NOT_FOUND: ${body || "Package not found"}`);
-    }
-
-    // 429 / 5xx: retry once
-    if (res.status === 429 || (res.status >= 500 && res.status <= 599)) {
-      const retryAfter = Number(res.headers.get("retry-after") || "1");
-      await new Promise((r) => setTimeout(r, Math.min(5, Math.max(1, retryAfter)) * 1000));
-      lastErr = new Error(`UPSTREAM_${res.status}`);
-      continue;
-    }
-
-    const text = await res.text().catch(() => "");
-    throw new Error(`UPSTREAM_${res.status}: ${text || "Upstream error"}`);
+  if (res.ok) {
+    return (await res.json()) as NpmRangeResponse;
   }
 
-  throw lastErr ?? new Error("UPSTREAM_FAILED");
+  if (res.status === 404) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`NPM_NOT_FOUND: ${body || "Package not found"}`);
+  }
+
+  const text = await res.text().catch(() => "");
+  throw new UpstreamError(res.status, text || "Upstream unavailable");
 }
