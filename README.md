@@ -1,6 +1,6 @@
 # npmtraffic
 
-npmtraffic is a mobile-first web app that shows daily npm package download traffic in a GitHub-style table view. It includes a package search experience with recent history and validates packages against the npm registry. It uses the npm downloads API for data and is not affiliated with npm.
+npmtraffic is a mobile-first web app that shows daily npm package download traffic in a GitHub-style table view. It includes search, compare, and CSV export for npm packages, and uses npm registry APIs for data. It is not affiliated with npm.
 
 ## Run locally
 
@@ -15,6 +15,8 @@ Open `http://localhost:3000`.
 
 - Search for `react` and press Enter to open `/p/react?days=30`.
 - Search for `logshield-cli` to validate a less common package.
+- Compare packages with `/compare?pkgs=react,vue,logshield-cli&days=30`.
+- Export CSV from `/api/v1/package/react/daily.csv?days=30`.
 
 ## Deploy to Vercel + npmtraffic.com
 
