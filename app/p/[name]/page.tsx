@@ -5,6 +5,7 @@ import { getBaseUrl } from "@/lib/base-url";
 import { config } from "@/lib/config";
 import { clampDays } from "@/lib/query";
 import SearchBox from "@/components/SearchBox";
+import CompareButton from "@/components/compare/CompareButton";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -121,6 +122,9 @@ export default async function PackagePage({ params, searchParams }: Props) {
           </div>
           <div className="hidden sm:block w-72">
             <SearchBox />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <CompareButton name={name} />
           </div>
           <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1">
             {RANGES.map((range) => {

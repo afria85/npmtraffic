@@ -4,6 +4,7 @@ import { POPULAR_PACKAGES } from "@/lib/constants";
 import { getBaseUrl } from "@/lib/base-url";
 import { config } from "@/lib/config";
 import SearchBox from "@/components/SearchBox";
+import CompareLink from "@/components/compare/CompareLink";
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getBaseUrl();
@@ -36,6 +37,10 @@ export default function Home() {
             <SearchBox className="max-w-md" />
           </div>
         </header>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <CompareLink />
+        </div>
 
         <section className="space-y-3">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500">
