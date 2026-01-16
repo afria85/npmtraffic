@@ -15,7 +15,7 @@ Open `http://localhost:3000`.
 
 - Search for `react` and press Enter to open `/p/react?days=30`.
 - Search for `logshield-cli` to validate a less common package.
-- Compare packages with `/compare?pkgs=react,vue,logshield-cli&days=30`.
+- Compare packages with `/compare?packages=react,vue,logshield-cli&days=30`.
 - Export CSV from `/api/v1/package/react/daily.csv?days=30`.
 
 ## Deploy to Vercel + npmtraffic.com

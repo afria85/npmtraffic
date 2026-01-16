@@ -5,15 +5,17 @@ import { buildCsv } from "@/lib/csv";
 import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
 import { parsePackageList } from "@/lib/query";
-import { UpstreamError } from "@/lib/npm-client";
+import { TrafficError } from "@/lib/traffic";
 
-export const revalidate = 21600;
+export const revalidate = 900;
 
 export async function GET(req: Request) {
   const requestId = crypto.randomUUID();
   const start = Date.now();
   const route = "GET /api/v1/compare.csv";
   let upstreamStatus: number | undefined;
+  let pkgList: string | undefined;
+  let daysValue: number | undefined;
 
   try {
     const limit = await rateLimit(req, route);
@@ -25,14 +27,27 @@ export async function GET(req: Request) {
         ms: Date.now() - start,
       });
       return NextResponse.json(
-        { requestId, error: "rate_limited", retryAfter: limit.retryAfter },
-        { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
+        {
+          error: { code: "RATE_LIMITED", message: "Please retry shortly." },
+          retryAfter: limit.retryAfter,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(limit.retryAfter),
+            "x-request-id": requestId,
+          },
+        }
       );
     }
 
     const url = new URL(req.url);
-    const pkgs = parsePackageList(url.searchParams.get("pkgs"));
+    const pkgs = parsePackageList(
+      url.searchParams.get("packages") ?? url.searchParams.get("pkgs")
+    );
     const days = url.searchParams.get("days") ?? undefined;
+    pkgList = pkgs.join(",");
+    daysValue = days ? Number(days) : undefined;
 
     const data = await buildCompareData(pkgs, days);
 
@@ -58,7 +73,7 @@ export async function GET(req: Request) {
       status: 200,
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Cache-Control": "public, s-maxage=21600, stale-while-revalidate=86400",
+        "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
         "x-request-id": requestId,
       },
     });
@@ -68,12 +83,14 @@ export async function GET(req: Request) {
       route,
       status: 200,
       ms: Date.now() - start,
+      package: pkgList,
+      days: data.days,
     });
     return response;
   } catch (error: any) {
     const msg = String(error?.message || error);
-    if (error instanceof UpstreamError) {
-      upstreamStatus = error.status;
+    if (error instanceof TrafficError) {
+      upstreamStatus = error.upstreamStatus;
     }
 
     if (msg.startsWith("BAD_REQUEST")) {
@@ -82,10 +99,14 @@ export async function GET(req: Request) {
         route,
         status: 400,
         ms: Date.now() - start,
+        package: pkgList,
+        days: daysValue,
       });
       return NextResponse.json(
-        { requestId, error: "bad_request", message: msg.replace("BAD_REQUEST: ", "") },
-        { status: 400 }
+        {
+          error: { code: "INVALID_REQUEST", message: msg.replace("BAD_REQUEST: ", "") },
+        },
+        { status: 400, headers: { "x-request-id": requestId } }
       );
     }
 
@@ -95,15 +116,18 @@ export async function GET(req: Request) {
       status: 502,
       ms: Date.now() - start,
       upstreamStatus,
+      package: pkgList,
+      days: daysValue,
     });
     return NextResponse.json(
       {
-        requestId,
-        error: "upstream_unavailable",
+        error: {
+          code: "UPSTREAM_UNAVAILABLE",
+          message: "npm API temporarily unavailable",
+        },
         status: upstreamStatus ?? 502,
-        message: "npm API temporarily unavailable",
       },
-      { status: 502 }
+      { status: 502, headers: { "x-request-id": requestId } }
     );
   }
 }

@@ -3,16 +3,21 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
 import { clampDays, canonicalizePackages, parsePackageList } from "@/lib/query";
+import { validatePackageName } from "@/lib/package-name";
 
 type Props = {
-  searchParams?: Promise<{ pkgs?: string; days?: string }>;
+  searchParams?: Promise<{ packages?: string; pkgs?: string; days?: string }>;
 };
 
 type CompareResponse = {
-  requestId: string;
   days: number;
   packages: { name: string; total: number; share: number }[];
   series: { date: string; values: Record<string, { downloads: number; delta: number | null }> }[];
+  warnings?: string[];
+};
+
+type ApiError = {
+  error?: { code?: string; message?: string };
 };
 
 const numberFormatter = new Intl.NumberFormat("en-US");
@@ -30,11 +35,14 @@ function formatDelta(value: number | null) {
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const sp = (await searchParams) ?? {};
-  const pkgs = canonicalizePackages(parsePackageList(sp.pkgs));
+  const rawList = sp.packages ?? sp.pkgs ?? "";
+  const pkgs = canonicalizePackages(parsePackageList(rawList))
+    .filter((pkg) => validatePackageName(pkg).ok)
+    .slice(0, 5);
   const days = clampDays(sp.days);
   const baseUrl = await getBaseUrl();
 
-  if (pkgs.length < 2 || pkgs.length > 5) {
+  if (pkgs.length < 2) {
     return {
       title: "Compare npm downloads | npmtraffic",
       description: "Compare npm download history across packages.",
@@ -48,7 +56,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   }
 
   const canonicalPkgs = pkgs.map((pkg) => encodeURIComponent(pkg)).join(",");
-  const canonical = `${baseUrl}/compare?pkgs=${canonicalPkgs}&days=${days}`;
+  const canonical = `${baseUrl}/compare?packages=${canonicalPkgs}&days=${days}`;
   const title = `Compare npm downloads (${days} days) | npmtraffic`;
   const description = `Compare npm download history for ${pkgs.join(", ")}.`;
 
@@ -66,28 +74,50 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
 export default async function ComparePage({ searchParams }: Props) {
   const sp = (await searchParams) ?? {};
-  const rawPkgs = sp.pkgs ?? "";
+  const rawPkgs = sp.packages ?? sp.pkgs ?? "";
   const rawDays = sp.days;
-  const pkgs = canonicalizePackages(parsePackageList(rawPkgs));
+  const pkgs = canonicalizePackages(parsePackageList(rawPkgs))
+    .filter((pkg) => validatePackageName(pkg).ok)
+    .slice(0, 5);
   const days = clampDays(rawDays);
-  if (pkgs.length < 2 || pkgs.length > 5) notFound();
+  if (pkgs.length < 2) notFound();
 
   const canonicalPkgs = pkgs.map((pkg) => encodeURIComponent(pkg)).join(",");
-  if (!rawDays || rawDays !== String(days) || rawPkgs !== pkgs.join(",")) {
-    redirect(`/compare?pkgs=${canonicalPkgs}&days=${days}`);
+  if (
+    !rawDays ||
+    rawDays !== String(days) ||
+    rawPkgs !== pkgs.join(",") ||
+    sp.pkgs
+  ) {
+    redirect(`/compare?packages=${canonicalPkgs}&days=${days}`);
   }
 
   const baseUrl = await getBaseUrl();
-  const res = await fetch(`${baseUrl}/api/v1/compare?pkgs=${canonicalPkgs}&days=${days}`, {
-    next: { revalidate: 21600 },
-  });
+  const res = await fetch(
+    `${baseUrl}/api/v1/compare?packages=${canonicalPkgs}&days=${days}`,
+    {
+      next: { revalidate: 900 },
+    }
+  );
 
   if (res.status === 400 || res.status === 404) notFound();
 
   let data: CompareResponse | null = null;
   let errorText: string | null = null;
   if (!res.ok) {
-    errorText = res.status === 502 ? "npm API temporarily unavailable." : "Failed to load.";
+    let code: string | undefined;
+    try {
+      const payload = (await res.json()) as ApiError;
+      code = payload?.error?.code;
+    } catch {
+      code = undefined;
+    }
+    errorText =
+      res.status === 429 || code === "RATE_LIMITED"
+        ? "Rate limit reached. Please retry shortly."
+        : res.status === 502 || code === "UPSTREAM_UNAVAILABLE"
+          ? "npm API temporarily unavailable."
+          : "Failed to load.";
   } else {
     data = (await res.json()) as CompareResponse;
   }
@@ -103,13 +133,13 @@ export default async function ComparePage({ searchParams }: Props) {
             Compare packages
           </h1>
           <p className="text-sm text-slate-400">
-            {pkgs.join(", ")} · {days} days
+            {pkgs.join(", ")} - {days} days
           </p>
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
         <Link
-          href={`/api/v1/compare.csv?pkgs=${canonicalPkgs}&days=${days}`}
+          href={`/api/v1/compare.csv?packages=${canonicalPkgs}&days=${days}`}
           className="h-11 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
         >
           Export CSV
@@ -132,6 +162,11 @@ export default async function ComparePage({ searchParams }: Props) {
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-4 py-6">
       {header}
+      {data?.warnings?.length ? (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+          {data.warnings.join(" ")}
+        </div>
+      ) : null}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {data.packages.map((pkg) => (
           <div key={pkg.name} className="rounded-xl border border-white/10 bg-white/5 p-4">
@@ -166,7 +201,7 @@ export default async function ComparePage({ searchParams }: Props) {
                 ))}
                 {data.packages.map((pkg) => (
                   <th key={`${pkg.name}-delta`} className="px-3 py-2">
-                    Δ
+                    Delta
                   </th>
                 ))}
               </tr>
@@ -195,7 +230,7 @@ export default async function ComparePage({ searchParams }: Props) {
       </div>
 
       <p className="text-xs text-slate-500">
-        Data from api.npmjs.org. Request {data.requestId}.
+        Data from api.npmjs.org.
       </p>
     </main>
   );

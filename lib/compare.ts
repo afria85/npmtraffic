@@ -1,5 +1,6 @@
-import { getPackageDaily } from "@/lib/package-daily";
-import { canonicalizePackages, clampDays, rangeForDays, validatePackageList } from "@/lib/query";
+import { fetchTraffic, TrafficError } from "@/lib/traffic";
+import { canonicalizePackages, clampDays, rangeForDays } from "@/lib/query";
+import { validatePackageName } from "@/lib/package-name";
 
 export type CompareSeriesRow = {
   date: string;
@@ -17,27 +18,60 @@ export type CompareData = {
   range: ReturnType<typeof rangeForDays>;
   packages: CompareTotals[];
   series: CompareSeriesRow[];
+  warnings?: string[];
 };
 
 export async function buildCompareData(rawPackages: string[], rawDays?: string | number) {
   const days = clampDays(rawDays);
-  const pkgs = canonicalizePackages(rawPackages);
-  validatePackageList(pkgs);
+  let pkgs = canonicalizePackages(rawPackages);
+  const warnings: string[] = [];
+  const maxPackages = 5;
 
-  if (pkgs.length < 2 || pkgs.length > 5) {
+  if (pkgs.length > maxPackages) {
+    warnings.push(`Only the first ${maxPackages} packages are compared.`);
+    pkgs = pkgs.slice(0, maxPackages);
+  }
+
+  const validPkgs = pkgs.filter((pkg) => {
+    const result = validatePackageName(pkg);
+    if (!result.ok) {
+      warnings.push(`Ignored invalid package "${pkg}".`);
+      return false;
+    }
+    return true;
+  });
+
+  if (validPkgs.length < 2) {
     throw new Error("BAD_REQUEST: compare requires 2-5 packages");
   }
 
-  const datasets = await Promise.all(
-    pkgs.map(async (name) => {
-      const data = await getPackageDaily(name, days);
-      return { name, data };
+  const results = await Promise.all(
+    validPkgs.map(async (name) => {
+      try {
+        const data = await fetchTraffic(name, days);
+        return { name, data };
+      } catch (error) {
+        if (error instanceof TrafficError && error.code === "PACKAGE_NOT_FOUND") {
+          warnings.push(`Package not found: ${name}.`);
+          return null;
+        }
+        throw error;
+      }
     })
   );
 
+  const datasets = results.filter(Boolean) as Array<{
+    name: string;
+    data: Awaited<ReturnType<typeof fetchTraffic>>;
+  }>;
+
+  if (datasets.length < 2) {
+    throw new Error("BAD_REQUEST: compare requires 2-5 packages");
+  }
+
   const totals = datasets.map(({ name, data }) => ({
     name,
-    total: data.series.reduce((sum, row) => sum + row.downloads, 0),
+    total: data.totals.sum,
     share: 0,
   }));
 
@@ -52,11 +86,12 @@ export async function buildCompareData(rawPackages: string[], rawDays?: string |
   for (const date of dates) {
     const values: CompareSeriesRow["values"] = {};
     for (const { name, data } of datasets) {
-      const row = data.series.find((entry) => entry.date === date);
-      values[name] = {
-        downloads: row?.downloads ?? 0,
-        delta: row?.delta ?? null,
-      };
+      const rowIndex = data.series.findIndex((entry) => entry.date === date);
+      const row = rowIndex >= 0 ? data.series[rowIndex] : null;
+      const prev = rowIndex > 0 ? data.series[rowIndex - 1] : null;
+      const downloads = row?.downloads ?? 0;
+      const delta = prev ? downloads - prev.downloads : null;
+      values[name] = { downloads, delta };
     }
     series.push({ date, values });
   }
@@ -66,5 +101,6 @@ export async function buildCompareData(rawPackages: string[], rawDays?: string |
     range: rangeForDays(days),
     packages: totals,
     series,
+    warnings: warnings.length ? warnings : undefined,
   };
 }

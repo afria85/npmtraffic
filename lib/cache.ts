@@ -1,4 +1,4 @@
-type CacheEntry<T> = { value: T; expiresAt: number };
+type CacheEntry<T> = { value: T; expiresAt: number; staleAt?: number };
 
 declare global {
   // eslint-disable-next-line no-var
@@ -22,4 +22,38 @@ export function cacheGet<T>(key: string): { hit: boolean; value?: T } {
 
 export function cacheSet<T>(key: string, value: T, ttlSeconds: number) {
   store.set(key, { value, expiresAt: Date.now() + ttlSeconds * 1000 });
+}
+
+export function cacheGetWithStale<T>(
+  key: string
+): { hit: boolean; stale: boolean; value?: T } {
+  const ent = store.get(key);
+  if (!ent) return { hit: false, stale: false };
+  const now = Date.now();
+  if (now <= ent.expiresAt) {
+    return { hit: true, stale: false, value: ent.value as T };
+  }
+  if (ent.staleAt && now <= ent.staleAt) {
+    return { hit: true, stale: true, value: ent.value as T };
+  }
+  store.delete(key);
+  return { hit: false, stale: false };
+}
+
+export function cacheSetWithStale<T>(
+  key: string,
+  value: T,
+  freshSeconds: number,
+  staleSeconds: number
+) {
+  const now = Date.now();
+  store.set(key, {
+    value,
+    expiresAt: now + freshSeconds * 1000,
+    staleAt: now + staleSeconds * 1000,
+  });
+}
+
+export function cacheClear() {
+  store.clear();
 }

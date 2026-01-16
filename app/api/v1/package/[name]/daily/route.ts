@@ -1,12 +1,11 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
-import { getPackageDaily } from "@/lib/package-daily";
 import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
-import { UpstreamError } from "@/lib/npm-client";
 import { clampDays } from "@/lib/query";
+import { fetchTraffic, getCachedTraffic, TrafficError } from "@/lib/traffic";
 
-export const revalidate = 21600;
+export const revalidate = 900;
 
 export async function GET(
   req: Request,
@@ -16,86 +15,133 @@ export async function GET(
   const start = Date.now();
   const route = "GET /api/v1/package/[name]/daily";
   let upstreamStatus: number | undefined;
+  let cacheStatus: string | undefined;
+  let isStale: boolean | undefined;
+  let staleReason: string | undefined;
+  let pkgName: string | undefined;
+  let daysValue: number | undefined;
 
   try {
+    const { name: rawName } = await ctx.params;
+    let name = "";
+    try {
+      name = decodeURIComponent(rawName ?? "");
+    } catch {
+      throw new TrafficError("INVALID_REQUEST", 400, "Invalid package name");
+    }
+    pkgName = name;
+
+    const url = new URL(req.url);
+    const daysParam = clampDays(url.searchParams.get("days") || "30");
+    daysValue = daysParam;
+
     const limit = await rateLimit(req, route);
     if (!limit.allowed) {
+      const cached = getCachedTraffic(name, daysParam, "UNKNOWN");
+      if (cached) {
+        cacheStatus = cached.meta.cacheStatus;
+        isStale = cached.meta.isStale;
+        staleReason = cached.meta.staleReason ?? undefined;
+        const response = NextResponse.json(cached, {
+          status: 200,
+          headers: {
+            "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
+            "Retry-After": String(limit.retryAfter),
+            "x-request-id": requestId,
+          },
+        });
+        logApiEvent({
+          requestId,
+          route,
+          status: 200,
+          ms: Date.now() - start,
+          package: name,
+          days: daysParam,
+          cacheStatus,
+          isStale,
+          staleReason,
+        });
+        return response;
+      }
+
       logApiEvent({
         requestId,
         route,
         status: 429,
         ms: Date.now() - start,
+        package: name,
+        days: daysParam,
       });
       return NextResponse.json(
-        { requestId, error: "rate_limited", retryAfter: limit.retryAfter },
+        {
+          error: { code: "RATE_LIMITED", message: "Please retry shortly." },
+          retryAfter: limit.retryAfter,
+        },
         {
           status: 429,
-          headers: { "Retry-After": String(limit.retryAfter) },
+          headers: {
+            "Retry-After": String(limit.retryAfter),
+            "x-request-id": requestId,
+          },
         }
       );
     }
 
-    const { name: rawName } = await ctx.params;
-    const name = decodeURIComponent(rawName);
+    const data = await fetchTraffic(name, daysParam);
+    cacheStatus = data.meta.cacheStatus;
+    isStale = data.meta.isStale;
+    staleReason = data.meta.staleReason ?? undefined;
 
-    const url = new URL(req.url);
-    const daysParam = clampDays(url.searchParams.get("days") || "30");
-
-    const data = await getPackageDaily(name, daysParam);
-    const series = data.series.map(({ date, downloads, delta, avg7 }) => ({
-      date,
-      downloads,
-      delta,
-      avg7,
-    }));
-
-    const response = NextResponse.json(
-      { requestId, series },
-      {
-        status: 200,
-        headers: {
-          "Cache-Control": "public, s-maxage=21600, stale-while-revalidate=86400",
-        },
-      }
-    );
+    const response = NextResponse.json(data, {
+      status: 200,
+      headers: {
+        "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
+        "x-request-id": requestId,
+      },
+    });
     logApiEvent({
       requestId,
       route,
       status: 200,
       ms: Date.now() - start,
+      package: name,
+      days: daysParam,
+      cacheStatus,
+      isStale,
+      staleReason,
     });
     return response;
   } catch (e: any) {
-    const msg = String(e?.message || e);
-    const status = e instanceof UpstreamError ? 502 : 500;
-    upstreamStatus = e instanceof UpstreamError ? e.status : undefined;
+    const status = e instanceof TrafficError ? e.status : 500;
+    upstreamStatus = e instanceof TrafficError ? e.upstreamStatus : undefined;
 
-    if (msg.startsWith("BAD_REQUEST")) {
+    if (e instanceof TrafficError && e.code === "INVALID_REQUEST") {
       logApiEvent({
         requestId,
         route,
         status: 400,
         ms: Date.now() - start,
+        package: pkgName,
+        days: daysValue,
       });
       return NextResponse.json(
-        {
-          requestId,
-          error: { code: "BAD_REQUEST", message: msg.replace("BAD_REQUEST: ", "") },
-        },
-        { status: 400 }
+        { error: { code: "INVALID_REQUEST", message: "Invalid package name" } },
+        { status: 400, headers: { "x-request-id": requestId } }
       );
     }
 
-    if (msg.startsWith("NPM_NOT_FOUND")) {
+    if (e instanceof TrafficError && e.code === "PACKAGE_NOT_FOUND") {
       logApiEvent({
         requestId,
         route,
         status: 404,
         ms: Date.now() - start,
+        package: pkgName,
+        days: daysValue,
       });
       return NextResponse.json(
-        { requestId, error: { code: "NOT_FOUND", message: "Package not found" } },
-        { status: 404 }
+        { error: { code: "PACKAGE_NOT_FOUND", message: "Package not found" } },
+        { status: 404, headers: { "x-request-id": requestId } }
       );
     }
 
@@ -105,15 +151,18 @@ export async function GET(
       status: status,
       ms: Date.now() - start,
       upstreamStatus,
+      package: pkgName,
+      days: daysValue,
     });
     return NextResponse.json(
       {
-        requestId,
-        error: "upstream_unavailable",
+        error: {
+          code: "UPSTREAM_UNAVAILABLE",
+          message: "npm API temporarily unavailable",
+        },
         status: upstreamStatus ?? 502,
-        message: "npm API temporarily unavailable",
       },
-      { status: 502 }
+      { status: 502, headers: { "x-request-id": requestId } }
     );
   }
 }

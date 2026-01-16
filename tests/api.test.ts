@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { GET as getDaily } from "../app/api/v1/package/[name]/daily/route";
 import { GET as getSearch } from "../app/api/v1/search/route";
 
-test("daily API returns requestId and series", async (t) => {
+test("daily API returns traffic response shape", async (t) => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input) => {
     const url = typeof input === "string" ? input : input.url;
@@ -31,9 +31,19 @@ test("daily API returns requestId and series", async (t) => {
   const req = new Request("http://localhost/api/v1/package/react/daily?days=30");
   const res = await getDaily(req, { params: Promise.resolve({ name: "react" }) });
   assert.equal(res.status, 200);
-  const body = (await res.json()) as { requestId?: string; series?: unknown[] };
-  assert.equal(typeof body.requestId, "string");
+  const body = (await res.json()) as {
+    package?: string;
+    range?: { startDate?: string; endDate?: string };
+    series?: unknown[];
+    totals?: { sum?: number };
+    meta?: { cacheStatus?: string };
+  };
+  assert.equal(body.package, "react");
+  assert.equal(typeof body.range?.startDate, "string");
+  assert.equal(typeof body.range?.endDate, "string");
   assert.equal(Array.isArray(body.series), true);
+  assert.equal(typeof body.totals?.sum, "number");
+  assert.equal(typeof body.meta?.cacheStatus, "string");
 });
 
 test("search API returns normalized results", async (t) => {
@@ -63,7 +73,12 @@ test("search API returns normalized results", async (t) => {
   const req = new Request("http://localhost/api/v1/search?q=react&limit=10");
   const res = await getSearch(req);
   assert.equal(res.status, 200);
-  const body = (await res.json()) as { q?: string; results?: Array<{ name: string }> };
-  assert.equal(body.q, "react");
-  assert.equal(body.results?.[0]?.name, "react");
+  const body = (await res.json()) as {
+    query?: string;
+    items?: Array<{ name: string }>;
+    meta?: { cacheStatus?: string };
+  };
+  assert.equal(body.query, "react");
+  assert.equal(body.items?.[0]?.name, "react");
+  assert.equal(typeof body.meta?.cacheStatus, "string");
 });

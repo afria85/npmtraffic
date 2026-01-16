@@ -53,7 +53,7 @@ export function buildCompareUrl(list: string[], days = 30) {
   const canonical = canonicalizePackages(list);
   if (canonical.length < 2) return null;
   const pkgs = canonical.map((pkg) => encodeURIComponent(pkg)).join(",");
-  return `/compare?pkgs=${pkgs}&days=${days}`;
+  return `/compare?packages=${pkgs}&days=${days}`;
 }
 
 export { STORAGE_KEY, MAX_COMPARE };

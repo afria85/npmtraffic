@@ -2,42 +2,45 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
-import { config } from "@/lib/config";
 import { clampDays } from "@/lib/query";
 import SearchBox from "@/components/SearchBox";
 import CompareButton from "@/components/compare/CompareButton";
+import type { TrafficResponse } from "@/lib/traffic";
 
 type Props = {
   params: Promise<{ name: string }>;
   searchParams?: Promise<{ days?: string }>;
 };
 
-type PackageDailyResponse = {
-  requestId: string;
-  series: {
-    date: string;
-    downloads: number;
-    delta: number | null;
-    avg7: number | null;
-  }[];
+type ApiError = {
+  error?: { code?: string; message?: string };
 };
 
 const ALLOWED_DAYS = new Set(["7", "14", "30"]);
 const RANGES = [7, 14, 30] as const;
 const numberFormatter = new Intl.NumberFormat("en-US");
 
-function formatNumber(value: number | null) {
-  if (value == null) return "-";
+function formatNumber(value: number) {
   return numberFormatter.format(value);
 }
 
-function formatDelta(value: number | null) {
-  if (value == null) return "-";
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${numberFormatter.format(value)}`;
+function formatUpdatedAt(iso: string) {
+  const ts = Date.parse(iso);
+  if (!Number.isFinite(ts)) return "Updated recently";
+  const diffMs = Date.now() - ts;
+  const minutes = Math.max(0, Math.round(diffMs / 60000));
+  if (minutes < 1) return "Updated just now";
+  if (minutes < 60) return `Updated ${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `Updated ${hours} hr ago`;
+  const days = Math.round(hours / 24);
+  return `Updated ${days} d ago`;
 }
 
-export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: Props): Promise<Metadata> {
   const p = await params;
   const sp = (await searchParams) ?? {};
   const baseUrl = await getBaseUrl();
@@ -48,7 +51,16 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
       alternates: { canonical: `${baseUrl}/` },
     };
   }
-  const name = decodeURIComponent(p.name);
+  let name = "";
+  try {
+    name = decodeURIComponent(p.name);
+  } catch {
+    return {
+      title: "npmtraffic",
+      description: "Daily npm download history in a GitHub-style table",
+      alternates: { canonical: `${baseUrl}/` },
+    };
+  }
   const days = clampDays(sp.days);
   const canonical = `${baseUrl}/p/${encodeURIComponent(name)}?days=${days}`;
 
@@ -70,7 +82,16 @@ export default async function PackagePage({ params, searchParams }: Props) {
   const p = await params;
   const sp = (await searchParams) ?? {};
   if (!p?.name) notFound();
-  const name = decodeURIComponent(p.name);
+
+  let name = "";
+  try {
+    name = decodeURIComponent(p.name);
+  } catch {
+    notFound();
+  }
+
+  if (!name) notFound();
+
   const rawDays = sp.days;
   const days = clampDays(rawDays);
   const baseUrl = await getBaseUrl();
@@ -80,26 +101,41 @@ export default async function PackagePage({ params, searchParams }: Props) {
     redirect(`/p/${encodedName}?days=${days}`);
   }
 
-  let data: PackageDailyResponse | null = null;
+  let data: TrafficResponse | null = null;
   let errorText: string | null = null;
 
   try {
     const res = await fetch(
       `${baseUrl}/api/v1/package/${encodedName}/daily?days=${days}`,
-      { next: { revalidate: config.cache.dailyTTLSeconds } }
+      { next: { revalidate: 900 } }
     );
 
     if (res.status === 404 || res.status === 400) notFound();
 
     if (!res.ok) {
-      errorText =
-        res.status === 502 ? "npm API temporarily unavailable." : "Failed to load.";
+      let code: string | undefined;
+      try {
+        const payload = (await res.json()) as ApiError;
+        code = payload?.error?.code;
+      } catch {
+        code = undefined;
+      }
+
+      if (res.status === 429 || code === "RATE_LIMITED") {
+        errorText = "Rate limit reached. Please retry shortly.";
+      } else if (res.status === 502 || code === "UPSTREAM_UNAVAILABLE") {
+        errorText = "npm API temporarily unavailable.";
+      } else {
+        errorText = "Failed to load data.";
+      }
     } else {
-      data = (await res.json()) as PackageDailyResponse;
+      data = (await res.json()) as TrafficResponse;
     }
-  } catch (error) {
+  } catch {
     errorText = "Failed to load data.";
   }
+
+  const updatedLabel = data ? formatUpdatedAt(data.meta.fetchedAt) : null;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-6">
@@ -114,6 +150,11 @@ export default async function PackagePage({ params, searchParams }: Props) {
               npm downloads, GitHub-style traffic view
             </p>
           </div>
+          {updatedLabel ? (
+            <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
+              {updatedLabel}
+            </span>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-3 sm:items-end">
@@ -155,59 +196,63 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
       </div>
 
+      {data?.meta.isStale ? (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+          {data.warning ?? "Showing cached data (upstream error)."}
+        </div>
+      ) : null}
+
       {errorText ? (
         <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
           {errorText} Please try again.
         </div>
       ) : (
         <>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs uppercase tracking-widest text-slate-500">
+                Total downloads
+              </p>
+              <p className="mt-2 text-xl font-semibold text-white">
+                {data ? formatNumber(data.totals.sum) : "-"}
+              </p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs uppercase tracking-widest text-slate-500">
+                Avg per day
+              </p>
+              <p className="mt-2 text-xl font-semibold text-white">
+                {data ? formatNumber(data.totals.avgPerDay) : "-"}
+              </p>
+            </div>
+          </div>
+
           <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
             <div className="max-h-[70vh] overflow-auto">
-              <table className="min-w-[520px] w-full text-sm">
+              <table className="min-w-[420px] w-full text-sm">
                 <thead className="sticky top-0 bg-black/80 text-left text-xs uppercase tracking-wider text-slate-300 backdrop-blur">
                   <tr>
                     <th className="px-3 py-2">Date</th>
                     <th className="px-3 py-2">Downloads</th>
-                    <th className="px-3 py-2">Δ</th>
-                    <th className="px-3 py-2">7D Avg</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
-                  {data?.series?.map((row) => {
-                    const deltaClass =
-                      row.delta == null
-                        ? "text-slate-400"
-                        : row.delta > 0
-                          ? "text-emerald-300"
-                          : row.delta < 0
-                            ? "text-rose-300"
-                            : "text-slate-200";
-
-                    return (
-                      <tr key={row.date} className="text-slate-100">
-                        <td className="px-3 py-2 text-xs uppercase tracking-wide text-slate-400">
-                          {row.date}
-                        </td>
-                        <td className="px-3 py-2 font-mono tabular-nums">
-                          {formatNumber(row.downloads)}
-                        </td>
-                        <td className={`px-3 py-2 font-mono tabular-nums ${deltaClass}`}>
-                          {formatDelta(row.delta)}
-                        </td>
-                        <td className="px-3 py-2 font-mono tabular-nums">
-                          {formatNumber(row.avg7)}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {data?.series?.map((row) => (
+                    <tr key={row.date} className="text-slate-100">
+                      <td className="px-3 py-2 text-xs uppercase tracking-wide text-slate-400">
+                        {row.date}
+                      </td>
+                      <td className="px-3 py-2 font-mono tabular-nums">
+                        {formatNumber(row.downloads)}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
 
-          <p className="text-xs text-slate-500">
-            Data from api.npmjs.org. Request {data?.requestId ?? "n/a"}.
-          </p>
+          <p className="text-xs text-slate-500">Data from api.npmjs.org.</p>
         </>
       )}
     </main>

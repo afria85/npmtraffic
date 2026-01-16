@@ -88,18 +88,17 @@ function SearchPanel({
           { signal: controller.signal }
         );
         const payload = (await res.json()) as {
-          requestId?: string;
-          results?: SearchResult[];
-          error?: string;
+          query?: string;
+          items?: SearchResult[];
         };
         if (!res.ok) {
           setState("error");
           setResults([]);
-          setRequestId(payload.requestId ?? null);
+          setRequestId(res.headers.get("x-request-id"));
           return;
         }
-        setResults(payload.results ?? []);
-        setRequestId(payload.requestId ?? null);
+        setResults(payload.items ?? []);
+        setRequestId(res.headers.get("x-request-id"));
         setState("idle");
       } catch (error) {
         if (controller.signal.aborted) return;
