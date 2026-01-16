@@ -7,6 +7,8 @@ export const config = {
   cache: {
     dailyTTLSeconds: 60 * 60 * 6, // 6 hours
     metadataTTLSeconds: 60 * 60 * 24 * 7, // 7 days
+    validatePositiveTTLSeconds: 60 * 60 * 24, // 24 hours
+    validateNegativeTTLSeconds: 60 * 60, // 1 hour
   },
   limits: {
     compareMax: 5,

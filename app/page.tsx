@@ -3,6 +3,7 @@ import Link from "next/link";
 import { POPULAR_PACKAGES } from "@/lib/constants";
 import { getBaseUrl } from "@/lib/base-url";
 import { config } from "@/lib/config";
+import PackageSearch from "@/components/PackageSearch";
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getBaseUrl();
@@ -26,6 +27,9 @@ export default function Home() {
           <p className="text-sm text-slate-300">
             npm downloads, GitHub-style traffic view
           </p>
+          <div className="pt-2">
+            <PackageSearch className="max-w-md" />
+          </div>
         </header>
 
         <section className="space-y-3">

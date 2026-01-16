@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
 import { config } from "@/lib/config";
+import PackageSearch from "@/components/PackageSearch";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -100,7 +101,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <Link href="/" className="text-xs uppercase tracking-[0.3em] text-slate-400">
             npmtraffic
@@ -113,25 +114,33 @@ export default async function PackagePage({ params, searchParams }: Props) {
           </div>
         </div>
 
-        <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1">
-          {RANGES.map((range) => {
-            const active = range === days;
-            return (
-              <Link
-                key={range}
-                href={`/p/${encodeURIComponent(name)}?days=${range}`}
-                className={[
-                  "rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition",
-                  active
-                    ? "bg-white text-black"
-                    : "text-slate-200 hover:bg-white/10 hover:text-white",
-                ].join(" ")}
-                aria-current={active ? "page" : undefined}
-              >
-                {range}D
-              </Link>
-            );
-          })}
+        <div className="flex flex-col gap-3 sm:items-end">
+          <div className="sm:hidden">
+            <PackageSearch variant="modal" triggerLabel="Search another package" />
+          </div>
+          <div className="hidden sm:block w-72">
+            <PackageSearch />
+          </div>
+          <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1">
+            {RANGES.map((range) => {
+              const active = range === days;
+              return (
+                <Link
+                  key={range}
+                  href={`/p/${encodeURIComponent(name)}?days=${range}`}
+                  className={[
+                    "rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition",
+                    active
+                      ? "bg-white text-black"
+                      : "text-slate-200 hover:bg-white/10 hover:text-white",
+                  ].join(" ")}
+                  aria-current={active ? "page" : undefined}
+                >
+                  {range}D
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </div>
 
