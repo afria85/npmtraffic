@@ -44,7 +44,7 @@ test("serves stale cache when upstream fails", async (t) => {
   });
 
   const firstResponse = await fetchTraffic("react", 14);
-  const cacheKey = `traffic:${firstResponse.package.toLowerCase()}:${firstResponse.range.days}:${firstResponse.range.startDate}`;
+  const cacheKey = `traffic:${firstResponse.package.toLowerCase()}:${firstResponse.range.days}:${firstResponse.range.label}:${firstResponse.range.startDate}:${firstResponse.range.endDate}`;
   cacheSetWithStale(
     cacheKey,
     {

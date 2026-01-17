@@ -18,8 +18,8 @@ type Props = {
   searchParams?: Promise<{ days?: string }>;
 };
 
-const ALLOWED_DAYS = new Set(["7", "14", "30"]);
-const RANGES = [7, 14, 30] as const;
+const ALLOWED_DAYS = new Set(["7", "14", "30", "90", "180", "365"]);
+const RANGES = [7, 14, 30, 90, 180, 365] as const;
 const numberFormatter = new Intl.NumberFormat("en-US");
 
 function formatNumber(value: number) {

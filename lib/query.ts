@@ -2,7 +2,7 @@ import { normalizePackageInput, validatePackageName } from "@/lib/package-name";
 import { toYYYYMMDD } from "@/lib/dates";
 import type { NpmRange } from "@/lib/npm-client";
 
-const ALLOWED_DAYS = new Set([7, 14, 30]);
+const ALLOWED_DAYS = new Set([7, 14, 30, 90, 180, 365]);
 
 export type RangeForDaysResult = {
   days: number;
@@ -15,6 +15,9 @@ const RANGE_LABELS: Record<number, NpmRange> = {
   7: "last-7-days",
   14: "last-14-days",
   30: "last-30-days",
+  90: "last-90-days",
+  180: "last-180-days",
+  365: "last-365-days",
 };
 
 export function clampDays(raw?: string | number) {

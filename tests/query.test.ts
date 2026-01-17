@@ -7,6 +7,9 @@ test("clampDays defaults and clamps to allowed values", () => {
   assert.equal(clampDays("7"), 7);
   assert.equal(clampDays("14"), 14);
   assert.equal(clampDays("30"), 30);
+  assert.equal(clampDays("90"), 90);
+  assert.equal(clampDays("180"), 180);
+  assert.equal(clampDays("365"), 365);
   assert.equal(clampDays("100"), 30);
 });
 
@@ -22,4 +25,19 @@ test("rangeForDays returns yesterday-based window", () => {
   assert.equal(range.startDate, "2026-01-03");
   assert.equal(range.endDate, "2026-01-16");
   assert.equal(range.label, "last-14-days");
+});
+
+test("rangeForDays handles long ranges", () => {
+  const now = new Date("2026-01-17T12:00:00Z");
+  const range90 = rangeForDays(90, now);
+  assert.equal(range90.days, 90);
+  assert.equal(range90.startDate, "2025-10-19");
+  assert.equal(range90.endDate, "2026-01-16");
+  assert.equal(range90.label, "last-90-days");
+
+  const range365 = rangeForDays(365, now);
+  assert.equal(range365.days, 365);
+  assert.equal(range365.startDate, "2025-01-17");
+  assert.equal(range365.endDate, "2026-01-16");
+  assert.equal(range365.label, "last-365-days");
 });

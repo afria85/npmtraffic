@@ -56,6 +56,10 @@ export default function DataPage() {
           Responses are cached for 15 minutes and kept stale for 24 hours; stale data is used when a fresh
           copy cannot be fetched. Totals, averages, and series always represent the normalized range.
         </p>
+        <p>
+          Supported ranges now include 7, 14, 30, 90, 180, and 365 days. Longer views (90+ days) refresh every 12 hours while still honoring
+          the 24-hour stale window so that historic traffic remains available even during upstream hiccups.
+        </p>
         <div>
           <h2 className="text-lg font-semibold">Error meanings</h2>
           <ul className="mt-2 space-y-2 pl-4">

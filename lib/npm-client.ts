@@ -6,7 +6,13 @@ export type NpmRangeResponse = {
   downloads: NpmRangeRow[];
 };
 
-export type NpmRange = "last-7-days" | "last-14-days" | "last-30-days";
+export type NpmRange =
+  | "last-7-days"
+  | "last-14-days"
+  | "last-30-days"
+  | "last-90-days"
+  | "last-180-days"
+  | "last-365-days";
 export type NpmDateRange = { start: string; end: string };
 
 export class UpstreamError extends Error {

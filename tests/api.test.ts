@@ -59,6 +59,49 @@ test("daily API returns traffic response shape", async (t) => {
   assert.ok(Array.isArray(body.derived?.outliers));
 });
 
+test("daily API supports long-range normalization", async (t) => {
+  const originalFetch = globalThis.fetch;
+  const expectedRange = rangeForDays(90);
+  globalThis.fetch = async (input) => {
+    const url = typeof input === "string" ? input : input.url;
+    if (
+      url.startsWith(
+        `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
+      )
+    ) {
+      return new Response(
+        JSON.stringify({
+          start: expectedRange.startDate,
+          end: expectedRange.endDate,
+          package: "react",
+          downloads: [
+            { day: expectedRange.startDate, downloads: 5 },
+            { day: expectedRange.endDate, downloads: 7 },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const req = new Request("http://localhost/api/v1/package/react/daily?days=90");
+  const res = await getDaily(req, { params: Promise.resolve({ name: "react" }) });
+  assert.equal(res.status, 200);
+  const body = (await res.json()) as {
+    range?: { days?: number; startDate?: string; endDate?: string };
+    series?: unknown[];
+  };
+  assert.equal(body.range?.days, 90);
+  assert.equal(body.range?.startDate, expectedRange.startDate);
+  assert.equal(body.range?.endDate, expectedRange.endDate);
+  assert.equal(body.series?.length, 90);
+});
+
 test("daily CSV export includes metadata comments", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(30);
@@ -100,6 +143,45 @@ test("daily CSV export includes metadata comments", async (t) => {
   assert.ok(lines[3].startsWith("# generated_at="));
   assert.ok(lines[4].startsWith("# source="));
   assert.equal(lines[5], "date,downloads,ma3,ma7,is_outlier,outlier_score");
+});
+
+test("daily CSV export matches long-range row count", async (t) => {
+  const originalFetch = globalThis.fetch;
+  const expectedRange = rangeForDays(90);
+  globalThis.fetch = async (input) => {
+    const url = typeof input === "string" ? input : input.url;
+    if (
+      url.startsWith(
+        `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
+      )
+    ) {
+      return new Response(
+        JSON.stringify({
+          start: expectedRange.startDate,
+          end: expectedRange.endDate,
+          package: "react",
+          downloads: [
+            { day: expectedRange.startDate, downloads: 5 },
+            { day: expectedRange.endDate, downloads: 7 },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const req = new Request("http://localhost/api/v1/package/react/daily.csv?days=90");
+  const res = await getDailyCsv(req, { params: Promise.resolve({ name: "react" }) });
+  assert.equal(res.status, 200);
+  const text = await res.text();
+  const lines = text.trim().split("\n");
+  // 5 comment lines + header + 90 data rows
+  assert.equal(lines.length, 5 + 1 + 90);
 });
 
 test("daily JSON export returns audit metadata", async (t) => {

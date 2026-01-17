@@ -6,7 +6,8 @@ import { listDatesBetween } from "@/lib/dates";
 import { recordError, recordSuccess } from "@/lib/health";
 import { buildDerivedMetrics, DERIVED_METHOD_DESCRIPTION, type DerivedMetrics } from "@/lib/derived";
 
-const FRESH_TTL_SECONDS = 60 * 15;
+const SHORT_FRESH_TTL_SECONDS = 60 * 15;
+const LONG_FRESH_TTL_SECONDS = 60 * 60 * 12;
 const STALE_TTL_SECONDS = 60 * 60 * 24;
 
 export type TrafficSeriesRow = { date: string; downloads: number };
@@ -117,8 +118,15 @@ function getStaleReason(error: unknown) {
   return "UNKNOWN";
 }
 
+function getCacheTtl(days: number) {
+  if (days > 30) {
+    return { fresh: LONG_FRESH_TTL_SECONDS, stale: STALE_TTL_SECONDS };
+  }
+  return { fresh: SHORT_FRESH_TTL_SECONDS, stale: STALE_TTL_SECONDS };
+}
+
 function buildCacheKey(pkg: string, range: RangeForDaysResult) {
-  return `traffic:${pkg.toLowerCase()}:${range.days}:${range.startDate}`;
+  return `traffic:${pkg.toLowerCase()}:${range.days}:${range.label}:${range.startDate}:${range.endDate}`;
 }
 
 export function getCachedTraffic(
@@ -173,7 +181,8 @@ export async function fetchTraffic(pkgInput: string, daysInput?: string | number
       totals,
       fetchedAt,
     };
-    cacheSetWithStale(key, nextValue, FRESH_TTL_SECONDS, STALE_TTL_SECONDS);
+    const ttl = getCacheTtl(range.days);
+    cacheSetWithStale(key, nextValue, ttl.fresh, ttl.stale);
     recordSuccess("MISS", false);
     return buildResponse(nextValue, "MISS", null);
   } catch (error: unknown) {
