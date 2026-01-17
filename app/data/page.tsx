@@ -78,6 +78,10 @@ export default function DataPage() {
             Derived metrics such as trailing MA3/MA7 and MAD-based outlier scores are available in the exports and behind the
             &quot;Show derived metrics&quot; toggle on package pages. These values are computed heuristically and do not alter the raw download counts.
           </p>
+          <p className="text-sm text-slate-400">
+            Events are user-provided notes stored locally per package in the browser. They add markers to the table rows,
+            show in the list overlay, and are never synced or stored on the server.
+          </p>
         </div>
       </section>
     </main>

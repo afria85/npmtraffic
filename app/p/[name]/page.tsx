@@ -249,7 +249,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <DerivedSeriesTable series={traffic.series} derived={traffic.derived} />
+      <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} />
 
       <p className="text-xs text-slate-500">Data from api.npmjs.org.</p>
     </main>
