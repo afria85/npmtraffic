@@ -43,21 +43,34 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen px-6 py-12">
-      <div className="mx-auto flex max-w-2xl flex-col gap-8">
-        <header className="space-y-3">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">npmtraffic</p>
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">npmtraffic</h1>
-          <p className="text-sm text-slate-300">
-            npm downloads, GitHub-style traffic view
+      <div className="mx-auto flex max-w-2xl flex-col gap-10">
+        <header className="space-y-4 text-center">
+          <p className="text-xs uppercase tracking-[0.4em] text-slate-400">npmtraffic</p>
+          <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+            GitHub-style daily npm download history
+          </h1>
+          <p className="text-base text-slate-300 sm:text-lg">
+            Compare packages. Export CSV. Track when downloads change day-to-day.
           </p>
-          <div className="pt-2">
-            <SearchBox className="max-w-md" />
+          <div className="pt-4">
+            <SearchBox className="mx-auto w-full max-w-xl" />
           </div>
         </header>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-3">
           <CompareLink />
         </div>
+
+        <section className="space-y-4 border-t border-white/10 pt-8 text-sm text-slate-300">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">
+            How it works
+          </h2>
+          <ul className="space-y-2 text-left sm:text-base">
+            <li>• Daily downloads pulled directly from <code>api.npmjs.org</code>.</li>
+            <li>• All ranges end yesterday UTC so downloads always line up with npm’s reporting.</li>
+            <li>• Counts reflect total downloads, not unique users or installs.</li>
+          </ul>
+        </section>
 
         <section className="space-y-3">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500">
