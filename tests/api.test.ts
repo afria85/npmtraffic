@@ -46,6 +46,7 @@ test("daily API returns traffic response shape", async (t) => {
     series?: unknown[];
     totals?: { sum?: number };
     meta?: { cacheStatus?: string };
+    derived?: { ma3?: unknown[]; ma7?: unknown[]; outliers?: unknown[] };
   };
   assert.equal(body.package, "react");
   assert.equal(typeof body.range?.startDate, "string");
@@ -53,6 +54,9 @@ test("daily API returns traffic response shape", async (t) => {
   assert.equal(Array.isArray(body.series), true);
   assert.equal(typeof body.totals?.sum, "number");
   assert.equal(typeof body.meta?.cacheStatus, "string");
+  assert.ok(Array.isArray(body.derived?.ma3));
+  assert.ok(Array.isArray(body.derived?.ma7));
+  assert.ok(Array.isArray(body.derived?.outliers));
 });
 
 test("daily CSV export includes metadata comments", async (t) => {
@@ -95,7 +99,7 @@ test("daily CSV export includes metadata comments", async (t) => {
   assert.ok(lines[2].startsWith("# timezone="));
   assert.ok(lines[3].startsWith("# generated_at="));
   assert.ok(lines[4].startsWith("# source="));
-  assert.equal(lines[5], "date,downloads");
+  assert.equal(lines[5], "date,downloads,ma3,ma7,is_outlier,outlier_score");
 });
 
 test("daily JSON export returns audit metadata", async (t) => {

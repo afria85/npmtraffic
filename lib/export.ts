@@ -1,5 +1,6 @@
 import type { RangeForDaysResult } from "@/lib/query";
 import type { TrafficResponse } from "@/lib/traffic";
+import { DERIVED_METHOD_DESCRIPTION } from "@/lib/derived";
 
 export const EXPORT_TIMEZONE = "UTC";
 export const EXPORT_SOURCE = "npm downloads API";
@@ -36,6 +37,7 @@ export function makeJsonExportPayload(
     range: data.range,
     series: data.series,
     totals: data.totals,
+    derived: data.derived,
     meta: {
       timezone: EXPORT_TIMEZONE,
       generatedAt,
@@ -43,6 +45,7 @@ export function makeJsonExportPayload(
       cacheStatus: data.meta.cacheStatus,
       isStale: data.meta.isStale,
       staleReason: data.meta.staleReason,
+      derivedMethod: DERIVED_METHOD_DESCRIPTION,
       requestId,
     },
   };

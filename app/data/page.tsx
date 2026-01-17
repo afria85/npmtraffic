@@ -71,8 +71,12 @@ export default function DataPage() {
           <p>
             Download the data as CSV or JSON from <code>/api/v1/package/&#123;name&#125;/daily.csv</code> or <code>/api/v1/package/&#123;name&#125;/daily.json</code>.
             CSV files now add comment headers that document <em>from</em>/<em>to</em> dates, <em>timezone</em>, <em>generated_at</em>, and the data
-            <em>source</em>. The JSON response shares the same range and adds a <code>meta</code> object with timezone, generatedAt,
-            source, cache status, stale flag, stale reason, and the requestId you can use for audits.
+            <em>source</em>. JSON responses expose the normalized range along with a <code>meta</code> block that repeats those fields
+            plus cache status, stale flags, derived method metadata, and the requestId for auditing.
+          </p>
+          <p className="text-sm text-slate-400">
+            Derived metrics such as trailing MA3/MA7 and MAD-based outlier scores are available in the exports and behind the
+            &quot;Show derived metrics&quot; toggle on package pages. These values are computed heuristically and do not alter the raw download counts.
           </p>
         </div>
       </section>

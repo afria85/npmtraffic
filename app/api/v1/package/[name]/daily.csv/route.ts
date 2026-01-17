@@ -41,10 +41,24 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
         isStale = cached.meta.isStale;
         staleReason = cached.meta.staleReason ?? undefined;
         const range = cached.range;
+        const derived = cached.derived;
         const generatedAt = cached.meta.fetchedAt;
         const rows: Array<Array<string | number | null>> = [
-          ["date", "downloads"],
-          ...cached.series.map((row) => [row.date, row.downloads]),
+          ["date", "downloads", "ma3", "ma7", "is_outlier", "outlier_score"],
+          ...cached.series.map((row, index) => {
+            const ma3 = derived?.ma3?.[index]?.value ?? null;
+            const ma7 = derived?.ma7?.[index]?.value ?? null;
+            const outlier = derived?.outliers?.[index];
+            const isOutlierCell = outlier?.is_outlier ? "true" : "false";
+            return [
+              row.date,
+              row.downloads,
+              ma3,
+              ma7,
+              isOutlierCell,
+              outlier?.score ?? null,
+            ];
+          }),
         ];
         const csv =
           buildExportCommentHeader(range, generatedAt) + "\n" + buildCsv(rows);
@@ -110,10 +124,24 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
     isStale = data.meta.isStale;
     staleReason = data.meta.staleReason ?? undefined;
     const range = data.range;
+    const derived = data.derived;
     const generatedAt = data.meta.fetchedAt;
     const rows: Array<Array<string | number | null>> = [
-      ["date", "downloads"],
-      ...data.series.map((row) => [row.date, row.downloads]),
+      ["date", "downloads", "ma3", "ma7", "is_outlier", "outlier_score"],
+      ...data.series.map((row, index) => {
+        const ma3 = derived?.ma3?.[index]?.value ?? null;
+        const ma7 = derived?.ma7?.[index]?.value ?? null;
+        const outlier = derived?.outliers?.[index];
+        const isOutlierCell = outlier?.is_outlier ? "true" : "false";
+        return [
+          row.date,
+          row.downloads,
+          ma3,
+          ma7,
+          isOutlierCell,
+          outlier?.score ?? null,
+        ];
+      }),
     ];
 
     const csv = buildExportCommentHeader(range, generatedAt) + "\n" + buildCsv(rows);

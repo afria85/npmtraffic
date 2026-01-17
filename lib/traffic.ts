@@ -4,6 +4,7 @@ import { clampDays, rangeForDays, type RangeForDaysResult } from "@/lib/query";
 import { fetchDailyDownloadsRange, type NpmRangeRow, UpstreamError } from "@/lib/npm-client";
 import { listDatesBetween } from "@/lib/dates";
 import { recordError, recordSuccess } from "@/lib/health";
+import { buildDerivedMetrics, DERIVED_METHOD_DESCRIPTION, type DerivedMetrics } from "@/lib/derived";
 
 const FRESH_TTL_SECONDS = 60 * 15;
 const STALE_TTL_SECONDS = 60 * 60 * 24;
@@ -15,12 +16,14 @@ export type TrafficResponse = {
   range: RangeForDaysResult;
   series: TrafficSeriesRow[];
   totals: { sum: number; avgPerDay: number };
+  derived: DerivedMetrics;
   meta: {
     source: "npm";
     fetchedAt: string;
     cacheStatus: "HIT" | "MISS" | "STALE";
     isStale: boolean;
     staleReason: "UPSTREAM_401" | "UPSTREAM_429" | "UPSTREAM_5XX" | "TIMEOUT" | "UNKNOWN" | null;
+    derivedMethod: string;
   };
   warning?: string;
 };
@@ -82,11 +85,13 @@ function buildResponse(
   cacheStatus: TrafficResponse["meta"]["cacheStatus"],
   staleReason: TrafficResponse["meta"]["staleReason"] | null
 ): TrafficResponse {
+  const derived = buildDerivedMetrics(cached.series);
   const isStale = cacheStatus === "STALE";
   return {
     package: cached.package,
     range: cached.range,
     series: cached.series,
+    derived,
     totals: cached.totals,
     meta: {
       source: "npm",
@@ -94,6 +99,7 @@ function buildResponse(
       cacheStatus,
       isStale,
       staleReason: isStale ? staleReason : null,
+      derivedMethod: DERIVED_METHOD_DESCRIPTION,
     },
     warning: isStale ? "Showing cached data (upstream error)." : undefined,
   };
