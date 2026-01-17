@@ -24,3 +24,14 @@ test("falls back to config.site.url when host is Vercel and site URL configured"
   });
   assert.equal(result, "https://npmtraffic.com");
 });
+
+test("prefers config.site.url when only Vercel URL is available", () => {
+  const result = resolveBaseUrl({
+    env: {
+      ...process.env,
+      VERCEL_URL: "staging.npmtraffic.vercel.app",
+      NODE_ENV: "production",
+    },
+  });
+  assert.equal(result, "https://npmtraffic.com");
+});

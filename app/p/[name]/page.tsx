@@ -10,6 +10,7 @@ import AlertBanner from "@/components/AlertBanner";
 import { buildPackageCanonical } from "@/lib/canonical";
 import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
 import { getPackageGithubRepo } from "@/lib/npm-repo";
+import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -167,22 +168,22 @@ export default async function PackagePage({ params, searchParams }: Props) {
             </div>
             <div className="flex flex-wrap gap-2">
               <CompareButton name={name} />
-              {repoUrl ? (
-                <a
-                  href={repoUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="h-11 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
-                >
-                  Star on GitHub
-                </a>
-              ) : null}
-              <Link
-                href={`/api/v1/package/${encodedName}/daily.csv?days=${days}`}
-                className="h-11 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+            {repoUrl ? (
+              <a
+                href={repoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={ACTION_BUTTON_CLASSES}
               >
-                Export CSV
-              </Link>
+                Star on GitHub
+              </a>
+            ) : null}
+            <Link
+              href={`/api/v1/package/${encodedName}/daily.csv?days=${days}`}
+              className={ACTION_BUTTON_CLASSES}
+            >
+              Export CSV
+            </Link>
               <CopyLinkButton canonical={canonical} label="Copy link" />
             </div>
           <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1">

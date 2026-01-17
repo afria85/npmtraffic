@@ -1,18 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { buildCompareUrl, loadCompareList } from "@/lib/compare-store";
+import { useEffect, useState } from "react";
+import {
+  COMPARE_UPDATED_EVENT,
+  buildCompareUrl,
+  loadCompareList,
+} from "@/lib/compare-store";
+import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 export default function CompareLink() {
-  const url = buildCompareUrl(loadCompareList(), 30);
+  const [list, setList] = useState<string[]>(() => loadCompareList());
+
+  useEffect(() => {
+    const handleUpdate = () => setList(loadCompareList());
+    window.addEventListener(COMPARE_UPDATED_EVENT, handleUpdate);
+    return () => window.removeEventListener(COMPARE_UPDATED_EVENT, handleUpdate);
+  }, []);
+
+  const url = buildCompareUrl(list, 30);
   if (!url) return null;
 
   return (
-    <Link
-      href={url}
-      className="h-11 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
-    >
-      Compare packages
+    <Link href={url} className={ACTION_BUTTON_CLASSES}>
+      Compare ({list.length})
     </Link>
   );
 }

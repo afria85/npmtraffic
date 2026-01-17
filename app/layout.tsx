@@ -41,6 +41,7 @@ export const metadata: Metadata = {
   },
 };
 
+import CompareTray from "@/components/compare/CompareTray";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen antialiased">
         <div className="flex min-h-screen flex-col">
           <Header />
+          <CompareTray />
           <main className="flex-1">{children}</main>
           <Footer />
         </div>

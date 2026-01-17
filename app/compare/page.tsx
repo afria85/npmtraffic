@@ -9,6 +9,7 @@ import { TrafficError } from "@/lib/traffic";
 import { buildCompareCanonical } from "@/lib/canonical";
 import CopyLinkButton from "@/components/CopyLinkButton";
 import AlertBanner from "@/components/AlertBanner";
+import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 type Props = {
   searchParams?: Promise<{ packages?: string; pkgs?: string; days?: string }>;
@@ -136,7 +137,7 @@ export default async function ComparePage({ searchParams }: Props) {
       <div className="flex flex-wrap gap-2">
         <Link
           href={`/api/v1/compare.csv?packages=${canonicalPkgs}&days=${days}`}
-          className="h-11 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+          className={ACTION_BUTTON_CLASSES}
         >
           Export CSV
         </Link>
@@ -175,9 +176,11 @@ export default async function ComparePage({ searchParams }: Props) {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
-        <div className="max-h-[70vh] overflow-auto">
-          <table className="min-w-[720px] w-full text-sm">
-            <thead className="sticky top-0 bg-black/80 text-left text-xs uppercase tracking-wider text-slate-300 backdrop-blur">
+        <div className="overflow-x-auto">
+          <div className="min-w-[720px]">
+            <div className="max-h-[70vh] overflow-auto">
+              <table className="min-w-[720px] w-full text-sm">
+                <thead className="sticky top-0 bg-black/80 text-left text-xs uppercase tracking-wider text-slate-300 backdrop-blur">
               <tr>
                 <th className="px-3 py-2" rowSpan={2}>
                   Date
@@ -220,7 +223,9 @@ export default async function ComparePage({ searchParams }: Props) {
                 </tr>
               ))}
             </tbody>
-          </table>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 

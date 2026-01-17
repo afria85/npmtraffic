@@ -2,6 +2,7 @@ import { normalizePackageInput } from "@/lib/package-name";
 import { canonicalizePackages } from "@/lib/query";
 
 const STORAGE_KEY = "npmtraffic:compare";
+export const COMPARE_UPDATED_EVENT = "npmtraffic:compare-updated";
 const MAX_COMPARE = 5;
 
 export function loadCompareList() {
@@ -22,6 +23,11 @@ export function saveCompareList(list: string[]) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 }
 
+function broadcastUpdate(list: string[]) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(COMPARE_UPDATED_EVENT, { detail: list }));
+}
+
 export function addToCompare(name: string) {
   const normalized = normalizePackageInput(name);
   if (!normalized) return loadCompareList();
@@ -29,6 +35,7 @@ export function addToCompare(name: string) {
   const next = [normalized, ...list.filter((item) => item.toLowerCase() !== normalized.toLowerCase())];
   const capped = next.slice(0, MAX_COMPARE);
   saveCompareList(capped);
+  broadcastUpdate(capped);
   return capped;
 }
 
@@ -37,6 +44,7 @@ export function removeFromCompare(name: string) {
   const lower = name.toLowerCase();
   const filtered = list.filter((item) => item.toLowerCase() !== lower);
   saveCompareList(filtered);
+  broadcastUpdate(filtered);
   return filtered;
 }
 

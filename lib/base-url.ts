@@ -39,6 +39,9 @@ export function resolveBaseUrl(options: ResolveBaseUrlOptions = {}) {
   }
 
   if (env.VERCEL_URL) {
+    if (env.NODE_ENV === "production" && config.site.url) {
+      return normalizeBaseUrl(config.site.url);
+    }
     return normalizeBaseUrl(`https://${env.VERCEL_URL}`);
   }
 
