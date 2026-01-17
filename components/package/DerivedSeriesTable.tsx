@@ -3,8 +3,19 @@
 import { useMemo, useState } from "react";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 import type { DerivedMetrics } from "@/lib/derived";
+import type { EventEntry } from "@/lib/events";
+import {
+  addEvent,
+  deleteEvent,
+  EVENT_TYPES,
+  eventIdentifier,
+  exportEvents,
+  groupEventsByDate,
+  importEventsFromPayload,
+  loadEvents,
+  updateEvent,
+} from "@/lib/events";
 import type { TrafficSeriesRow } from "@/lib/traffic";
-import { groupEventsByDate, loadEvents } from "@/lib/events";
 
 type Props = {
   derived: DerivedMetrics;
@@ -12,17 +23,96 @@ type Props = {
   pkgName: string;
 };
 
+const DEFAULT_FORM: EventEntry = {
+  date_utc: "",
+  event_type: EVENT_TYPES[0],
+  label: "",
+  url: undefined,
+  strength: 1,
+};
+
 const formatDerived = (value: number | null) => (value == null ? "-" : value.toFixed(1));
 
 export default function DerivedSeriesTable({ series, derived, pkgName }: Props) {
   const [showDerived, setShowDerived] = useState(false);
   const [showEventsList, setShowEventsList] = useState(false);
-  const hasDerived = useMemo(() => derived?.ma3?.length === series.length, [derived, series.length]);
-  const events = useMemo(() => (pkgName ? loadEvents(pkgName) : []), [pkgName]);
+  const [form, setForm] = useState<EventEntry>(DEFAULT_FORM);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
+  const events = useMemo(() => {
+    void refreshKey;
+    return pkgName ? loadEvents(pkgName) : [];
+  }, [pkgName, refreshKey]);
   const groupedEvents = useMemo(() => groupEventsByDate(events), [events]);
   const totalEvents = events.length;
-  const hasEvents = totalEvents > 0;
+  const hasDerived = useMemo(() => derived?.ma3?.length === series.length, [derived, series.length]);
+
+  const refresh = () => setRefreshKey((prev) => prev + 1);
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!pkgName) return;
+    if (!form.date_utc || !form.label) {
+      setStatusMessage("Date and label are required.");
+      return;
+    }
+    const entry: EventEntry = {
+      date_utc: form.date_utc,
+      event_type: form.event_type,
+      label: form.label,
+      url: form.url,
+      strength: form.strength,
+    };
+    if (editingKey) {
+      updateEvent(pkgName, entry);
+      setStatusMessage("Event updated.");
+    } else {
+      addEvent(pkgName, entry);
+      setStatusMessage("Event added.");
+    }
+    setForm(DEFAULT_FORM);
+    setEditingKey(null);
+    refresh();
+  };
+
+  const handleEdit = (entry: EventEntry) => {
+    setForm(entry);
+    setEditingKey(eventIdentifier(entry));
+    setShowEventsList(true);
+    setStatusMessage("Editing event. Save to apply.");
+  };
+
+  const handleDelete = (entry: EventEntry) => {
+    if (!pkgName) return;
+    deleteEvent(pkgName, eventIdentifier(entry));
+    setStatusMessage("Event removed.");
+    refresh();
+  };
+
+  const handleExport = () => {
+    if (!pkgName) return;
+    const content = exportEvents(pkgName);
+    const blob = new Blob([content], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${pkgName}-npmtraffic-events.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportFile = async (file: File) => {
+    if (!pkgName) return;
+    const text = await file.text();
+    const result = importEventsFromPayload(pkgName, text);
+    setStatusMessage(
+      `Imported ${result.added} new, ${result.updated} updated.` +
+        (result.errors.length ? ` ${result.errors.join(" ")}` : "")
+    );
+    refresh();
+  };
 
   return (
     <>
@@ -30,7 +120,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-3 text-sm text-slate-300">
           <span>Daily downloads table</span>
           <div className="flex flex-wrap gap-2">
-            {hasEvents ? (
+            {totalEvents ? (
               <button
                 type="button"
                 onClick={() => setShowEventsList(true)}
@@ -86,9 +176,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
                         ) : null}
                       </div>
                     </td>
-                    <td className="px-3 py-2 font-mono">
-                      {row.downloads.toLocaleString("en-US")}
-                    </td>
+                    <td className="px-3 py-2 font-mono">{row.downloads.toLocaleString("en-US")}</td>
                     {showDerived ? <td className="px-3 py-2 font-mono">{formatDerived(ma3)}</td> : null}
                     {showDerived ? <td className="px-3 py-2 font-mono">{formatDerived(ma7)}</td> : null}
                     {showDerived ? (
@@ -106,6 +194,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
           </table>
         </div>
       </div>
+
       {showEventsList ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 px-4 py-8">
           <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0b1119] p-6 shadow-xl shadow-black/50">
@@ -122,20 +211,140 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
                 Close
               </button>
             </div>
-            <div className="mt-4 space-y-3 max-h-[60vh] overflow-auto">
+
+            <form className="mt-4 space-y-2" onSubmit={handleSubmit}>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="text-xs uppercase tracking-widest text-slate-400">
+                  Date
+                  <input
+                    type="date"
+                    value={form.date_utc}
+                    onChange={(event) => setForm((prev) => ({ ...prev, date_utc: event.target.value }))}
+                    className="mt-1 w-full rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-white/30 focus:outline-none"
+                    required
+                  />
+                </label>
+                <label className="text-xs uppercase tracking-widest text-slate-400">
+                  Type
+                  <select
+                    value={form.event_type}
+                    onChange={(event) => setForm((prev) => ({ ...prev, event_type: event.target.value as EventEntry["event_type"] }))}
+                    className="mt-1 w-full rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-white/30 focus:outline-none"
+                  >
+                    {EVENT_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <label className="text-xs uppercase tracking-widest text-slate-400">
+                Label
+                <input
+                  value={form.label}
+                  onChange={(event) => setForm((prev) => ({ ...prev, label: event.target.value }))}
+                  className="mt-1 w-full rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-white/30 focus:outline-none"
+                  required
+                />
+              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="text-xs uppercase tracking-widest text-slate-400">
+                  URL (optional)
+                  <input
+                    value={form.url ?? ""}
+                    onChange={(event) => setForm((prev) => ({ ...prev, url: event.target.value || undefined }))}
+                    className="mt-1 w-full rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-white/30 focus:outline-none"
+                  />
+                </label>
+                <label className="text-xs uppercase tracking-widest text-slate-400">
+                  Strength
+                  <select
+                    value={form.strength}
+                    onChange={(event) => setForm((prev) => ({ ...prev, strength: Number(event.target.value) as 1 | 2 | 3 }))}
+                    className="mt-1 w-full rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-white/30 focus:outline-none"
+                  >
+                    {[1, 2, 3].map((level) => (
+                      <option key={level} value={level}>
+                        {level}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <button type="submit" className={`${ACTION_BUTTON_CLASSES} bg-emerald-500/20 text-emerald-200`}>
+                  {editingKey ? "Update event" : "Add event"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForm(DEFAULT_FORM);
+                    setEditingKey(null);
+                  }}
+                  className={`${ACTION_BUTTON_CLASSES} bg-white/0 text-slate-200 hover:bg-white/10`}
+                >
+                  Reset
+                </button>
+              </div>
+              {statusMessage ? <p className="text-xs text-slate-400">{statusMessage}</p> : null}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleExport}
+                  className={`${ACTION_BUTTON_CLASSES} bg-white/0 text-slate-200 hover:bg-white/10`}
+                >
+                  Export JSON
+                </button>
+                <label className="flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-200 hover:border-white/30 hover:bg-white/10">
+                  <span>Import JSON</span>
+                  <input
+                    type="file"
+                    accept="application/json"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) {
+                        handleImportFile(file);
+                      }
+                      event.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-slate-400">
+                Conflicts keep existing entries unless the import provides missing URL/strength.
+              </p>
+            </form>
+            <div className="mt-4 space-y-3 max-h-[40vh] overflow-auto">
               {events.length ? (
                 events.map((event) => (
                   <div
-                    key={`${event.date_utc}-${event.label}`}
+                    key={eventIdentifier(event)}
                     className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm"
                   >
                     <div className="flex items-center justify-between">
-                      <p className="font-medium text-white">{event.label}</p>
-                      <span className="text-xs uppercase tracking-[0.3em] text-slate-400">
-                        {event.event_type}
-                      </span>
+                      <div>
+                        <p className="font-medium text-white">{event.label}</p>
+                        <p className="text-xs text-slate-400">{event.date_utc}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(event)}
+                          className="text-xs text-emerald-200 underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(event)}
+                          className="text-xs text-rose-200 underline"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-xs text-slate-400">Date: {event.date_utc}</p>
                     {event.url ? (
                       <a
                         href={event.url}
@@ -146,6 +355,10 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
                         View link
                       </a>
                     ) : null}
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                      {event.event_type}
+                      {event.strength ? ` · strength ${event.strength}` : ""}
+                    </p>
                   </div>
                 ))
               ) : (

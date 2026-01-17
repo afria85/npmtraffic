@@ -17,7 +17,7 @@ export type EventEntry = {
   strength?: 1 | 2 | 3;
 };
 
-const EVENT_TYPES: EventType[] = [
+export const EVENT_TYPES: EventType[] = [
   "release",
   "reddit",
   "hn",
@@ -86,11 +86,15 @@ export function loadEvents(pkg: string) {
   }
 }
 
-export function saveEvents(pkg: string, events: EventEntry[]) {
+function persistEvents(pkg: string, events: EventEntry[]) {
   if (typeof window === "undefined") return;
   ensureSchemaVersion();
   const filtered = events.filter(isValidEvent);
   window.localStorage.setItem(storageKey(pkg), JSON.stringify(filtered.sort(sortEvents)));
+}
+
+export function saveEvents(pkg: string, events: EventEntry[]) {
+  persistEvents(pkg, events);
 }
 
 export function groupEventsByDate(events: EventEntry[]) {
@@ -101,4 +105,111 @@ export function groupEventsByDate(events: EventEntry[]) {
     map.set(event.date_utc, list);
   }
   return map;
+}
+
+function eventKey(event: EventEntry) {
+  return `${event.date_utc}|${event.event_type}|${event.label}`;
+}
+
+export function eventIdentifier(event: EventEntry) {
+  return eventKey(event);
+}
+
+export function addEvent(pkg: string, event: EventEntry) {
+  if (!isValidEvent(event)) return loadEvents(pkg);
+  const current = loadEvents(pkg);
+  if (current.find((item) => eventKey(item) === eventKey(event))) {
+    return current;
+  }
+  const next = [...current, event];
+  saveEvents(pkg, next);
+  return next;
+}
+
+export function updateEvent(pkg: string, event: EventEntry) {
+  if (!isValidEvent(event)) return loadEvents(pkg);
+  const current = loadEvents(pkg);
+  let changed = false;
+  const next = current.map((item) => {
+    if (eventKey(item) !== eventKey(event)) return item;
+    changed = true;
+    return event;
+  });
+  if (!changed) return current;
+  saveEvents(pkg, next);
+  return next;
+}
+
+export function deleteEvent(pkg: string, key: string) {
+  const current = loadEvents(pkg);
+  const next = current.filter((item) => eventKey(item) !== key);
+  if (next.length === current.length) return current;
+  saveEvents(pkg, next);
+  return next;
+}
+
+export function exportEvents(pkg: string) {
+  return JSON.stringify(loadEvents(pkg), null, 2);
+}
+
+export function parseImportPayload(payload: string) {
+  try {
+    const parsed = JSON.parse(payload);
+    if (!Array.isArray(parsed)) return { events: [], errors: ["payload is not an array"] };
+    const events = parsed.filter((entry) => isValidEvent(entry));
+    const errors = parsed.length === events.length ? [] : ["some entries were invalid and skipped"];
+    return { events, errors };
+  } catch {
+    return { events: [], errors: ["invalid JSON"] };
+  }
+}
+
+export function mergeEvents(pkg: string, imported: EventEntry[]) {
+  const current = loadEvents(pkg);
+  const map = new Map<string, EventEntry>();
+  current.forEach((event) => map.set(eventKey(event), event));
+
+  let added = 0;
+  let updated = 0;
+
+  for (const incoming of imported) {
+    if (!isValidEvent(incoming)) continue;
+    const key = eventKey(incoming);
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, incoming);
+      added += 1;
+      continue;
+    }
+
+    const needsUpdate =
+      (!existing.url && incoming.url) ||
+      (!existing.strength && incoming.strength) ||
+      incoming.url !== existing.url ||
+      incoming.strength !== existing.strength;
+    if (needsUpdate) {
+      const merged: EventEntry = {
+        ...existing,
+        url: existing.url || incoming.url,
+        strength: existing.strength || incoming.strength,
+      };
+      map.set(key, merged);
+      updated += 1;
+    }
+  }
+
+  if (!added && !updated) return { events: current, added, updated };
+
+  const next = Array.from(map.values()).sort(sortEvents);
+  persistEvents(pkg, next);
+  return { events: next, added, updated };
+}
+
+export function importEventsFromPayload(pkg: string, payload: string) {
+  const parsed = parseImportPayload(payload);
+  if (!parsed.events.length) {
+    return { events: loadEvents(pkg), added: 0, updated: 0, errors: parsed.errors };
+  }
+  const merged = mergeEvents(pkg, parsed.events);
+  return { ...merged, errors: parsed.errors };
 }
