@@ -5,16 +5,12 @@ import { getBaseUrl } from "@/lib/base-url";
 import { clampDays } from "@/lib/query";
 import SearchBox from "@/components/SearchBox";
 import CompareButton from "@/components/compare/CompareButton";
-import type { TrafficResponse } from "@/lib/traffic";
+import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
 import { getPackageGithubRepo } from "@/lib/npm-repo";
 
 type Props = {
   params: Promise<{ name: string }>;
   searchParams?: Promise<{ days?: string }>;
-};
-
-type ApiError = {
-  error?: { code?: string; message?: string };
 };
 
 const ALLOWED_DAYS = new Set(["7", "14", "30"]);
@@ -95,7 +91,6 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
   const rawDays = sp.days;
   const days = clampDays(rawDays);
-  const baseUrl = await getBaseUrl();
   const encodedName = encodeURIComponent(name);
 
   if (!rawDays || !ALLOWED_DAYS.has(rawDays)) {
@@ -106,34 +101,23 @@ export default async function PackagePage({ params, searchParams }: Props) {
   let errorText: string | null = null;
 
   try {
-    const res = await fetch(
-      `${baseUrl}/api/v1/package/${encodedName}/daily?days=${days}`,
-      { next: { revalidate: 900 } }
-    );
-
-    if (res.status === 404 || res.status === 400) notFound();
-
-    if (!res.ok) {
-      let code: string | undefined;
-      try {
-        const payload = (await res.json()) as ApiError;
-        code = payload?.error?.code;
-      } catch {
-        code = undefined;
+    data = await fetchTraffic(name, days);
+  } catch (error: unknown) {
+    if (error instanceof TrafficError) {
+      if (error.code === "PACKAGE_NOT_FOUND") {
+        notFound();
       }
-
-      if (res.status === 429 || code === "RATE_LIMITED") {
-        errorText = "Rate limit reached. Please retry shortly.";
-      } else if (res.status === 502 || code === "UPSTREAM_UNAVAILABLE") {
+      if (error.code === "INVALID_REQUEST") {
+        notFound();
+      }
+      if (error.code === "UPSTREAM_UNAVAILABLE") {
         errorText = "npm API temporarily unavailable.";
       } else {
         errorText = "Failed to load data.";
       }
     } else {
-      data = (await res.json()) as TrafficResponse;
+      errorText = "Failed to load data.";
     }
-  } catch {
-    errorText = "Failed to load data.";
   }
 
   const updatedLabel = data ? formatUpdatedAt(data.meta.fetchedAt) : null;

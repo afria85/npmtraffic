@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
 import { clampDays, canonicalizePackages, parsePackageList } from "@/lib/query";
 import { validatePackageName } from "@/lib/package-name";
+import { buildCompareData } from "@/lib/compare";
+import { TrafficError } from "@/lib/traffic";
 
 type Props = {
   searchParams?: Promise<{ packages?: string; pkgs?: string; days?: string }>;
@@ -14,10 +16,6 @@ type CompareResponse = {
   packages: { name: string; total: number; share: number }[];
   series: { date: string; values: Record<string, { downloads: number; delta: number | null }> }[];
   warnings?: string[];
-};
-
-type ApiError = {
-  error?: { code?: string; message?: string };
 };
 
 const numberFormatter = new Intl.NumberFormat("en-US");
@@ -92,34 +90,20 @@ export default async function ComparePage({ searchParams }: Props) {
     redirect(`/compare?packages=${canonicalPkgs}&days=${days}`);
   }
 
-  const baseUrl = await getBaseUrl();
-  const res = await fetch(
-    `${baseUrl}/api/v1/compare?packages=${canonicalPkgs}&days=${days}`,
-    {
-      next: { revalidate: 900 },
-    }
-  );
-
-  if (res.status === 400 || res.status === 404) notFound();
-
   let data: CompareResponse | null = null;
   let errorText: string | null = null;
-  if (!res.ok) {
-    let code: string | undefined;
-    try {
-      const payload = (await res.json()) as ApiError;
-      code = payload?.error?.code;
-    } catch {
-      code = undefined;
+  try {
+    data = await buildCompareData(pkgs, days);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error ?? "");
+    if (message.startsWith("BAD_REQUEST")) {
+      notFound();
     }
-    errorText =
-      res.status === 429 || code === "RATE_LIMITED"
-        ? "Rate limit reached. Please retry shortly."
-        : res.status === 502 || code === "UPSTREAM_UNAVAILABLE"
-          ? "npm API temporarily unavailable."
-          : "Failed to load.";
-  } else {
-    data = (await res.json()) as CompareResponse;
+    if (error instanceof TrafficError && error.code === "UPSTREAM_UNAVAILABLE") {
+      errorText = "npm API temporarily unavailable.";
+    } else {
+      errorText = "Failed to load.";
+    }
   }
 
   const header = (

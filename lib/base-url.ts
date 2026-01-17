@@ -1,47 +1,67 @@
-import "server-only";
 import { headers } from "next/headers";
 import { config } from "@/lib/config";
+
+export type ResolveBaseUrlOptions = {
+  env?: NodeJS.ProcessEnv;
+  headers?: { host?: string | null; forwardedHost?: string | null; proto?: string | null };
+};
 
 function normalizeBaseUrl(url: string) {
   return url.replace(/\/$/, "");
 }
 
-export async function getBaseUrl() {
+function getEnvUrl(env: NodeJS.ProcessEnv) {
   const envUrl =
-    process.env.NEXT_PUBLIC_BASE_URL ??
-    process.env.BASE_URL ??
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    process.env.SITE_URL;
+    env.NEXT_PUBLIC_BASE_URL ??
+    env.BASE_URL ??
+    env.NEXT_PUBLIC_SITE_URL ??
+    env.SITE_URL;
 
-  if (envUrl) {
-    const withProtocol = envUrl.startsWith("http") ? envUrl : `https://${envUrl}`;
-    return normalizeBaseUrl(withProtocol);
+  if (!envUrl) return null;
+  const withProtocol = envUrl.startsWith("http") ? envUrl : `https://${envUrl}`;
+  return normalizeBaseUrl(withProtocol);
+}
+
+export function resolveBaseUrl(options: ResolveBaseUrlOptions = {}) {
+  const env = options.env ?? process.env;
+  const envUrl = getEnvUrl(env);
+  if (envUrl) return envUrl;
+
+  const host = options.headers?.forwardedHost ?? options.headers?.host;
+  const proto = options.headers?.proto ?? "https";
+
+  if (host) {
+    const trimmedHost = host.split(",")[0].trim();
+    if (trimmedHost.endsWith(".vercel.app") && config.site.url) {
+      return normalizeBaseUrl(config.site.url);
+    }
+    return normalizeBaseUrl(`${proto}://${trimmedHost}`);
   }
 
-  if (process.env.VERCEL_URL) {
-    return normalizeBaseUrl(`https://${process.env.VERCEL_URL}`);
+  if (env.VERCEL_URL) {
+    return normalizeBaseUrl(`https://${env.VERCEL_URL}`);
   }
 
   if (
-    process.env.CODESPACES &&
-    process.env.CODESPACE_NAME &&
-    process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN
+    env.CODESPACES &&
+    env.CODESPACE_NAME &&
+    env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN
   ) {
     return normalizeBaseUrl(
-      `https://${process.env.CODESPACE_NAME}-3000.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`
+      `https://${env.CODESPACE_NAME}-3000.${env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`
     );
   }
 
-  if (process.env.NODE_ENV !== "production") {
+  if (env.NODE_ENV !== "production") {
     return "http://localhost:3000";
   }
 
-  const h = await headers();
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  if (host) {
-    return normalizeBaseUrl(`${proto}://${host}`);
-  }
-
   return normalizeBaseUrl(config.site.url);
+}
+
+export async function getBaseUrl() {
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  return resolveBaseUrl({ headers: { host, forwardedHost: h.get("x-forwarded-host"), proto } });
 }

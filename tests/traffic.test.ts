@@ -26,10 +26,10 @@ test("serves stale cache when upstream fails", async (t) => {
           start: expectedRange.startDate,
           end: expectedRange.endDate,
           package: "react",
-        downloads: [
-          { day: expectedRange.startDate, downloads: 10 },
-          { day: nextDate(expectedRange.startDate), downloads: 12 },
-        ],
+          downloads: [
+            { day: expectedRange.startDate, downloads: 10 },
+            { day: nextDate(expectedRange.startDate), downloads: 12 },
+          ],
         }),
         { status: 200, headers: { "content-type": "application/json" } }
       );
@@ -125,4 +125,46 @@ test("normalizes missing dates and totals for the requested range", async (t) =>
   assert.equal(data.series[1].downloads, 0);
   assert.equal(data.series.at(-2)?.downloads, 0);
   assert.equal(data.series[13].downloads, 20);
+});
+
+test("fetchTraffic only calls npm downloads endpoint and returns totals", async () => {
+  const originalFetch = globalThis.fetch;
+  const expectedRange = rangeForDays(7);
+  globalThis.fetch = async (input) => {
+    const url = typeof input === "string" ? input : input.url;
+    assert.ok(!url.includes("/api/v1/"), "should not request internal API");
+    if (
+      url.startsWith(
+        `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
+      )
+    ) {
+      return new Response(
+        JSON.stringify({
+          start: expectedRange.startDate,
+          end: expectedRange.endDate,
+          package: "react",
+          downloads: Array.from({ length: 7 }, (_, index) => ({
+            day: new Date(
+              Date.parse(`${expectedRange.startDate}T00:00:00Z`) + index * 86_400_000
+            )
+              .toISOString()
+              .slice(0, 10),
+            downloads: index + 1,
+          })),
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  try {
+    const data = await fetchTraffic("react", 7);
+    assert.equal(data.series.length, 7);
+    assert.equal(typeof data.totals.sum, "number");
+    assert.equal(typeof data.totals.avgPerDay, "number");
+  } finally {
+    globalThis.fetch = originalFetch;
+    cacheClear();
+  }
 });
