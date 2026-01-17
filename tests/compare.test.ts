@@ -21,6 +21,12 @@ const makeResponse = (downloads: Array<{ day: string; downloads: number }>) =>
     { status: 200, headers: { "content-type": "application/json" } }
   );
 
+const makeRangeResponse = (start: string, end: string) =>
+  makeResponse([
+    { day: start, downloads: 5 },
+    { day: end, downloads: 7 },
+  ]);
+
 test("buildCompareData trims to max packages and warns", async (t) => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () =>
@@ -93,4 +99,25 @@ test("buildCompareData aligns series and computes deltas", async (t) => {
   assert.equal(day1.values.react?.delta, null);
   assert.equal(day2.values.react?.delta, 5);
   assert.equal(day2.values.vue?.delta, -2);
+});
+
+test("buildCompareData supports 90-day ranges", async (t) => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = typeof input === "string" ? input : input.url;
+    const match = url.match(/downloads\/range\/([0-9-]+):([0-9-]+)\//);
+    if (!match) {
+      return new Response("not found", { status: 404 });
+    }
+    return makeRangeResponse(match[1], match[2]);
+  };
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+    cacheClear();
+  });
+
+  const data = await buildCompareData(["react", "vue"], 90);
+  assert.equal(data.series.length, 90);
+  assert.equal(data.range.days, 90);
 });

@@ -10,6 +10,7 @@ import { buildCompareCanonical } from "@/lib/canonical";
 import CopyLinkButton from "@/components/CopyLinkButton";
 import AlertBanner from "@/components/AlertBanner";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
+import RangeSelector from "@/components/RangeSelector";
 
 type Props = {
   searchParams?: Promise<{ packages?: string; pkgs?: string; days?: string }>;
@@ -102,6 +103,12 @@ export default async function ComparePage({ searchParams }: Props) {
 
   const baseUrl = await getBaseUrl();
   const canonical = buildCompareCanonical(baseUrl, pkgs, days);
+  const rangeSelector = (
+    <RangeSelector
+      currentDays={days}
+      getHref={(value) => `/compare?packages=${canonicalPkgs}&days=${value}`}
+    />
+  );
 
   let data: CompareResponse | null = null;
   let errorText: string | null = null;
@@ -120,28 +127,33 @@ export default async function ComparePage({ searchParams }: Props) {
   }
 
   const header = (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="space-y-2">
-        <Link href="/" className="text-xs uppercase tracking-[0.3em] text-slate-400">
-          npmtraffic
-        </Link>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Compare packages
-          </h1>
-          <p className="text-sm text-slate-400">
-            {pkgs.join(", ")} - {days} days
-          </p>
+    <div className="flex w-full flex-col gap-3">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <Link href="/" className="text-xs uppercase tracking-[0.3em] text-slate-400">
+            npmtraffic
+          </Link>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              Compare packages
+            </h1>
+            <p className="text-sm text-slate-400">
+              {pkgs.join(", ")} - {days} days
+            </p>
+          </div>
         </div>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Link
-          href={`/api/v1/compare.csv?packages=${canonicalPkgs}&days=${days}`}
-          className={ACTION_BUTTON_CLASSES}
-        >
-          Export CSV
-        </Link>
-        <CopyLinkButton canonical={canonical} label="Copy link" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {rangeSelector}
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/api/v1/compare.csv?packages=${canonicalPkgs}&days=${days}`}
+            className={ACTION_BUTTON_CLASSES}
+          >
+            Export CSV
+          </Link>
+          <CopyLinkButton canonical={canonical} label="Copy link" />
+        </div>
       </div>
     </div>
   );
