@@ -6,6 +6,7 @@ import { clampDays } from "@/lib/query";
 import SearchBox from "@/components/SearchBox";
 import CompareButton from "@/components/compare/CompareButton";
 import CopyLinkButton from "@/components/CopyLinkButton";
+import AlertBanner from "@/components/AlertBanner";
 import { buildPackageCanonical } from "@/lib/canonical";
 import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
 import { getPackageGithubRepo } from "@/lib/npm-repo";
@@ -214,9 +215,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
       ) : null}
 
       {errorText ? (
-        <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
-          {errorText} Please try again.
-        </div>
+        <AlertBanner message={`${errorText} Please try again.`} />
       ) : (
         <>
           <div className="grid gap-3 sm:grid-cols-2">

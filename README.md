@@ -34,6 +34,13 @@ Download counts are sourced from `api.npmjs.org`.
 - `/status` shows the latest build info (commit + environment), the most recent traffic success/error timestamps, and the last recorded cache status or stale indicator. It will always render even if no health data is recorded yet.
 - `/api/cron/prewarm` triggers warming the traffic cache for the curated package list (or a custom comma-separated `packages` parameter) across 7/14/30-day ranges. Call it via `curl https://npmtraffic.com/api/cron/prewarm` or with `?packages=react,vue&days=7,14`. The endpoint always returns a `200` JSON summary with counts, failures, and duration.
 
+## Production Verification Checklist
+
+- **URLs to verify**: `/`, `/p/logshield-cli?days=14`, `/p/react?days=14`, `/compare?packages=react,vue&days=14`, `/donate`, `/status`, `/sitemap.xml`, `/robots.txt`.
+- **Expected UI**: package/compare tables show totals, freshness badge, stale banner when upstream errors occur, working copy link buttons, donate links/footer, and GitHub star buttons where available.
+- **Failure modes**: upstream `401/429/5xx` responses should never leave blank screens—show the stale banner or a typed error message (e.g., "npm API temporarily unavailable."); rate limits should surface a friendly retry hint.
+- **Tagging optional** (this repo currently does not publish tags).
+
 ## Disclaimer
 
 Not affiliated with npm, Inc.

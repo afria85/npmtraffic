@@ -8,6 +8,7 @@ import { buildCompareData } from "@/lib/compare";
 import { TrafficError } from "@/lib/traffic";
 import { buildCompareCanonical } from "@/lib/canonical";
 import CopyLinkButton from "@/components/CopyLinkButton";
+import AlertBanner from "@/components/AlertBanner";
 
 type Props = {
   searchParams?: Promise<{ packages?: string; pkgs?: string; days?: string }>;
@@ -148,9 +149,7 @@ export default async function ComparePage({ searchParams }: Props) {
     return (
       <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-4 py-6">
         {header}
-        <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
-          {errorText ?? "Failed to load."}
-        </div>
+        <AlertBanner message={errorText ?? "Failed to load."} />
       </main>
     );
   }
