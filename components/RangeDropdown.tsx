@@ -24,7 +24,7 @@ export default function RangeDropdown({ currentDays, getHref }: RangeSelectorPro
   );
 
   useEffect(() => {
-    if (!open || !detailsRef.current) return undefined;
+    if (!open || !detailsRef.current || typeof document === "undefined") return undefined;
     const controller = makeDropdownController({
       container: detailsRef.current,
       onClose: close,
