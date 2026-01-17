@@ -7,6 +7,9 @@ function escapeCsvValue(value: string | number | null | undefined) {
   return str;
 }
 
-export function buildCsv(rows: Array<Array<string | number | null | undefined>>) {
-  return rows.map((row) => row.map(escapeCsvValue).join(",")).join("\n");
+export function buildCsv(
+  rows: Array<Array<string | number | null | undefined>>,
+  delimiter = ","
+) {
+  return rows.map((row) => row.map(escapeCsvValue).join(delimiter)).join("\n");
 }

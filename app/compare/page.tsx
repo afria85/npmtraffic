@@ -134,12 +134,28 @@ export default async function ComparePage({ searchParams }: Props) {
     }
   }
 
-  const exportFilename = data
+  const csvFilename = data
     ? buildExportFilename({
         packages: pkgs,
         days,
         range: data.range,
         format: "csv",
+      })
+    : undefined;
+  const excelFilename = data
+    ? buildExportFilename({
+        packages: pkgs,
+        days,
+        range: data.range,
+        format: "excel.csv",
+      })
+    : undefined;
+  const jsonFilename = data
+    ? buildExportFilename({
+        packages: pkgs,
+        days,
+        range: data.range,
+        format: "json",
       })
     : undefined;
 
@@ -166,9 +182,23 @@ export default async function ComparePage({ searchParams }: Props) {
           <a
             href={`/api/v1/compare.csv?packages=${canonicalPkgs}&days=${days}`}
             className={ACTION_BUTTON_CLASSES}
-            download={exportFilename}
+            download={csvFilename}
           >
             Export CSV
+          </a>
+          <a
+            href={`/api/v1/compare.excel.csv?packages=${canonicalPkgs}&days=${days}`}
+            className={`${ACTION_BUTTON_CLASSES} bg-white/5 text-slate-100`}
+            download={excelFilename}
+          >
+            Export Excel CSV
+          </a>
+          <a
+            href={`/api/v1/compare.json?packages=${canonicalPkgs}&days=${days}`}
+            className={ACTION_BUTTON_CLASSES}
+            download={jsonFilename}
+          >
+            Export JSON
           </a>
           <CopyLinkButton canonical={canonical} label="Copy link" />
         </div>

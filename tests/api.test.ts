@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { GET as getDaily } from "../app/api/v1/package/[name]/daily/route";
-import { GET as getSearch } from "../app/api/v1/search/route";
-import { GET as getCompare } from "../app/api/v1/compare/route";
-import { rangeForDays } from "../lib/query";
 import { GET as getDailyCsv } from "../app/api/v1/package/[name]/daily.csv/route";
+import { GET as getDailyExcelCsv } from "../app/api/v1/package/[name]/daily.excel.csv/route";
 import { GET as getDailyJson } from "../app/api/v1/package/[name]/daily.json/route";
 import { GET as getCompare } from "../app/api/v1/compare/route";
 import { GET as getCompareCsv } from "../app/api/v1/compare.csv/route";
+import { GET as getCompareExcelCsv } from "../app/api/v1/compare.excel.csv/route";
+import { GET as getSearch } from "../app/api/v1/search/route";
+import { rangeForDays } from "../lib/query";
 
 test("daily API returns traffic response shape", async (t) => {
   const originalFetch = globalThis.fetch;
@@ -376,6 +377,83 @@ test("compare CSV export includes metadata comments", async (t) => {
   assert.ok(lines[9].startsWith("date"));
   const disposition = res.headers.get("content-disposition") ?? "";
   assert.ok(disposition.includes("npmtraffic__react__vue"));
+});
+
+test("daily Excel CSV export uses semicolon delimiter", async (t) => {
+  const originalFetch = globalThis.fetch;
+  const expectedRange = rangeForDays(30);
+  globalThis.fetch = async (input) => {
+    const url = typeof input === "string" ? input : input.url;
+    if (
+      url.startsWith(
+        `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
+      )
+    ) {
+      return new Response(
+        JSON.stringify({
+          start: expectedRange.startDate,
+          end: expectedRange.endDate,
+          package: "react",
+          downloads: [
+            { day: expectedRange.startDate, downloads: 5 },
+            { day: expectedRange.endDate, downloads: 7 },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const req = new Request("http://localhost/api/v1/package/react/daily.excel.csv?days=30");
+  const res = await getDailyExcelCsv(req, { params: Promise.resolve({ name: "react" }) });
+  assert.equal(res.status, 200);
+  const text = await res.text();
+  const lines = text.split("\n");
+  assert.equal(lines[0], "sep=;");
+  assert.ok(lines[10].includes(";"));
+  assert.ok(res.headers.get("content-disposition")?.includes(".excel.csv\""));
+});
+
+test("compare Excel CSV export uses semicolon delimiter", async (t) => {
+  const originalFetch = globalThis.fetch;
+  const expectedRange = rangeForDays(30);
+  globalThis.fetch = async (input) => {
+    const url = typeof input === "string" ? input : input.url;
+    if (url.includes("/react") || url.includes("/vue")) {
+      return new Response(
+        JSON.stringify({
+          start: expectedRange.startDate,
+          end: expectedRange.endDate,
+          package: url.includes("/react") ? "react" : "vue",
+          downloads: [
+            { day: expectedRange.startDate, downloads: 8 },
+            { day: expectedRange.endDate, downloads: 9 },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const req = new Request("http://localhost/api/v1/compare.excel.csv?packages=react,vue&days=30");
+  const res = await getCompareExcelCsv(req);
+  assert.equal(res.status, 200);
+  const text = await res.text();
+  const lines = text.split("\n");
+  assert.equal(lines[0], "sep=;");
+  assert.ok(lines[10].includes(";"));
+  const disposition = res.headers.get("content-disposition") ?? "";
+  assert.ok(disposition.includes(".excel.csv\""));
 });
 
 test("search API returns normalized results", async (t) => {

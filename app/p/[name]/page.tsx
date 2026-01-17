@@ -148,15 +148,30 @@ export default async function PackagePage({ params, searchParams }: Props) {
     />
   );
 
-  const exportFilename =
-    data?.range && data
-      ? buildExportFilename({
-          packages: [name],
-          days,
-          range: data.range,
-          format: "csv",
-        })
-      : undefined;
+  const csvFilename = data?.range
+    ? buildExportFilename({
+        packages: [name],
+        days,
+        range: data.range,
+        format: "csv",
+      })
+    : undefined;
+  const excelFilename = data?.range
+    ? buildExportFilename({
+        packages: [name],
+        days,
+        range: data.range,
+        format: "excel.csv",
+      })
+    : undefined;
+  const jsonFilename = data?.range
+    ? buildExportFilename({
+        packages: [name],
+        days,
+        range: data.range,
+        format: "json",
+      })
+    : undefined;
 
   const header = (
     <div className="flex w-full flex-col gap-4">
@@ -200,9 +215,23 @@ export default async function PackagePage({ params, searchParams }: Props) {
             <a
               href={`/api/v1/package/${encodedName}/daily.csv?days=${days}`}
               className={ACTION_BUTTON_CLASSES}
-              download={exportFilename}
+              download={csvFilename}
             >
               Export CSV
+            </a>
+            <a
+              href={`/api/v1/package/${encodedName}/daily.excel.csv?days=${days}`}
+              className={`${ACTION_BUTTON_CLASSES} bg-white/5 text-slate-100`}
+              download={excelFilename}
+            >
+              Export Excel CSV
+            </a>
+            <a
+              href={`/api/v1/package/${encodedName}/daily.json?days=${days}`}
+              className={ACTION_BUTTON_CLASSES}
+              download={jsonFilename}
+            >
+              Export JSON
             </a>
             <CopyLinkButton canonical={canonical} label="Copy link" />
           </div>
