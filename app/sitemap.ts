@@ -22,6 +22,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${baseUrl}/compare`,
       lastModified: now,
     },
+    {
+      url: `${baseUrl}/roadmap`,
+      lastModified: now,
+    },
+    {
+      url: `${baseUrl}/transparency`,
+      lastModified: now,
+    },
+    {
+      url: `${baseUrl}/data`,
+      lastModified: now,
+    },
     ...POPULAR_PACKAGES.map((pkg) => ({
       url: `${baseUrl}/p/${encodeURIComponent(pkg)}?days=30`,
       lastModified: now,

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { POPULAR_PACKAGES } from "@/lib/constants";
 import { getBaseUrl } from "@/lib/base-url";
 import { config } from "@/lib/config";
+import { homepageJsonLd } from "@/lib/jsonld";
 import SearchBox from "@/components/SearchBox";
 import CompareLink from "@/components/compare/CompareLink";
 
@@ -19,11 +20,25 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "npmtraffic",
       description: config.site.tagline,
       url: `${baseUrl}/`,
+      images: [
+        {
+          url: `${baseUrl}/file.svg`,
+          alt: "npmtraffic",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "npmtraffic",
+      description: config.site.tagline,
     },
   };
 }
 
-export default function Home() {
+export default async function Home() {
+  const baseUrl = await getBaseUrl();
+  const jsonLd = homepageJsonLd(baseUrl);
+
   return (
     <main className="min-h-screen px-6 py-12">
       <div className="mx-auto flex max-w-2xl flex-col gap-8">
@@ -59,6 +74,11 @@ export default function Home() {
           </div>
         </section>
       </div>
+      <script
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
     </main>
   );
 }

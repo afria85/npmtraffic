@@ -6,6 +6,8 @@ import { clampDays, canonicalizePackages, parsePackageList } from "@/lib/query";
 import { validatePackageName } from "@/lib/package-name";
 import { buildCompareData } from "@/lib/compare";
 import { TrafficError } from "@/lib/traffic";
+import { buildCompareCanonical } from "@/lib/canonical";
+import CopyLinkButton from "@/components/CopyLinkButton";
 
 type Props = {
   searchParams?: Promise<{ packages?: string; pkgs?: string; days?: string }>;
@@ -53,10 +55,10 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     };
   }
 
-  const canonicalPkgs = pkgs.map((pkg) => encodeURIComponent(pkg)).join(",");
-  const canonical = `${baseUrl}/compare?packages=${canonicalPkgs}&days=${days}`;
+  const canonical = buildCompareCanonical(baseUrl, pkgs, days);
   const title = `Compare npm downloads (${days} days) | npmtraffic`;
   const description = `Compare npm download history for ${pkgs.join(", ")}.`;
+  const ogImage = `${baseUrl}/file.svg`;
 
   return {
     title,
@@ -66,6 +68,12 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       title,
       description,
       url: canonical,
+      images: [{ url: ogImage, alt: "npmtraffic" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
     },
   };
 }
@@ -89,6 +97,9 @@ export default async function ComparePage({ searchParams }: Props) {
   ) {
     redirect(`/compare?packages=${canonicalPkgs}&days=${days}`);
   }
+
+  const baseUrl = await getBaseUrl();
+  const canonical = buildCompareCanonical(baseUrl, pkgs, days);
 
   let data: CompareResponse | null = null;
   let errorText: string | null = null;
@@ -128,6 +139,7 @@ export default async function ComparePage({ searchParams }: Props) {
         >
           Export CSV
         </Link>
+        <CopyLinkButton canonical={canonical} label="Copy link" />
       </div>
     </div>
   );

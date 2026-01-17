@@ -5,6 +5,8 @@ import { getBaseUrl } from "@/lib/base-url";
 import { clampDays } from "@/lib/query";
 import SearchBox from "@/components/SearchBox";
 import CompareButton from "@/components/compare/CompareButton";
+import CopyLinkButton from "@/components/CopyLinkButton";
+import { buildPackageCanonical } from "@/lib/canonical";
 import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
 import { getPackageGithubRepo } from "@/lib/npm-repo";
 
@@ -59,18 +61,27 @@ export async function generateMetadata({
     };
   }
   const days = clampDays(sp.days);
-  const canonical = `${baseUrl}/p/${encodeURIComponent(name)}?days=${days}`;
+  const canonical = buildPackageCanonical(baseUrl, name, days);
+  const title = `${name} npm downloads (${days} days) | npmtraffic`;
+  const description = `Daily npm download history for ${name} in a GitHub-style table`;
+  const ogImage = `${baseUrl}/file.svg`;
 
   return {
-    title: `${name} npm downloads (${days} days) | npmtraffic`,
-    description: `Daily npm download history for ${name} in a GitHub-style table`,
+    title,
+    description,
     alternates: {
       canonical,
     },
     openGraph: {
-      title: `${name} npm downloads (${days} days) | npmtraffic`,
-      description: `Daily npm download history for ${name} in a GitHub-style table`,
+      title,
+      description,
       url: canonical,
+      images: [{ url: ogImage, alt: "npmtraffic" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
     },
   };
 }
@@ -96,6 +107,9 @@ export default async function PackagePage({ params, searchParams }: Props) {
   if (!rawDays || !ALLOWED_DAYS.has(rawDays)) {
     redirect(`/p/${encodedName}?days=${days}`);
   }
+
+  const baseUrl = await getBaseUrl();
+  const canonical = buildPackageCanonical(baseUrl, name, days);
 
   let data: TrafficResponse | null = null;
   let errorText: string | null = null;
@@ -143,32 +157,33 @@ export default async function PackagePage({ params, searchParams }: Props) {
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-3 sm:items-end">
-          <div className="sm:hidden">
-            <SearchBox variant="modal" triggerLabel="Search another package" />
-          </div>
-          <div className="hidden sm:block w-72">
-            <SearchBox />
-          </div>
-        <div className="flex flex-wrap gap-2">
-          <CompareButton name={name} />
-          {repoUrl ? (
-            <a
-              href={repoUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="h-11 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
-            >
-              Star on GitHub
-            </a>
-          ) : null}
-          <Link
-            href={`/api/v1/package/${encodedName}/daily.csv?days=${days}`}
-            className="h-11 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
-            >
-              Export CSV
-            </Link>
-          </div>
+          <div className="flex flex-col gap-3 sm:items-end">
+            <div className="sm:hidden">
+              <SearchBox variant="modal" triggerLabel="Search another package" />
+            </div>
+            <div className="hidden sm:block w-72">
+              <SearchBox />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <CompareButton name={name} />
+              {repoUrl ? (
+                <a
+                  href={repoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="h-11 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+                >
+                  Star on GitHub
+                </a>
+              ) : null}
+              <Link
+                href={`/api/v1/package/${encodedName}/daily.csv?days=${days}`}
+                className="h-11 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+              >
+                Export CSV
+              </Link>
+              <CopyLinkButton canonical={canonical} label="Copy link" />
+            </div>
           <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1">
             {RANGES.map((range) => {
               const active = range === days;
