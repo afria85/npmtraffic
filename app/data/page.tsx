@@ -66,6 +66,15 @@ export default function DataPage() {
             ))}
           </ul>
         </div>
+        <div>
+          <h2 className="text-lg font-semibold">Exports</h2>
+          <p>
+            Download the data as CSV or JSON from <code>/api/v1/package/&#123;name&#125;/daily.csv</code> or <code>/api/v1/package/&#123;name&#125;/daily.json</code>.
+            CSV files now add comment headers that document <em>from</em>/<em>to</em> dates, <em>timezone</em>, <em>generated_at</em>, and the data
+            <em>source</em>. The JSON response shares the same range and adds a <code>meta</code> object with timezone, generatedAt,
+            source, cache status, stale flag, stale reason, and the requestId you can use for audits.
+          </p>
+        </div>
       </section>
     </main>
   );

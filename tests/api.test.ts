@@ -4,6 +4,8 @@ import { GET as getDaily } from "../app/api/v1/package/[name]/daily/route";
 import { GET as getSearch } from "../app/api/v1/search/route";
 import { GET as getCompare } from "../app/api/v1/compare/route";
 import { rangeForDays } from "../lib/query";
+import { GET as getDailyCsv } from "../app/api/v1/package/[name]/daily.csv/route";
+import { GET as getDailyJson } from "../app/api/v1/package/[name]/daily.json/route";
 
 test("daily API returns traffic response shape", async (t) => {
   const originalFetch = globalThis.fetch;
@@ -51,6 +53,94 @@ test("daily API returns traffic response shape", async (t) => {
   assert.equal(Array.isArray(body.series), true);
   assert.equal(typeof body.totals?.sum, "number");
   assert.equal(typeof body.meta?.cacheStatus, "string");
+});
+
+test("daily CSV export includes metadata comments", async (t) => {
+  const originalFetch = globalThis.fetch;
+  const expectedRange = rangeForDays(30);
+  globalThis.fetch = async (input) => {
+    const url = typeof input === "string" ? input : input.url;
+    if (
+      url.startsWith(
+        `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
+      )
+    ) {
+      return new Response(
+        JSON.stringify({
+          start: expectedRange.startDate,
+          end: expectedRange.endDate,
+          package: "react",
+          downloads: [
+            { day: "2024-01-31", downloads: 10 },
+            { day: "2024-02-01", downloads: 12 },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const req = new Request("http://localhost/api/v1/package/react/daily.csv?days=30");
+  const res = await getDailyCsv(req, { params: Promise.resolve({ name: "react" }) });
+  assert.equal(res.status, 200);
+  const text = await res.text();
+  const lines = text.split("\n");
+  assert.ok(lines[0].startsWith("# from="));
+  assert.ok(lines[1].startsWith("# to="));
+  assert.ok(lines[2].startsWith("# timezone="));
+  assert.ok(lines[3].startsWith("# generated_at="));
+  assert.ok(lines[4].startsWith("# source="));
+  assert.equal(lines[5], "date,downloads");
+});
+
+test("daily JSON export returns audit metadata", async (t) => {
+  const originalFetch = globalThis.fetch;
+  const expectedRange = rangeForDays(14);
+  globalThis.fetch = async (input) => {
+    const url = typeof input === "string" ? input : input.url;
+    if (
+      url.startsWith(
+        `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
+      )
+    ) {
+      return new Response(
+        JSON.stringify({
+          start: expectedRange.startDate,
+          end: expectedRange.endDate,
+          package: "react",
+          downloads: [
+            { day: "2024-01-01", downloads: 5 },
+            { day: "2024-01-02", downloads: 7 },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const req = new Request("http://localhost/api/v1/package/react/daily.json?days=14");
+  const res = await getDailyJson(req, { params: Promise.resolve({ name: "react" }) });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.package, "react");
+  assert.equal(body.range.days, 14);
+  assert.equal(typeof body.meta?.timezone, "string");
+  assert.equal(body.meta.timezone, "UTC");
+  assert.equal(typeof body.meta?.generatedAt, "string");
+  assert.equal(typeof body.meta?.source, "string");
+  assert.equal(typeof body.meta?.cacheStatus, "string");
+  assert.equal(typeof body.meta?.isStale, "boolean");
+  assert.equal(typeof body.meta?.requestId, "string");
 });
 
 test("search API returns normalized results", async (t) => {

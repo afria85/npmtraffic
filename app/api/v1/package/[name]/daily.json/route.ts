@@ -1,24 +1,23 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
-import { buildCsv } from "@/lib/csv";
 import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
 import { clampDays, rangeForDays } from "@/lib/query";
 import { fetchTraffic, getCachedTraffic, TrafficError } from "@/lib/traffic";
-import { buildExportCommentHeader } from "@/lib/export";
+import { makeJsonExportPayload } from "@/lib/export";
 
 export const revalidate = 900;
 
 export async function GET(req: Request, ctx: { params: Promise<{ name: string }> }) {
   const requestId = crypto.randomUUID();
   const start = Date.now();
-  const route = "GET /api/v1/package/[name]/daily.csv";
+  const route = "GET /api/v1/package/[name]/daily.json";
   let upstreamStatus: number | undefined;
-  let pkgName: string | undefined;
-  let daysValue: number | undefined;
   let cacheStatus: string | undefined;
   let isStale: boolean | undefined;
   let staleReason: string | undefined;
+  let pkgName: string | undefined;
+  let daysValue: number | undefined;
 
   try {
     const limit = await rateLimit(req, route);
@@ -30,9 +29,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
       } catch {
         name = "";
       }
+      pkgName = name;
       const url = new URL(req.url);
       const days = clampDays(url.searchParams.get("days") || "30");
-      pkgName = name;
       daysValue = days;
       const cacheRange = rangeForDays(days);
       const cached = getCachedTraffic(name, cacheRange, "UNKNOWN");
@@ -40,14 +39,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
         cacheStatus = cached.meta.cacheStatus;
         isStale = cached.meta.isStale;
         staleReason = cached.meta.staleReason ?? undefined;
-        const range = cached.range;
-        const generatedAt = cached.meta.fetchedAt;
-        const rows: Array<Array<string | number | null>> = [
-          ["date", "downloads"],
-          ...cached.series.map((row) => [row.date, row.downloads]),
-        ];
-        const csv =
-          buildExportCommentHeader(range, generatedAt) + "\n" + buildCsv(rows);
+        const payload = makeJsonExportPayload(cached, requestId, cached.meta.fetchedAt);
         logApiEvent({
           requestId,
           route,
@@ -59,10 +51,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
           isStale,
           staleReason,
         });
-        return new NextResponse(csv, {
+        return NextResponse.json(payload, {
           status: 200,
           headers: {
-            "Content-Type": "text/csv; charset=utf-8",
             "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
             "Retry-After": String(limit.retryAfter),
             "x-request-id": requestId,
@@ -109,18 +100,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
     cacheStatus = data.meta.cacheStatus;
     isStale = data.meta.isStale;
     staleReason = data.meta.staleReason ?? undefined;
-    const range = data.range;
-    const generatedAt = data.meta.fetchedAt;
-    const rows: Array<Array<string | number | null>> = [
-      ["date", "downloads"],
-      ...data.series.map((row) => [row.date, row.downloads]),
-    ];
 
-    const csv = buildExportCommentHeader(range, generatedAt) + "\n" + buildCsv(rows);
-    const response = new NextResponse(csv, {
+    const payload = makeJsonExportPayload(data, requestId);
+    const response = NextResponse.json(payload, {
       status: 200,
       headers: {
-        "Content-Type": "text/csv; charset=utf-8",
         "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
         "x-request-id": requestId,
       },
@@ -139,43 +123,43 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
     });
     return response;
   } catch (error: unknown) {
-    if (error instanceof TrafficError) {
-      upstreamStatus = error.upstreamStatus;
-      if (error.code === "INVALID_REQUEST") {
-        logApiEvent({
-          requestId,
-          route,
-          status: 400,
-          ms: Date.now() - start,
-          package: pkgName,
-          days: daysValue,
-        });
-        return NextResponse.json(
-          { error: { code: "INVALID_REQUEST", message: "Invalid package name" } },
-          { status: 400, headers: { "x-request-id": requestId } }
-        );
-      }
+    const status = error instanceof TrafficError ? error.status : 500;
+    upstreamStatus = error instanceof TrafficError ? error.upstreamStatus : undefined;
 
-      if (error.code === "PACKAGE_NOT_FOUND") {
-        logApiEvent({
-          requestId,
-          route,
-          status: 404,
-          ms: Date.now() - start,
-          package: pkgName,
-          days: daysValue,
-        });
-        return NextResponse.json(
-          { error: { code: "PACKAGE_NOT_FOUND", message: "Package not found" } },
-          { status: 404, headers: { "x-request-id": requestId } }
-        );
-      }
+    if (error instanceof TrafficError && error.code === "INVALID_REQUEST") {
+      logApiEvent({
+        requestId,
+        route,
+        status: 400,
+        ms: Date.now() - start,
+        package: pkgName,
+        days: daysValue,
+      });
+      return NextResponse.json(
+        { error: { code: "INVALID_REQUEST", message: "Invalid package name" } },
+        { status: 400, headers: { "x-request-id": requestId } }
+      );
+    }
+
+    if (error instanceof TrafficError && error.code === "PACKAGE_NOT_FOUND") {
+      logApiEvent({
+        requestId,
+        route,
+        status: 404,
+        ms: Date.now() - start,
+        package: pkgName,
+        days: daysValue,
+      });
+      return NextResponse.json(
+        { error: { code: "PACKAGE_NOT_FOUND", message: "Package not found" } },
+        { status: 404, headers: { "x-request-id": requestId } }
+      );
     }
 
     logApiEvent({
       requestId,
       route,
-      status: 502,
+      status,
       ms: Date.now() - start,
       upstreamStatus,
       package: pkgName,
