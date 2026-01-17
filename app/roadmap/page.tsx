@@ -19,11 +19,23 @@ const roadmap = [
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getBaseUrl();
+  const ogImage = `${baseUrl}/og.png`;
   return {
     title: "Roadmap | npmtraffic",
     description: "Roadmap for npmtraffic features and infrastructure.",
     alternates: {
       canonical: `${baseUrl}/roadmap`,
+    },
+    openGraph: {
+      title: "Roadmap | npmtraffic",
+      description: "Roadmap for npmtraffic features and infrastructure.",
+      url: `${baseUrl}/roadmap`,
+      images: [{ url: ogImage, alt: "npmtraffic roadmap" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Roadmap | npmtraffic",
+      description: "Roadmap for npmtraffic features and infrastructure.",
     },
   };
 }

@@ -22,6 +22,23 @@ export const metadata: Metadata = {
   },
   description: config.site.tagline,
   metadataBase: new URL(config.site.url),
+  openGraph: {
+    title: config.site.name,
+    description: config.site.tagline,
+    url: config.site.url,
+    type: "website",
+    images: [
+      {
+        url: `${config.site.url}/og.png`,
+        alt: "npmtraffic logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: config.site.name,
+    description: config.site.tagline,
+  },
 };
 
 import Footer from "@/components/Footer";
@@ -30,6 +47,9 @@ import Header from "@/components/Header";
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${jetBrainsMono.variable}`}>
+      <head>
+        <link rel="icon" href="/favicon.ico" />
+      </head>
       <body className="min-h-screen antialiased">
         <div className="flex min-h-screen flex-col">
           <Header />

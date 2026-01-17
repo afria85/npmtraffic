@@ -9,6 +9,7 @@ import CompareLink from "@/components/compare/CompareLink";
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getBaseUrl();
+  const ogImage = `${baseUrl}/og.png`;
 
   return {
     title: "npmtraffic",
@@ -22,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
       url: `${baseUrl}/`,
       images: [
         {
-          url: `${baseUrl}/file.svg`,
+          url: ogImage,
           alt: "npmtraffic",
         },
       ],
@@ -31,6 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title: "npmtraffic",
       description: config.site.tagline,
+      images: [ogImage],
     },
   };
 }

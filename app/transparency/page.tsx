@@ -4,11 +4,23 @@ import { getBaseUrl } from "@/lib/base-url";
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getBaseUrl();
+  const ogImage = `${baseUrl}/og.png`;
   return {
     title: "Transparency | npmtraffic",
     description: "Cost and infrastructure transparency for npmtraffic.",
     alternates: {
       canonical: `${baseUrl}/transparency`,
+    },
+    openGraph: {
+      title: "Transparency | npmtraffic",
+      description: "Cost and infrastructure transparency for npmtraffic.",
+      url: `${baseUrl}/transparency`,
+      images: [{ url: ogImage, alt: "npmtraffic transparency" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Transparency | npmtraffic",
+      description: "Cost and infrastructure transparency for npmtraffic.",
     },
   };
 }

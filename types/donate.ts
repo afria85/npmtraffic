@@ -1,5 +1,7 @@
+import type { ReactNode } from "react";
+
 export type DonateLink = {
   label: string;
-  icon: string;
+  icon: ReactNode;
   url: string;
 };

@@ -65,7 +65,7 @@ export async function generateMetadata({
   const canonical = buildPackageCanonical(baseUrl, name, days);
   const title = `${name} npm downloads (${days} days) | npmtraffic`;
   const description = `Daily npm download history for ${name} in a GitHub-style table`;
-  const ogImage = `${baseUrl}/file.svg`;
+  const ogImage = `${baseUrl}/og.png`;
 
   return {
     title,

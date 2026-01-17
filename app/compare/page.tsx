@@ -59,7 +59,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const canonical = buildCompareCanonical(baseUrl, pkgs, days);
   const title = `Compare npm downloads (${days} days) | npmtraffic`;
   const description = `Compare npm download history for ${pkgs.join(", ")}.`;
-  const ogImage = `${baseUrl}/file.svg`;
+  const ogImage = `${baseUrl}/og.png`;
 
   return {
     title,

@@ -4,11 +4,23 @@ import { getBaseUrl } from "@/lib/base-url";
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getBaseUrl();
+  const ogImage = `${baseUrl}/og.png`;
   return {
     title: "Data | npmtraffic",
     description: "How npmtraffic sources and caches npm download data.",
     alternates: {
       canonical: `${baseUrl}/data`,
+    },
+    openGraph: {
+      title: "Data | npmtraffic",
+      description: "How npmtraffic sources and caches npm download data.",
+      url: `${baseUrl}/data`,
+      images: [{ url: ogImage, alt: "npmtraffic data" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Data | npmtraffic",
+      description: "How npmtraffic sources and caches npm download data.",
     },
   };
 }

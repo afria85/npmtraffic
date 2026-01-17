@@ -4,11 +4,23 @@ import { getStatusOverview } from "@/lib/status";
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getBaseUrl();
+  const ogImage = `${baseUrl}/og.png`;
   return {
     title: "Status | npmtraffic",
     description: "Operational status and recent health for npmtraffic.",
     alternates: {
       canonical: `${baseUrl}/status`,
+    },
+    openGraph: {
+      title: "Status | npmtraffic",
+      description: "Operational status and recent health for npmtraffic.",
+      url: `${baseUrl}/status`,
+      images: [{ url: ogImage, alt: "npmtraffic status" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Status | npmtraffic",
+      description: "Operational status and recent health for npmtraffic.",
     },
   };
 }
