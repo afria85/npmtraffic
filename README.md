@@ -29,6 +29,11 @@ Open `http://localhost:3000`.
 
 Download counts are sourced from `api.npmjs.org`.
 
+## Ops
+
+- `/status` shows the latest build info (commit + environment), the most recent traffic success/error timestamps, and the last recorded cache status or stale indicator. It will always render even if no health data is recorded yet.
+- `/api/cron/prewarm` triggers warming the traffic cache for the curated package list (or a custom comma-separated `packages` parameter) across 7/14/30-day ranges. Call it via `curl https://npmtraffic.com/api/cron/prewarm` or with `?packages=react,vue&days=7,14`. The endpoint always returns a `200` JSON summary with counts, failures, and duration.
+
 ## Disclaimer
 
 Not affiliated with npm, Inc.

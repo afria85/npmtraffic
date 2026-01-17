@@ -23,6 +23,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
     },
     {
+      url: `${baseUrl}/status`,
+      lastModified: now,
+    },
+    {
       url: `${baseUrl}/roadmap`,
       lastModified: now,
     },

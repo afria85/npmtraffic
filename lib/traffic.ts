@@ -3,6 +3,7 @@ import { assertValidPackageName, normalizePackageInput } from "@/lib/package-nam
 import { clampDays, rangeForDays, type RangeForDaysResult } from "@/lib/query";
 import { fetchDailyDownloadsRange, type NpmRangeRow, UpstreamError } from "@/lib/npm-client";
 import { listDatesBetween } from "@/lib/dates";
+import { recordError, recordSuccess } from "@/lib/health";
 
 const FRESH_TTL_SECONDS = 60 * 15;
 const STALE_TTL_SECONDS = 60 * 60 * 24;
@@ -141,6 +142,7 @@ export async function fetchTraffic(pkgInput: string, daysInput?: string | number
   const key = buildCacheKey(pkg, range);
   const cached = cacheGetWithStale<TrafficCacheValue>(key);
   if (cached.hit && cached.value && !cached.stale) {
+    recordSuccess("HIT", false);
     return buildResponse(cached.value, "HIT", null);
   }
 
@@ -166,19 +168,24 @@ export async function fetchTraffic(pkgInput: string, daysInput?: string | number
       fetchedAt,
     };
     cacheSetWithStale(key, nextValue, FRESH_TTL_SECONDS, STALE_TTL_SECONDS);
+    recordSuccess("MISS", false);
     return buildResponse(nextValue, "MISS", null);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error ?? "");
     if (msg.startsWith("NPM_NOT_FOUND")) {
+      recordError("PACKAGE_NOT_FOUND", msg);
       throw new TrafficError("PACKAGE_NOT_FOUND", 404, "Package not found");
     }
 
     if (cached.hit && cached.value) {
       const staleReason = getStaleReason(error);
+      recordError(staleReason);
+      recordSuccess("STALE", true);
       return buildResponse(cached.value, "STALE", staleReason);
     }
 
     const upstreamStatus = error instanceof UpstreamError ? error.status : undefined;
+    recordError("UPSTREAM_UNAVAILABLE", String(error ?? "upstream"));
     throw new TrafficError(
       "UPSTREAM_UNAVAILABLE",
       502,
