@@ -7,7 +7,7 @@ const SOURCES: Array<{ env: string; label: string; icon: string }> = [
   { env: "NEXT_PUBLIC_DONATE_PAYPAL", label: "PayPal", icon: "💸" },
 ];
 
-export function resolveDonateLinks(env: NodeJS.ProcessEnv = process.env) {
+export function getDonateLinks(env: NodeJS.ProcessEnv = process.env) {
   return SOURCES.map((source) => {
     const url = env[source.env];
     if (!url) return null;
@@ -15,7 +15,10 @@ export function resolveDonateLinks(env: NodeJS.ProcessEnv = process.env) {
   }).filter((link): link is DonateLink => Boolean(link));
 }
 
-export const donateLinks = resolveDonateLinks();
-export const hasDonateLinks = donateLinks.length > 0;
-export const projectGithubUrl =
-  process.env.NEXT_PUBLIC_PROJECT_GITHUB?.trim() || null;
+export function hasDonateLinks(env: NodeJS.ProcessEnv = process.env) {
+  return getDonateLinks(env).length > 0;
+}
+
+export function getProjectGithubUrl(env: NodeJS.ProcessEnv = process.env) {
+  return env.NEXT_PUBLIC_PROJECT_GITHUB?.trim() ?? null;
+}
