@@ -79,12 +79,19 @@ export default function DataPage() {
             plus cache status, stale flags, derived method metadata, and the requestId for auditing.
           </p>
           <p className="text-sm text-slate-400">
+            Both CSV and JSON exports now share an <strong>export metadata</strong> block (from/to dates, timezone=UTC, generated_at timestamp, source, request_id, cache status, and stale indicators)
+            so you can verify precisely what data was generated and why.
+          </p>
+          <p className="text-sm text-slate-400">
             Derived metrics such as trailing MA3/MA7 and MAD-based outlier scores are available in the exports and behind the
             &quot;Show derived metrics&quot; toggle on package pages. These values are computed heuristically and do not alter the raw download counts.
           </p>
           <p className="text-sm text-slate-400">
             Events are user-provided notes stored locally per package in the browser. They add markers to the table rows,
             show in the list overlay, and are never synced or stored on the server.
+          </p>
+          <p className="text-sm text-slate-400">
+            Downloads reflect all traffic captured by <code>api.npmjs.org</code>; they are not unique user counts and may include CI, bots, or repeated installs.
           </p>
         </div>
       </section>

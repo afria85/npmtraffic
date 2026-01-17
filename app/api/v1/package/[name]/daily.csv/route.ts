@@ -4,8 +4,8 @@ import { buildCsv } from "@/lib/csv";
 import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
 import { clampDays, rangeForDays } from "@/lib/query";
-import { fetchTraffic, getCachedTraffic, TrafficError } from "@/lib/traffic";
-import { buildExportCommentHeader } from "@/lib/export";
+import { fetchTraffic, getCachedTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
+import { buildExportCommentHeader, buildExportMeta } from "@/lib/export";
 
 export const revalidate = 900;
 
@@ -16,9 +16,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
   let upstreamStatus: number | undefined;
   let pkgName: string | undefined;
   let daysValue: number | undefined;
-  let cacheStatus: string | undefined;
+  let cacheStatus: TrafficResponse["meta"]["cacheStatus"] | undefined;
   let isStale: boolean | undefined;
-  let staleReason: string | undefined;
+  let staleReason: TrafficResponse["meta"]["staleReason"] | undefined;
 
   try {
     const limit = await rateLimit(req, route);
@@ -60,8 +60,15 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
             ];
           }),
         ];
-        const csv =
-          buildExportCommentHeader(range, generatedAt) + "\n" + buildCsv(rows);
+        const exportMeta = buildExportMeta(
+          range,
+          generatedAt,
+          requestId,
+          cacheStatus ?? "MISS",
+          Boolean(isStale),
+          staleReason ?? null
+        );
+        const csv = buildExportCommentHeader(exportMeta) + "\n" + buildCsv(rows);
         logApiEvent({
           requestId,
           route,
@@ -144,7 +151,15 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
       }),
     ];
 
-    const csv = buildExportCommentHeader(range, generatedAt) + "\n" + buildCsv(rows);
+    const exportMeta = buildExportMeta(
+      range,
+      generatedAt,
+      requestId,
+      cacheStatus ?? "MISS",
+      Boolean(isStale),
+      staleReason ?? null
+    );
+    const csv = buildExportCommentHeader(exportMeta) + "\n" + buildCsv(rows);
     const response = new NextResponse(csv, {
       status: 200,
       headers: {

@@ -1,4 +1,4 @@
-import { fetchTraffic, TrafficError } from "@/lib/traffic";
+import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
 import { canonicalizePackages, clampDays, rangeForDays } from "@/lib/query";
 import { validatePackageName } from "@/lib/package-name";
 
@@ -19,6 +19,12 @@ export type CompareData = {
   packages: CompareTotals[];
   series: CompareSeriesRow[];
   warnings?: string[];
+  meta: {
+    cacheStatus: TrafficResponse["meta"]["cacheStatus"];
+    isStale: boolean;
+    staleReason: TrafficResponse["meta"]["staleReason"] | null;
+    fetchedAt: string;
+  };
 };
 
 export async function buildCompareData(rawPackages: string[], rawDays?: string | number) {
@@ -96,11 +102,22 @@ export async function buildCompareData(rawPackages: string[], rawDays?: string |
     series.push({ date, values });
   }
 
+  const metas = datasets.map(({ data }) => data.meta);
+  const isStale = metas.some((meta) => meta.isStale);
+  const staleReason = metas.find((meta) => meta.isStale)?.staleReason ?? null;
+  const cacheStatus: TrafficResponse["meta"]["cacheStatus"] = isStale
+    ? "STALE"
+    : metas.some((meta) => meta.cacheStatus === "MISS")
+    ? "MISS"
+    : "HIT";
+  const fetchedAt = new Date().toISOString();
+
   return {
     days,
     range: rangeForDays(days),
     packages: totals,
     series,
     warnings: warnings.length ? warnings : undefined,
+    meta: { cacheStatus, isStale, staleReason, fetchedAt },
   };
 }

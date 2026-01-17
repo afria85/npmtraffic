@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { buildCompareData } from "@/lib/compare";
 import { buildCsv } from "@/lib/csv";
+import { buildExportCommentHeader, buildExportMeta } from "@/lib/export";
 import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
 import { parsePackageList } from "@/lib/query";
@@ -86,7 +87,15 @@ export async function GET(req: Request) {
       }),
     ];
 
-    const csv = buildCsv(rows);
+    const exportMeta = buildExportMeta(
+      data.range,
+      data.meta.fetchedAt,
+      requestId,
+      data.meta.cacheStatus,
+      data.meta.isStale,
+      data.meta.staleReason ?? null
+    );
+    const csv = buildExportCommentHeader(exportMeta) + "\n" + buildCsv(rows);
     const response = new NextResponse(csv, {
       status: 200,
       headers: {

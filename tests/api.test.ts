@@ -6,6 +6,8 @@ import { GET as getCompare } from "../app/api/v1/compare/route";
 import { rangeForDays } from "../lib/query";
 import { GET as getDailyCsv } from "../app/api/v1/package/[name]/daily.csv/route";
 import { GET as getDailyJson } from "../app/api/v1/package/[name]/daily.json/route";
+import { GET as getCompare } from "../app/api/v1/compare/route";
+import { GET as getCompareCsv } from "../app/api/v1/compare.csv/route";
 
 test("daily API returns traffic response shape", async (t) => {
   const originalFetch = globalThis.fetch;
@@ -139,10 +141,14 @@ test("daily CSV export includes metadata comments", async (t) => {
   const lines = text.split("\n");
   assert.ok(lines[0].startsWith("# from="));
   assert.ok(lines[1].startsWith("# to="));
-  assert.ok(lines[2].startsWith("# timezone="));
+  assert.ok(lines[2].startsWith("# timezone=UTC"));
   assert.ok(lines[3].startsWith("# generated_at="));
   assert.ok(lines[4].startsWith("# source="));
-  assert.equal(lines[5], "date,downloads,ma3,ma7,is_outlier,outlier_score");
+  assert.ok(lines[5].startsWith("# request_id="));
+  assert.ok(lines[6].startsWith("# cache_status="));
+  assert.ok(lines[7].startsWith("# is_stale="));
+  assert.ok(lines[8].startsWith("# stale_reason="));
+  assert.equal(lines[9], "date,downloads,ma3,ma7,is_outlier,outlier_score");
 });
 
 test("daily CSV export matches long-range row count", async (t) => {
@@ -180,8 +186,8 @@ test("daily CSV export matches long-range row count", async (t) => {
   assert.equal(res.status, 200);
   const text = await res.text();
   const lines = text.trim().split("\n");
-  // 5 comment lines + header + 90 data rows
-  assert.equal(lines.length, 5 + 1 + 90);
+  // 9 comment lines + header + 90 data rows
+  assert.equal(lines.length, 9 + 1 + 90);
 });
 
 test("daily JSON export returns audit metadata", async (t) => {
@@ -227,6 +233,107 @@ test("daily JSON export returns audit metadata", async (t) => {
   assert.equal(typeof body.meta?.cacheStatus, "string");
   assert.equal(typeof body.meta?.isStale, "boolean");
   assert.equal(typeof body.meta?.requestId, "string");
+  assert.ok(body.meta?.export);
+  assert.equal(body.meta?.export?.from, body.range.startDate);
+  assert.equal(body.meta?.export?.timezone, "UTC");
+  assert.equal(typeof body.meta?.export?.generatedAt, "string");
+  assert.equal(typeof body.meta?.export?.requestId, "string");
+  assert.equal(typeof body.meta?.export?.cacheStatus, "string");
+});
+
+test("compare JSON export includes metadata block", async (t) => {
+  const originalFetch = globalThis.fetch;
+  const expectedRange = rangeForDays(30);
+  globalThis.fetch = async (input) => {
+    const url = typeof input === "string" ? input : input.url;
+    if (url.includes("/react")) {
+      return new Response(
+        JSON.stringify({
+          start: expectedRange.startDate,
+          end: expectedRange.endDate,
+          package: "react",
+          downloads: [
+            { day: expectedRange.startDate, downloads: 5 },
+            { day: expectedRange.endDate, downloads: 7 },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+    if (url.includes("/vue")) {
+      return new Response(
+        JSON.stringify({
+          start: expectedRange.startDate,
+          end: expectedRange.endDate,
+          package: "vue",
+          downloads: [
+            { day: expectedRange.startDate, downloads: 8 },
+            { day: expectedRange.endDate, downloads: 9 },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const req = new Request("http://localhost/api/v1/compare?packages=react,vue&days=30");
+  const res = await getCompare(req);
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.ok(body.export);
+  assert.equal(body.export.timezone, "UTC");
+  assert.ok(typeof body.export.generatedAt === "string");
+  assert.ok(typeof body.export.requestId === "string");
+  assert.equal(body.export.cacheStatus, "MISS");
+  assert.equal(body.export.isStale, false);
+});
+
+test("compare CSV export includes metadata comments", async (t) => {
+  const originalFetch = globalThis.fetch;
+  const expectedRange = rangeForDays(30);
+  globalThis.fetch = async (input) => {
+    const url = typeof input === "string" ? input : input.url;
+    if (url.includes("/react") || url.includes("/vue")) {
+      return new Response(
+        JSON.stringify({
+          start: expectedRange.startDate,
+          end: expectedRange.endDate,
+          package: url.includes("/react") ? "react" : "vue",
+          downloads: [
+            { day: expectedRange.startDate, downloads: 5 },
+            { day: expectedRange.endDate, downloads: 7 },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const req = new Request("http://localhost/api/v1/compare.csv?packages=react,vue&days=30");
+  const res = await getCompareCsv(req);
+  assert.equal(res.status, 200);
+  const text = await res.text();
+  const lines = text.split("\n");
+  assert.ok(lines[0].startsWith("# from="));
+  assert.ok(lines[1].startsWith("# to="));
+  assert.ok(lines[2].startsWith("# timezone=UTC"));
+  assert.ok(lines[3].startsWith("# generated_at="));
+  assert.ok(lines[4].startsWith("# source="));
+  assert.ok(lines[5].startsWith("# request_id="));
+  assert.ok(lines[6].startsWith("# cache_status="));
+  assert.ok(lines[7].startsWith("# is_stale="));
+  assert.ok(lines[8].startsWith("# stale_reason="));
+  assert.ok(lines[9].startsWith("date"));
 });
 
 test("search API returns normalized results", async (t) => {
