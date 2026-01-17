@@ -1,21 +1,25 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 import type { DerivedMetrics } from "@/lib/derived";
 import type { EventEntry } from "@/lib/events";
+import type { TrafficSeriesRow } from "@/lib/traffic";
 import {
   addEvent,
   deleteEvent,
   EVENT_TYPES,
   eventIdentifier,
+  encodeSharePayload,
   exportEvents,
   groupEventsByDate,
   importEventsFromPayload,
   loadEvents,
   updateEvent,
+  SHARE_MAX_LENGTH,
+  decodeSharePayload,
 } from "@/lib/events";
-import type { TrafficSeriesRow } from "@/lib/traffic";
 
 type Props = {
   derived: DerivedMetrics;
@@ -38,8 +42,12 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
   const [showEventsList, setShowEventsList] = useState(false);
   const [form, setForm] = useState<EventEntry>(DEFAULT_FORM);
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [, setStatusMessage] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const searchParams = useSearchParams();
+  const sharedParam = searchParams?.get("events") ?? "";
+  const sharedData = useMemo(() => decodeSharePayload(sharedParam), [sharedParam]);
 
   const events = useMemo(() => {
     void refreshKey;
@@ -48,6 +56,10 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
   const groupedEvents = useMemo(() => groupEventsByDate(events), [events]);
   const totalEvents = events.length;
   const hasDerived = useMemo(() => derived?.ma3?.length === series.length, [derived, series.length]);
+
+  const shareEncoded = useMemo(() => (events.length ? encodeSharePayload(events) : ""), [events]);
+  const shareTooLarge = shareEncoded.length > SHARE_MAX_LENGTH;
+  const shareEnabled = Boolean(shareEncoded) && !shareTooLarge;
 
   const refresh = () => setRefreshKey((prev) => prev + 1);
 
@@ -114,6 +126,26 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
     refresh();
   };
 
+  const handleCopyShareLink = () => {
+    if (!shareEnabled) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("events", shareEncoded);
+    if (sharedParam) url.searchParams.set("events", shareEncoded);
+    navigator.clipboard?.writeText(url.toString());
+    setStatusMessage("Share link copied.");
+  };
+
+  const handleImportShared = () => {
+    if (!pkgName || !sharedParam || !sharedData.events.length) return;
+    const result = importEventsFromPayload(pkgName, sharedParam);
+    setStatusMessage(
+      `Imported ${result.added} new, ${result.updated} updated.` +
+        (result.errors.length ? ` ${result.errors.join(" ")}` : "")
+    );
+    refresh();
+  };
+
+  const sharedEvents = sharedData.events;
   return (
     <>
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
@@ -180,9 +212,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
                     {showDerived ? <td className="px-3 py-2 font-mono">{formatDerived(ma3)}</td> : null}
                     {showDerived ? <td className="px-3 py-2 font-mono">{formatDerived(ma7)}</td> : null}
                     {showDerived ? (
-                      <td className="px-3 py-2 font-mono text-emerald-300">
-                        {outlier?.is_outlier ? "Yes" : "No"}
-                      </td>
+                      <td className="px-3 py-2 font-mono text-emerald-300">{outlier?.is_outlier ? "Yes" : "No"}</td>
                     ) : null}
                     {showDerived ? (
                       <td className="px-3 py-2 font-mono">{outlier ? outlier.score.toFixed(2) : "-"}</td>
@@ -228,7 +258,9 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
                   Type
                   <select
                     value={form.event_type}
-                    onChange={(event) => setForm((prev) => ({ ...prev, event_type: event.target.value as EventEntry["event_type"] }))}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, event_type: event.target.value as EventEntry["event_type"] }))
+                    }
                     className="mt-1 w-full rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-white/30 focus:outline-none"
                   >
                     {EVENT_TYPES.map((type) => (
@@ -239,6 +271,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
                   </select>
                 </label>
               </div>
+
               <label className="text-xs uppercase tracking-widest text-slate-400">
                 Label
                 <input
@@ -248,6 +281,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
                   required
                 />
               </label>
+
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="text-xs uppercase tracking-widest text-slate-400">
                   URL (optional)
@@ -261,7 +295,9 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
                   Strength
                   <select
                     value={form.strength}
-                    onChange={(event) => setForm((prev) => ({ ...prev, strength: Number(event.target.value) as 1 | 2 | 3 }))}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, strength: Number(event.target.value) as 1 | 2 | 3 }))
+                    }
                     className="mt-1 w-full rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:border-white/30 focus:outline-none"
                   >
                     {[1, 2, 3].map((level) => (
@@ -272,6 +308,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
                   </select>
                 </label>
               </div>
+
               <div className="flex flex-wrap items-center gap-3">
                 <button type="submit" className={`${ACTION_BUTTON_CLASSES} bg-emerald-500/20 text-emerald-200`}>
                   {editingKey ? "Update event" : "Add event"}
@@ -287,7 +324,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
                   Reset
                 </button>
               </div>
-              {statusMessage ? <p className="text-xs text-slate-400">{statusMessage}</p> : null}
+
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
@@ -311,11 +348,48 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
                     }}
                   />
                 </label>
+                <button
+                  type="button"
+                  onClick={handleCopyShareLink}
+                  disabled={!shareEnabled}
+                  className={`${ACTION_BUTTON_CLASSES} ${shareEnabled ? "bg-emerald-500/20 text-emerald-200" : "opacity-50"}`}
+                >
+                  Copy share link
+                </button>
               </div>
               <p className="text-xs text-slate-400">
                 Conflicts keep existing entries unless the import provides missing URL/strength.
               </p>
+              <p className="text-xs text-slate-400">
+                {shareTooLarge
+                  ? "Events too large to share."
+                  : shareEncoded
+                  ? `Share string ${shareEncoded.length} chars long.`
+                  : "Add events to enable sharing."}
+              </p>
+
+              {sharedParam ? (
+                <div className="rounded-xl border border-slate-600/40 bg-slate-900/40 p-3 text-xs text-slate-300">
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Shared events</p>
+                  {sharedData.error ? (
+                    <p className="text-emerald-200">{sharedData.error}</p>
+                  ) : sharedEvents.length ? (
+                    <p>{sharedEvents.length} events available to import.</p>
+                  ) : (
+                    <p>No share data available.</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleImportShared}
+                    disabled={!sharedEvents.length || Boolean(sharedData.error)}
+                    className={`${ACTION_BUTTON_CLASSES} bg-white/0 text-slate-200 hover:bg-white/10 mt-3`}
+                  >
+                    Import shared events
+                  </button>
+                </div>
+              ) : null}
             </form>
+
             <div className="mt-4 space-y-3 max-h-[40vh] overflow-auto">
               {events.length ? (
                 events.map((event) => (

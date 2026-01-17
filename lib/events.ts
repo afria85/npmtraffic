@@ -34,6 +34,8 @@ const STORAGE_NAMESPACE = "npmtraffic:events";
 const SCHEMA_VERSION_KEY = "npmtraffic:events_schema_version";
 const SCHEMA_VERSION = "1";
 
+export const SHARE_MAX_LENGTH = 1500;
+
 export function isValidEventType(value: string): value is EventType {
   return EVENT_TYPES.includes(value as EventType);
 }
@@ -113,6 +115,41 @@ function eventKey(event: EventEntry) {
 
 export function eventIdentifier(event: EventEntry) {
   return eventKey(event);
+}
+
+function base64urlEncode(value: string) {
+  const encoded = Buffer.from(value, "utf-8").toString("base64");
+  return encoded.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function base64urlDecode(value: string) {
+  let padded = value.replace(/-/g, "+").replace(/_/g, "/");
+  const mod = padded.length % 4;
+  if (mod === 2) padded += "==";
+  else if (mod === 3) padded += "=";
+  return Buffer.from(padded, "base64").toString("utf-8");
+}
+
+export function encodeSharePayload(events: EventEntry[]) {
+  const payload = JSON.stringify(events);
+  return base64urlEncode(payload);
+}
+
+export function decodeSharePayload(encoded: string) {
+  if (!encoded) return { events: [], error: null };
+  if (encoded.length > SHARE_MAX_LENGTH) {
+    return { events: [], error: "share payload too large" };
+  }
+  try {
+    const decoded = base64urlDecode(encoded);
+    const parsed = JSON.parse(decoded);
+    if (!Array.isArray(parsed)) return { events: [], error: "invalid share format" };
+    const events = parsed.filter((entry) => isValidEvent(entry));
+    if (!events.length) return { events: [], error: "no valid events in share" };
+    return { events, error: null };
+  } catch {
+    return { events: [], error: "invalid share payload" };
+  }
 }
 
 export function addEvent(pkg: string, event: EventEntry) {

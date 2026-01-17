@@ -11,6 +11,7 @@ import {
   parseImportPayload,
   saveEvents,
 } from "../lib/events";
+import { decodeSharePayload, encodeSharePayload, SHARE_MAX_LENGTH } from "../lib/events";
 
 class MockStorage implements Storage {
   private readonly values = new Map<string, string>();
@@ -110,4 +111,18 @@ test("parseImportPayload rejects invalid entries", () => {
   const result = parseImportPayload(payload);
   assert.equal(result.events.length, 1);
   assert.equal(result.errors.length, 1);
+});
+
+test("share encode/decode roundtrip and cap enforcement", () => {
+  const events = [
+    { date_utc: "2025-06-01", event_type: "release", label: "Release", url: "https://example.com" },
+  ];
+  const encoded = encodeSharePayload(events);
+  const roundtrip = decodeSharePayload(encoded);
+  assert.equal(roundtrip.events.length, 1);
+  assert.equal(roundtrip.error, null);
+  const longLabel = "x".repeat(SHARE_MAX_LENGTH);
+  const bigPayload = encodeSharePayload([{ date_utc: "2025-06-02", event_type: "docs", label: longLabel }]);
+  assert.ok(bigPayload.length > SHARE_MAX_LENGTH);
+  assert.equal(decodeSharePayload(bigPayload).error, "share payload too large");
 });
