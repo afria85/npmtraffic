@@ -29,7 +29,7 @@ export async function getPackageDaily(pkg: string, daysIn: number): Promise<Pack
   assertValidPackageName(pkg);
 
   const range = rangeForDays(days);
-  const key = `pkg:${pkg}:daily:${range}`;
+  const key = `pkg:${pkg}:daily:${range.days}:${range.startDate}`;
 
   const ttlSeconds = config.cache.dailyTTLSeconds;
 
@@ -38,13 +38,16 @@ export async function getPackageDaily(pkg: string, daysIn: number): Promise<Pack
     return { ...cached.value, requestId, cache: { status: "HIT", ttlSeconds } };
   }
 
-  const upstream = await fetchDailyDownloadsRange(pkg, range);
+  const upstream = await fetchDailyDownloadsRange(pkg, {
+    start: range.startDate,
+    end: range.endDate,
+  });
   const series = aggregateSeries(upstream.downloads);
 
   const result: PackageDailyResult = {
     requestId,
     package: pkg,
-    range: { days, start: upstream.start, end: upstream.end },
+    range: { days, start: range.startDate, end: range.endDate },
     cache: { status: "MISS", ttlSeconds },
     series,
     generatedAt: new Date().toISOString(),

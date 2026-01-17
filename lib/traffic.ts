@@ -1,7 +1,8 @@
 import { cacheGetWithStale, cacheSetWithStale } from "@/lib/cache";
 import { assertValidPackageName, normalizePackageInput } from "@/lib/package-name";
-import { clampDays, rangeForDays } from "@/lib/query";
-import { fetchDailyDownloadsRange, UpstreamError } from "@/lib/npm-client";
+import { clampDays, rangeForDays, type RangeForDaysResult } from "@/lib/query";
+import { fetchDailyDownloadsRange, type NpmRangeRow, UpstreamError } from "@/lib/npm-client";
+import { listDatesBetween } from "@/lib/dates";
 
 const FRESH_TTL_SECONDS = 60 * 15;
 const STALE_TTL_SECONDS = 60 * 60 * 24;
@@ -10,7 +11,7 @@ export type TrafficSeriesRow = { date: string; downloads: number };
 
 export type TrafficResponse = {
   package: string;
-  range: { days: number; startDate: string; endDate: string };
+  range: RangeForDaysResult;
   series: TrafficSeriesRow[];
   totals: { sum: number; avgPerDay: number };
   meta: {
@@ -25,7 +26,7 @@ export type TrafficResponse = {
 
 type TrafficCacheValue = {
   package: string;
-  range: { days: number; startDate: string; endDate: string };
+  range: RangeForDaysResult;
   series: TrafficSeriesRow[];
   totals: { sum: number; avgPerDay: number };
   fetchedAt: string;
@@ -52,6 +53,27 @@ function computeTotals(series: TrafficSeriesRow[]) {
   const sum = series.reduce((total, row) => total + row.downloads, 0);
   const avgPerDay = series.length ? Math.round(sum / series.length) : 0;
   return { sum, avgPerDay };
+}
+
+function normalizeSeries(rows: NpmRangeRow[], range: RangeForDaysResult) {
+  if (!rows.length) {
+    const empty = listDatesBetween(range.startDate, range.endDate);
+    return empty.map((date) => ({ date, downloads: 0 }));
+  }
+
+  const timeline = listDatesBetween(range.startDate, range.endDate);
+  if (!timeline.length) {
+    return rows.map((row) => ({
+      date: row.day,
+      downloads: row.downloads ?? 0,
+    }));
+  }
+
+  const lookup = new Map(rows.map((row) => [row.day, row.downloads ?? 0]));
+  return timeline.map((date) => ({
+    date,
+    downloads: lookup.get(date) ?? 0,
+  }));
 }
 
 function buildResponse(
@@ -88,12 +110,16 @@ function getStaleReason(error: unknown) {
   return "UNKNOWN";
 }
 
-function buildCacheKey(pkg: string, days: number) {
-  return `traffic:${pkg.toLowerCase()}:${days}`;
+function buildCacheKey(pkg: string, range: RangeForDaysResult) {
+  return `traffic:${pkg.toLowerCase()}:${range.days}:${range.startDate}`;
 }
 
-export function getCachedTraffic(pkg: string, days: number, reason?: TrafficResponse["meta"]["staleReason"]) {
-  const key = buildCacheKey(pkg, days);
+export function getCachedTraffic(
+  pkg: string,
+  range: RangeForDaysResult,
+  reason?: TrafficResponse["meta"]["staleReason"]
+) {
+  const key = buildCacheKey(pkg, range);
   const cached = cacheGetWithStale<TrafficCacheValue>(key);
   if (!cached.hit || !cached.value) return null;
   const status = cached.stale ? "STALE" : "HIT";
@@ -111,7 +137,8 @@ export async function fetchTraffic(pkgInput: string, daysInput?: string | number
     throw new TrafficError("INVALID_REQUEST", 400, message);
   }
 
-  const key = buildCacheKey(pkg, days);
+  const range = rangeForDays(days);
+  const key = buildCacheKey(pkg, range);
   const cached = cacheGetWithStale<TrafficCacheValue>(key);
   if (cached.hit && cached.value && !cached.stale) {
     return buildResponse(cached.value, "HIT", null);
@@ -124,21 +151,16 @@ export async function fetchTraffic(pkgInput: string, daysInput?: string | number
       throw new UpstreamError(code, "Test upstream failure");
     }
 
-    const range = rangeForDays(days);
-    const upstream = await fetchDailyDownloadsRange(pkg, range);
-    const series = upstream.downloads.map((row) => ({
-      date: row.day,
-      downloads: row.downloads ?? 0,
-    }));
+    const upstream = await fetchDailyDownloadsRange(pkg, {
+      start: range.startDate,
+      end: range.endDate,
+    });
+    const series = normalizeSeries(upstream.downloads, range);
     const totals = computeTotals(series);
     const fetchedAt = new Date().toISOString();
     const nextValue: TrafficCacheValue = {
       package: pkg,
-      range: {
-        days,
-        startDate: upstream.start,
-        endDate: upstream.end,
-      },
+      range,
       series,
       totals,
       fetchedAt,

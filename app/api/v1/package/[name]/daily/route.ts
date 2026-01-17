@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
-import { clampDays } from "@/lib/query";
+import { clampDays, rangeForDays } from "@/lib/query";
 import { fetchTraffic, getCachedTraffic, TrafficError } from "@/lib/traffic";
 
 export const revalidate = 900;
@@ -33,11 +33,12 @@ export async function GET(
 
     const url = new URL(req.url);
     const daysParam = clampDays(url.searchParams.get("days") || "30");
+    const limitRange = rangeForDays(daysParam);
     daysValue = daysParam;
 
     const limit = await rateLimit(req, route);
     if (!limit.allowed) {
-      const cached = getCachedTraffic(name, daysParam, "UNKNOWN");
+    const cached = getCachedTraffic(name, limitRange, "UNKNOWN");
       if (cached) {
         cacheStatus = cached.meta.cacheStatus;
         isStale = cached.meta.isStale;

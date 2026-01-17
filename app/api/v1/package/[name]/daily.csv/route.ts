@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { buildCsv } from "@/lib/csv";
 import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
-import { clampDays } from "@/lib/query";
+import { clampDays, rangeForDays } from "@/lib/query";
 import { fetchTraffic, getCachedTraffic, TrafficError } from "@/lib/traffic";
 
 export const revalidate = 900;
@@ -33,7 +33,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
       const days = clampDays(url.searchParams.get("days") || "30");
       pkgName = name;
       daysValue = days;
-      const cached = getCachedTraffic(name, days, "UNKNOWN");
+      const cacheRange = rangeForDays(days);
+      const cached = getCachedTraffic(name, cacheRange, "UNKNOWN");
       if (cached) {
         cacheStatus = cached.meta.cacheStatus;
         isStale = cached.meta.isStale;

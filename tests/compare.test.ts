@@ -2,6 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { buildCompareData } from "../lib/compare";
 import { cacheClear } from "../lib/cache";
+import { rangeForDays } from "../lib/query";
+
+function nextDate(value: string) {
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
 
 const makeResponse = (downloads: Array<{ day: string; downloads: number }>) =>
   new Response(
@@ -57,16 +64,18 @@ test("buildCompareData aligns series and computes deltas", async (t) => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input) => {
     const url = typeof input === "string" ? input : input.url;
+    const expectedRange = rangeForDays(30);
+    const secondDay = nextDate(expectedRange.startDate);
     if (url.includes("/react")) {
       return makeResponse([
-        { day: "2024-01-01", downloads: 10 },
-        { day: "2024-01-02", downloads: 15 },
+        { day: expectedRange.startDate, downloads: 10 },
+        { day: secondDay, downloads: 15 },
       ]);
     }
     if (url.includes("/vue")) {
       return makeResponse([
-        { day: "2024-01-01", downloads: 6 },
-        { day: "2024-01-02", downloads: 4 },
+        { day: expectedRange.startDate, downloads: 6 },
+        { day: secondDay, downloads: 4 },
       ]);
     }
     return new Response("not found", { status: 404 });
@@ -78,7 +87,7 @@ test("buildCompareData aligns series and computes deltas", async (t) => {
   });
 
   const data = await buildCompareData(["react", "vue"], 30);
-  assert.equal(data.series.length, 2);
+  assert.equal(data.series.length, 30);
   const day1 = data.series[0];
   const day2 = data.series[1];
   assert.equal(day1.values.react?.delta, null);

@@ -3,20 +3,26 @@ import { test } from "node:test";
 import { GET as getDaily } from "../app/api/v1/package/[name]/daily/route";
 import { GET as getSearch } from "../app/api/v1/search/route";
 import { GET as getCompare } from "../app/api/v1/compare/route";
+import { rangeForDays } from "../lib/query";
 
 test("daily API returns traffic response shape", async (t) => {
   const originalFetch = globalThis.fetch;
+  const expectedRange = rangeForDays(30);
   globalThis.fetch = async (input) => {
     const url = typeof input === "string" ? input : input.url;
-    if (url.startsWith("https://api.npmjs.org/downloads/range/last-30-days/react")) {
+    if (
+      url.startsWith(
+        `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
+      )
+    ) {
       return new Response(
         JSON.stringify({
-          start: "2024-01-01",
-          end: "2024-01-02",
+        start: expectedRange.startDate,
+        end: expectedRange.endDate,
           package: "react",
           downloads: [
-            { day: "2024-01-01", downloads: 10 },
-            { day: "2024-01-02", downloads: 12 },
+            { day: "2024-01-31", downloads: 10 },
+            { day: "2024-02-01", downloads: 12 },
           ],
         }),
         { status: 200, headers: { "content-type": "application/json" } }

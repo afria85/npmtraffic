@@ -7,6 +7,7 @@ export type NpmRangeResponse = {
 };
 
 export type NpmRange = "last-7-days" | "last-14-days" | "last-30-days";
+export type NpmDateRange = { start: string; end: string };
 
 export class UpstreamError extends Error {
   status: number;
@@ -39,10 +40,10 @@ async function fetchJson(url: string, timeoutMs: number): Promise<Response> {
 
 export async function fetchDailyDownloadsRange(
   pkg: string,
-  range: NpmRange
+  range: NpmDateRange
 ): Promise<NpmRangeResponse> {
   const safePkg = encodeURIComponent(pkg);
-  const url = `https://api.npmjs.org/downloads/range/${range}/${safePkg}`;
+  const url = `https://api.npmjs.org/downloads/range/${range.start}:${range.end}/${safePkg}`;
 
   const res = await fetchJson(url, 5000);
 
