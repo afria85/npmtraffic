@@ -2,15 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
-import { clampDays, canonicalizePackages, parsePackageList } from "@/lib/query";
+import { clampDays, canonicalizePackages, parsePackageList, rangeForDays } from "@/lib/query";
 import { validatePackageName } from "@/lib/package-name";
 import { buildCompareData } from "@/lib/compare";
-import { TrafficError } from "@/lib/traffic";
+import { TrafficError, type TrafficResponse } from "@/lib/traffic";
 import { buildCompareCanonical } from "@/lib/canonical";
 import CopyLinkButton from "@/components/CopyLinkButton";
 import AlertBanner from "@/components/AlertBanner";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 import RangeSelector from "@/components/RangeSelector";
+import { buildExportFilename } from "@/lib/export-filename";
 
 type Props = {
   searchParams?: Promise<{ packages?: string; pkgs?: string; days?: string }>;
@@ -18,9 +19,16 @@ type Props = {
 
 type CompareResponse = {
   days: number;
+  range: ReturnType<typeof rangeForDays>;
   packages: { name: string; total: number; share: number }[];
   series: { date: string; values: Record<string, { downloads: number; delta: number | null }> }[];
   warnings?: string[];
+  meta: {
+    cacheStatus: TrafficResponse["meta"]["cacheStatus"];
+    isStale: boolean;
+    staleReason: TrafficResponse["meta"]["staleReason"] | null;
+    fetchedAt: string;
+  };
 };
 
 const numberFormatter = new Intl.NumberFormat("en-US");
@@ -126,6 +134,15 @@ export default async function ComparePage({ searchParams }: Props) {
     }
   }
 
+  const exportFilename = data
+    ? buildExportFilename({
+        packages: pkgs,
+        days,
+        range: data.range,
+        format: "csv",
+      })
+    : undefined;
+
   const header = (
     <div className="flex w-full flex-col gap-3">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -146,12 +163,13 @@ export default async function ComparePage({ searchParams }: Props) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {rangeSelector}
         <div className="flex flex-wrap gap-2">
-          <Link
+          <a
             href={`/api/v1/compare.csv?packages=${canonicalPkgs}&days=${days}`}
             className={ACTION_BUTTON_CLASSES}
+            download={exportFilename}
           >
             Export CSV
-          </Link>
+          </a>
           <CopyLinkButton canonical={canonical} label="Copy link" />
         </div>
       </div>

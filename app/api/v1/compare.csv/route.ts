@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { buildCompareData } from "@/lib/compare";
 import { buildCsv } from "@/lib/csv";
 import { buildExportCommentHeader, buildExportMeta } from "@/lib/export";
+import { buildExportFilename } from "@/lib/export-filename";
 import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
 import { parsePackageList } from "@/lib/query";
@@ -96,12 +97,20 @@ export async function GET(req: Request) {
       data.meta.staleReason ?? null
     );
     const csv = buildExportCommentHeader(exportMeta) + "\n" + buildCsv(rows);
+    const filename = buildExportFilename({
+      packages: pkgs,
+      days: data.days,
+      range: data.range,
+      format: "csv",
+    });
     const response = new NextResponse(csv, {
       status: 200,
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
         "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
         "x-request-id": requestId,
+        "X-Content-Type-Options": "nosniff",
+        "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });
 

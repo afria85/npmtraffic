@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { clampDays, rangeForDays } from "@/lib/query";
 import { fetchTraffic, getCachedTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
 import { buildExportCommentHeader, buildExportMeta } from "@/lib/export";
+import { buildExportFilename } from "@/lib/export-filename";
 
 export const revalidate = 900;
 
@@ -68,6 +69,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
           Boolean(isStale),
           staleReason ?? null
         );
+        const filename = buildExportFilename({
+          packages: [name],
+          days,
+          range,
+          format: "csv",
+        });
         const csv = buildExportCommentHeader(exportMeta) + "\n" + buildCsv(rows);
         logApiEvent({
           requestId,
@@ -87,6 +94,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
             "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
             "Retry-After": String(limit.retryAfter),
             "x-request-id": requestId,
+            "X-Content-Type-Options": "nosniff",
+            "Content-Disposition": `attachment; filename="${filename}"`,
           },
         });
       }
@@ -159,6 +168,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
       Boolean(isStale),
       staleReason ?? null
     );
+    const filename = buildExportFilename({
+      packages: [name],
+      days,
+      range,
+      format: "csv",
+    });
     const csv = buildExportCommentHeader(exportMeta) + "\n" + buildCsv(rows);
     const response = new NextResponse(csv, {
       status: 200,
@@ -166,6 +181,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
         "Content-Type": "text/csv; charset=utf-8",
         "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
         "x-request-id": requestId,
+        "X-Content-Type-Options": "nosniff",
+        "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });
 

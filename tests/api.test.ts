@@ -149,6 +149,9 @@ test("daily CSV export includes metadata comments", async (t) => {
   assert.ok(lines[7].startsWith("# is_stale="));
   assert.ok(lines[8].startsWith("# stale_reason="));
   assert.equal(lines[9], "date,downloads,ma3,ma7,is_outlier,outlier_score");
+  assert.equal(res.headers.get("x-content-type-options"), "nosniff");
+  const disposition = res.headers.get("content-disposition") ?? "";
+  assert.ok(disposition.startsWith('attachment; filename="npmtraffic__react'));
 });
 
 test("daily CSV export matches long-range row count", async (t) => {
@@ -188,6 +191,40 @@ test("daily CSV export matches long-range row count", async (t) => {
   const lines = text.trim().split("\n");
   // 9 comment lines + header + 90 data rows
   assert.equal(lines.length, 9 + 1 + 90);
+});
+
+test("daily CSV export attachment header sanitizes scoped names", async (t) => {
+  const originalFetch = globalThis.fetch;
+  const expectedRange = rangeForDays(30);
+  globalThis.fetch = async (input) => {
+    const url = typeof input === "string" ? input : input.url;
+    if (url.includes("/@scope/name") || url.includes("/%40scope%2Fname")) {
+      return new Response(
+        JSON.stringify({
+          start: expectedRange.startDate,
+          end: expectedRange.endDate,
+          package: "@scope/name",
+          downloads: [
+            { day: expectedRange.startDate, downloads: 5 },
+            { day: expectedRange.endDate, downloads: 5 },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const req = new Request("http://localhost/api/v1/package/%40scope%2Fname/daily.csv?days=30");
+  const res = await getDailyCsv(req, { params: Promise.resolve({ name: "@scope/name" }) });
+  assert.equal(res.status, 200);
+  const disposition = res.headers.get("content-disposition") ?? "";
+  assert.ok(disposition.includes("npmtraffic__@scope__name"));
+  assert.equal(res.headers.get("x-content-type-options"), "nosniff");
 });
 
 test("daily JSON export returns audit metadata", async (t) => {
@@ -291,6 +328,9 @@ test("compare JSON export includes metadata block", async (t) => {
   assert.ok(typeof body.export.requestId === "string");
   assert.equal(body.export.cacheStatus, "MISS");
   assert.equal(body.export.isStale, false);
+  const disposition = res.headers.get("content-disposition") ?? "";
+  assert.ok(disposition.includes("npmtraffic__react__vue"));
+  assert.ok(disposition.endsWith(".json\""));
 });
 
 test("compare CSV export includes metadata comments", async (t) => {
@@ -334,6 +374,8 @@ test("compare CSV export includes metadata comments", async (t) => {
   assert.ok(lines[7].startsWith("# is_stale="));
   assert.ok(lines[8].startsWith("# stale_reason="));
   assert.ok(lines[9].startsWith("date"));
+  const disposition = res.headers.get("content-disposition") ?? "";
+  assert.ok(disposition.includes("npmtraffic__react__vue"));
 });
 
 test("search API returns normalized results", async (t) => {

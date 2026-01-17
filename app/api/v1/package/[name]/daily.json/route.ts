@@ -5,6 +5,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { clampDays, rangeForDays } from "@/lib/query";
 import { fetchTraffic, getCachedTraffic, TrafficError } from "@/lib/traffic";
 import { makeJsonExportPayload } from "@/lib/export";
+import { buildExportFilename } from "@/lib/export-filename";
 
 export const revalidate = 900;
 
@@ -40,6 +41,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
         isStale = cached.meta.isStale;
         staleReason = cached.meta.staleReason ?? undefined;
         const payload = makeJsonExportPayload(cached, requestId, cached.meta.fetchedAt);
+        const filename = buildExportFilename({
+          packages: [name],
+          days,
+          range: cached.range,
+          format: "json",
+        });
         logApiEvent({
           requestId,
           route,
@@ -57,6 +64,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
             "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
             "Retry-After": String(limit.retryAfter),
             "x-request-id": requestId,
+            "Content-Disposition": `attachment; filename="${filename}"`,
           },
         });
       }
@@ -102,11 +110,18 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
     staleReason = data.meta.staleReason ?? undefined;
 
     const payload = makeJsonExportPayload(data, requestId);
+    const filename = buildExportFilename({
+      packages: [name],
+      days,
+      range: data.range,
+      format: "json",
+    });
     const response = NextResponse.json(payload, {
       status: 200,
       headers: {
         "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
         "x-request-id": requestId,
+        "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });
 

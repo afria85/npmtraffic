@@ -13,6 +13,7 @@ import { getPackageGithubRepo } from "@/lib/npm-repo";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 import DerivedSeriesTable from "@/components/package/DerivedSeriesTable";
 import RangeSelector from "@/components/RangeSelector";
+import { buildExportFilename } from "@/lib/export-filename";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -147,6 +148,16 @@ export default async function PackagePage({ params, searchParams }: Props) {
     />
   );
 
+  const exportFilename =
+    data?.range && data
+      ? buildExportFilename({
+          packages: [name],
+          days,
+          range: data.range,
+          format: "csv",
+        })
+      : undefined;
+
   const header = (
     <div className="flex w-full flex-col gap-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -186,12 +197,13 @@ export default async function PackagePage({ params, searchParams }: Props) {
                 Star on GitHub
               </a>
             ) : null}
-            <Link
+            <a
               href={`/api/v1/package/${encodedName}/daily.csv?days=${days}`}
               className={ACTION_BUTTON_CLASSES}
+              download={exportFilename}
             >
               Export CSV
-            </Link>
+            </a>
             <CopyLinkButton canonical={canonical} label="Copy link" />
           </div>
         </div>

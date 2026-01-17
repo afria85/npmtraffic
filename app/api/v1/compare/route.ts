@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { buildCompareData } from "@/lib/compare";
+import { buildExportFilename } from "@/lib/export-filename";
 import { buildExportMeta } from "@/lib/export";
 import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
@@ -77,6 +78,12 @@ export async function GET(req: Request) {
       data.meta.staleReason ?? null
     );
     const payload = { ...data, export: exportMeta };
+    const filename = buildExportFilename({
+      packages: pkgs,
+      days: data.days,
+      range: data.range,
+      format: "json",
+    });
 
     const response = NextResponse.json(
       payload,
@@ -85,6 +92,7 @@ export async function GET(req: Request) {
         headers: {
           "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
           "x-request-id": requestId,
+          "Content-Disposition": `attachment; filename="${filename}"`,
         },
       }
     );
