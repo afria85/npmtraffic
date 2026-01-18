@@ -3,14 +3,14 @@ import { hasDonateLinks } from "@/lib/donate";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const HEADER_PILL_CLASSES =
-  "rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10";
+  "rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-2 text-sm text-[color:var(--foreground)] transition hover:border-[color:var(--border)]/80 hover:bg-[color:var(--surface)]/80";
 
 export default function Header() {
   const showDonate = hasDonateLinks();
   return (
-    <header className="border-b border-white/10 bg-[#04060d] px-4 py-3">
+    <header className="border-b border-[color:var(--border)] bg-[color:var(--surface)]/70 px-4 py-3 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between">
-        <Link href="/" className="text-xs uppercase tracking-[0.3em] text-slate-400">
+        <Link href="/" className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
           npmtraffic
         </Link>
         <div className="flex items-center gap-2">

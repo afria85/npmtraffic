@@ -1,24 +1,24 @@
 # npmtraffic
 
-GitHub-style daily npm download history with audit-grade exports.
+GitHub-style daily npm download history: fast tables, compare views, and audit-grade exports.
 
-[![CI](https://github.com/afria85/npmtraffic/actions/workflows/ci.yml/badge.svg)](https://github.com/afria85/npmtraffic/actions/workflows/ci.yml)
-[![Sponsor](https://img.shields.io/badge/sponsor-GitHub%20Sponsors-0ea5e9?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/afria85)
+> Not affiliated with npm, Inc. Data sourced from `api.npmjs.org`.
 
-npmtraffic is a mobile-first web app that shows **daily npm package downloads** in a GitHub-style table view. It supports search, compare, and exports (CSV/JSON), and surfaces cache freshness + staleness so users can trust what they are seeing.
+## Badges
 
-> Not affiliated with npm, Inc. Data from `api.npmjs.org`.
+- CI (GitHub Actions): ![CI](https://github.com/afria85/npmtraffic/actions/workflows/ci.yml/badge.svg)
+- Sponsors: ![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-Support-ff69b4)
 
-## What you get
+## Features
 
-- **Daily tables** (single package + compare)
-- **Ranges**: 7/14/30 + More (90/180/365)
-- **Cache TTL awareness** + stale surfacing (no blank screens)
-- **Audit-grade exports**
-  - CSV + JSON include metadata (`from/to`, UTC timestamps, source, cache status, request_id)
-  - Deterministic filenames and `Content-Disposition: attachment` for reliable downloads
-  - Excel-friendly CSV endpoints (semicolon + `sep=;`)
-- **Events**: local-first markers (CRUD + import/export + share payload)
+- **Daily history table** (GitHub-style) for npm package downloads.
+- **Compare view** across multiple packages with day-by-day downloads and deltas.
+- **Export, audit-grade**:
+  - CSV and JSON exports include metadata (`from/to`, `generated_at`, cache status, stale info, request id).
+  - Deterministic filenames + `Content-Disposition: attachment`.
+  - Excel-friendly CSV endpoints using `;` delimiter.
+- **Ranges**: 7/14/30 with a “More” menu for 90/180/365 (UTC-aligned).
+- **Local-first event markers** (create/update/delete) and shareable compare payloads.
 
 ## Run locally
 
@@ -29,59 +29,35 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-### Examples
+## Environment variables
 
-- Package: `/p/react?days=30`
-- Compare: `/compare?packages=react,vue,logshield-cli&days=30`
-- Export CSV: `/api/v1/package/react/daily.csv?days=30`
-- Export JSON: `/api/v1/package/react/daily.json?days=30`
+See `.env.example`. The most relevant are:
 
-## Environment
+- `BASE_URL` (recommended for canonical URLs in production)
+- `NEXT_PUBLIC_PROJECT_GITHUB` (for the “Star on GitHub” link)
+- `NEXT_PUBLIC_DONATE_GITHUB_SPONSORS` / PayPal / etc. (for `/donate` + footer buttons)
 
-No configuration is required for local dev.
-
-For production and external links, copy `.env.example` to `.env.local` (or configure in Vercel):
-
-- `BASE_URL` (recommended in production)
-- `NEXT_PUBLIC_PROJECT_GITHUB` (shows "Star on GitHub" link)
-- `NEXT_PUBLIC_DONATE_GITHUB_SPONSORS` / `NEXT_PUBLIC_DONATE_PAYPAL` (enables `/donate` and footer donate buttons)
-
-More details: `docs/ENVIRONMENT.md`.
-
-## Deploy
-
-### Vercel + npmtraffic.com
+## Deploy (Vercel)
 
 1. Import the repo in Vercel.
-2. Set `BASE_URL=https://npmtraffic.com` (recommended).
-3. Add custom domain `npmtraffic.com` and follow DNS instructions.
-4. Deploy.
+2. Set `BASE_URL` to your public origin (e.g. `https://npmtraffic.com`).
+3. Add a custom domain and follow DNS instructions.
+
+## Ops endpoints
+
+- `/status` shows build info and the latest traffic/cache health signals.
+- `/api/cron/prewarm` warms the traffic cache for curated packages (or custom `packages=` and `days=`).
 
 ## Sponsorship
 
-Sponsorship is optional. It helps keep npmtraffic **fast, reliable, and ad-free** (hosting, caching reliability, monitoring, maintenance).
+If npmtraffic is useful, sponsorship helps fund:
 
-- GitHub Sponsors: `https://github.com/sponsors/afria85`
-- In-app: `/donate` (enabled when donation env vars are set)
+- Hosting & bandwidth
+- Monitoring and cache reliability
+- Maintenance and UX improvements
 
-See: `docs/SPONSORSHIP.md`.
-
-## Roadmap and milestones
-
-- Website: `/roadmap`
-- Repo milestones: `docs/MILESTONES.md`
-
-## Ops
-
-- `/status` shows build info and recent health signals.
-- `/api/cron/prewarm` warms the traffic cache for curated packages (or custom `packages=`) across ranges.
-
-## Production verification checklist
-
-- **URLs**: `/`, `/p/logshield-cli?days=14`, `/p/react?days=14`, `/compare?packages=react,vue&days=14`, `/donate`, `/status`, `/sitemap.xml`, `/robots.txt`.
-- **Expected UI**: tables show totals and freshness, stale banners appear on upstream failures, copy/export actions work, donate links render when configured.
-- **Failure modes**: upstream `401/429/5xx` should never produce blank screens—show typed errors or stale indicators.
+Core features stay free. Sponsors help keep npmtraffic fast, reliable, and ad-free.
 
 ## License
 
-No license has been declared yet. If you plan to open-source npmtraffic, add a LICENSE file and update this section.
+No license file is included in this repo snapshot. If you want npmtraffic to be open source, add a LICENSE (e.g. MIT) and update this section accordingly.

@@ -1,21 +1,18 @@
 # Sponsorship
 
-npmtraffic is free and ad-free. Sponsorship funds infrastructure and sustainable maintenance so the project can stay reliable.
+npmtraffic is intentionally **ad-free** and focuses on deterministic, audit-grade analytics.
 
-## Where to sponsor
-
-- GitHub Sponsors: `https://github.com/sponsors/afria85`
-
-## What sponsorship supports
+Sponsorship (or one-time donations) helps fund:
 
 - Hosting & bandwidth
-- Caching reliability and monitoring
-- Maintenance, bug fixes, and UX improvements
+- Monitoring + cache reliability
+- Maintenance / bug fixes
+- UX polish and analysis features
 
-## Principles
+## Suggested tiers (example)
 
-- Core features stay free.
-- Sponsorship is optional; issues and feedback are welcome regardless.
-- If funding meaningfully exceeds basic maintenance needs, it is directed toward roadmap items that improve trust and analysis depth.
+- **Backer (small monthly)**: helps fund monitoring and steady releases.
+- **Supporter (mid)**: funds reliability improvements and response time on issues.
+- **Sponsor (higher)**: funds roadmap items (charts, snapshots/history, export polishing).
 
-See also: `docs/MILESTONES.md`.
+Core features stay free. Sponsors pay for sustainability and reliability, not paywalls.

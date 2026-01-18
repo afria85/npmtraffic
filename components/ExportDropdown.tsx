@@ -154,7 +154,7 @@ export default function ExportDropdown({
         ref={menuRef}
         role="menu"
         aria-label={`${label} menu`}
-        className="pointer-events-auto z-50 overflow-hidden rounded-xl border border-white/10 bg-[#04060d] shadow-xl"
+        className="pointer-events-auto z-50 overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-xl"
         style={{
           position: "fixed",
           top: menuPosition.top,
@@ -175,7 +175,7 @@ export default function ExportDropdown({
                 key={item.key}
                 href={item.href}
                 role="menuitem"
-                className="block rounded-lg px-3 py-2 text-sm text-slate-100 transition hover:bg-white/10"
+                className="block rounded-lg px-3 py-2 text-sm text-[color:var(--foreground)] transition hover:bg-[color:var(--surface)]/80"
                 {...downloadProps}
                 onClick={() => close()}
               >
@@ -201,7 +201,7 @@ export default function ExportDropdown({
           className={`${ACTION_BUTTON_CLASSES} inline-flex items-center gap-2`}
         >
           <span>{label}</span>
-          <span aria-hidden className="text-slate-300">
+          <span aria-hidden className="text-[color:var(--muted)]">
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
               <path d="M5.25 7.75a.75.75 0 0 1 1.06 0L10 11.44l3.69-3.69a.75.75 0 1 1 1.06 1.06l-4.22 4.22a.75.75 0 0 1-1.06 0L5.25 8.81a.75.75 0 0 1 0-1.06z" />
             </svg>

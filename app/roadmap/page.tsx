@@ -4,33 +4,16 @@ import { getBaseUrl } from "@/lib/base-url";
 
 const roadmap = [
   {
-    title: "v0.2.x — Core (shipping now)",
-    items: [
-      "Daily download tables (single + compare)",
-      "Ranges: 7/14/30 + More (90/180/365)",
-      "Cache TTL awareness + stale surfacing (no blank screens)",
-      "Audit-grade exports (CSV/JSON + metadata)",
-      "Excel-friendly CSV endpoints (semicolon + sep=;)",
-      "Local-first events (CRUD + import/export + share payload)",
-    ],
+    title: "Phase 0",
+    items: ["Reliable npm traffic table", "Internal API with caching", "Package + compare pages"],
   },
   {
-    title: "v0.3.x — UX + trust",
-    items: [
-      "Fix compare export dropdown clipping/portal issues",
-      "Clarify compare headers and explain % of total via tooltip",
-      "Consistent iconography and action alignment",
-      "Theme toggle defaults to system and persists",
-      "Donate UX polish (visible, not pushy)",
-    ],
+    title: "Phase 1",
+    items: ["Search-first navigation", "CSV exports", "Governance + transparency pages"],
   },
   {
-    title: "v0.4.x — Analysis",
-    items: [
-      "Minimal line chart (single + compare) with tooltips",
-      "Optional MA7 toggle and event overlays",
-      "Unified export dropdown (CSV / Excel CSV / JSON)",
-    ],
+    title: "Phase 2",
+    items: ["Comparison sharing and compare list", "Downloads alerts", "Community contributions"],
   },
 ];
 
@@ -65,9 +48,7 @@ export default function RoadmapPage() {
           npmtraffic
         </Link>
         <h1 className="mt-2 text-4xl font-semibold">Roadmap</h1>
-        <p className="text-sm text-slate-400">
-          Planned milestones for npmtraffic. Core reliability ships first; deeper analysis follows.
-        </p>
+        <p className="text-sm text-slate-400">Planned phases for npmtraffic evolution.</p>
       </header>
       <div className="space-y-8">
         {roadmap.map((phase) => (

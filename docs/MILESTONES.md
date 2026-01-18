@@ -1,44 +1,28 @@
-# Milestones
+# npmtraffic milestones
 
-This project is intentionally small, deterministic, and "audit-first". Milestones focus on reliability, clarity, and exports that users can trust.
+This document is intentionally lightweight. Treat it as a product-facing roadmap rather than an engineering backlog.
 
 ## Product milestones
 
-### v0.2.x (shipping now)
-- Daily download tables (single package + compare)
-- Ranges: 7/14/30 and More (90/180/365)
-- Cache TTL awareness and stale surfacing (no blank screens)
-- Audit-grade exports (CSV/JSON + metadata)
-- Excel-friendly CSV endpoints (semicolon + `sep=;`)
-- Local-first events (CRUD + import/export + share payload)
+### v0.2.x (stability + UX)
+- Theme toggle works (system default + persisted override)
+- Compare table alignment + clear column labels
+- Dropdown reliability (range, export) with SSR safety
+- Readable light theme (no low-contrast text)
 
-### v0.3.x (UX + trust)
-- Fix compare Export dropdown clipping/portal issues
-- Clarify compare headers (no duplicated labels) and explain "% of total" via tooltip copy
-- Consistent iconography (replace "?" caret with chevron, align actions)
-- Theme toggle that defaults to system and persists choice
-- Donate UX polish (visible, not pushy)
+### v0.3.x (trust + polish)
+- Export UI unified (CSV / Excel CSV / JSON)
+- Improved tooltips and copy (share-of-total, delta definition)
+- Donate + GitHub sponsor hooks (non-intrusive)
 
 ### v0.4.x (analysis)
-- Minimal line chart (single + compare)
-  - Tooltip: UTC date, downloads, delta, cache/stale
-  - Optional MA7 toggle
-  - Event overlays
-- Unified Export dropdown (CSV / Excel CSV / JSON)
+- Minimal line charts (single + compare) with tooltip (UTC date, downloads, delta, cache/stale)
+- Optional MA7 toggle + event overlay markers
 
-### v0.5+ (optional, demand-driven)
-- Local snapshots/history (user-owned storage)
-- Insights over time (adoption signals, change attribution)
-- Optional paid add-ons if there is clear demand (never at the expense of core reliability)
+## Sponsorship goals (example)
 
-## Sponsorship milestones (communication)
+These are optional and purely communicative—adjust to your comfort.
 
-GitHub Sponsors tiers are designed to keep the project sustainable without paywalling core features.
-
-- **$500/mo**: cover baseline infrastructure (hosting, caching, monitoring) and keep the site ad-free
-- **$1000/mo**: reduce part-time hours to ship fixes and improvements more consistently
-- **$1500/mo**: accelerate reliability work and deeper analysis features (still keeping the core free)
-
-Notes:
-- These are directional milestones for transparency, not promises or delivery dates.
-- Feature prioritization remains driven by user feedback and reliability needs.
+- **$250/mo**: cover hosting + monitoring, keep site ad-free.
+- **$500/mo**: reduce maintenance lag; faster issue turnaround.
+- **$1000/mo**: consistent roadmap delivery (charts, history, UX polish) and fewer part-time hours.

@@ -27,6 +27,37 @@ function applyTheme(theme: Theme) {
   document.documentElement.style.colorScheme = theme;
 }
 
+function SunIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden>
+      <path
+        d="M12 18a6 6 0 1 0 0-12a6 6 0 0 0 0 12Z"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M12 2v2.5M12 19.5V22M4.22 4.22l1.77 1.77M18.01 18.01l1.77 1.77M2 12h2.5M19.5 12H22M4.22 19.78l1.77-1.77M18.01 5.99l1.77-1.77"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden>
+      <path
+        d="M21 14.5A7.5 7.5 0 0 1 9.5 3a6.5 6.5 0 1 0 11.5 11.5Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function ThemeToggle({ className }: { className?: string }) {
   // Initialize from persisted override if available; otherwise mirror system.
   const [hasOverride, setHasOverride] = useState<boolean>(() => readPersistedTheme() !== null);
@@ -58,21 +89,24 @@ export default function ThemeToggle({ className }: { className?: string }) {
     }
 
     // Safari fallback
-
     mq.addListener(onChange);
-
     return () => mq.removeListener(onChange);
   }, [hasOverride]);
 
-  const label = useMemo(() => (theme === "dark" ? "Dark" : "Light"), [theme]);
+  const nextTheme = useMemo<Theme>(() => (theme === "dark" ? "light" : "dark"), [theme]);
+  const ariaLabel = useMemo(
+    () => `Switch to ${nextTheme === "dark" ? "dark" : "light"} theme`,
+    [nextTheme]
+  );
 
   return (
     <button
       type="button"
       className={className}
       title="Toggle theme (defaults to your device setting)"
+      aria-label={ariaLabel}
       onClick={() => {
-        const next: Theme = theme === "dark" ? "light" : "dark";
+        const next: Theme = nextTheme;
         setTheme(next);
         setHasOverride(true);
         try {
@@ -82,7 +116,8 @@ export default function ThemeToggle({ className }: { className?: string }) {
         }
       }}
     >
-      {label}
+      <span className="sr-only">{ariaLabel}</span>
+      {theme === "dark" ? <MoonIcon /> : <SunIcon />}
     </button>
   );
 }
