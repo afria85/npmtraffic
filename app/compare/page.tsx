@@ -35,6 +35,30 @@ type CompareResponse = {
   };
 };
 
+type CompareTableHeaderProps = {
+  packageNames: string[];
+};
+
+export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
+  return (
+    <thead className="sticky top-0 bg-black/80 text-left text-xs uppercase tracking-wider text-slate-300 backdrop-blur">
+      <tr>
+        <th className="px-3 py-2">Date</th>
+        {packageNames.map((pkg) => (
+          <th key={`${pkg}-downloads`} className="px-3 py-2">
+            {pkg} Downloads
+          </th>
+        ))}
+        {packageNames.map((pkg) => (
+          <th key={`${pkg}-delta`} className="px-3 py-2">
+            {pkg} Δ
+          </th>
+        ))}
+      </tr>
+    </thead>
+  );
+}
+
 const numberFormatter = new Intl.NumberFormat("en-US");
 
 function formatNumber(value: number | null) {
@@ -219,6 +243,8 @@ export default async function ComparePage({ searchParams }: Props) {
     );
   }
 
+  const tablePackageNames = data.packages.map((pkg) => pkg.name);
+
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-4 py-6">
       {header}
@@ -244,58 +270,42 @@ export default async function ComparePage({ searchParams }: Props) {
           <div className="min-w-[720px]">
             <div className="max-h-[70vh] overflow-auto">
               <table className="min-w-[720px] w-full text-sm">
-                <thead className="sticky top-0 bg-black/80 text-left text-xs uppercase tracking-wider text-slate-300 backdrop-blur">
-              <tr>
-                <th className="px-3 py-2" rowSpan={2}>
-                  Date
-                </th>
-                {data.packages.map((pkg) => (
-                  <th key={pkg.name} className="px-3 py-2 text-center" colSpan={2}>
-                    {pkg.name}
-                  </th>
-                ))}
-              </tr>
-              <tr>
-                {data.packages.map((pkg) => (
-                  <th key={`${pkg.name}-downloads`} className="px-3 py-2">
-                    Downloads
-                  </th>
-                ))}
-                {data.packages.map((pkg) => (
-                  <th key={`${pkg.name}-delta`} className="px-3 py-2">
-                    Delta
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/10">
-              {data.series.map((row) => (
-                <tr key={row.date} className="text-slate-100">
-                  <td className="px-3 py-2 text-xs uppercase tracking-wide text-slate-400">
-                    {row.date}
-                  </td>
-                  {data.packages.map((pkg) => (
-                    <td key={`${row.date}-${pkg.name}-downloads`} className="px-3 py-2 font-mono">
-                      {formatNumber(row.values[pkg.name]?.downloads ?? 0)}
-                    </td>
+                <CompareTableHeader packageNames={tablePackageNames} />
+                <tbody className="divide-y divide-white/10">
+                  {data.series.map((row) => (
+                    <tr key={row.date} className="text-slate-100">
+                      <td className="px-3 py-2 text-xs uppercase tracking-wide text-slate-400">
+                        {row.date}
+                      </td>
+                      {data.packages.map((pkg) => (
+                        <td
+                          key={`${row.date}-${pkg.name}-downloads`}
+                          className="px-3 py-2 font-mono"
+                        >
+                          {formatNumber(row.values[pkg.name]?.downloads ?? 0)}
+                        </td>
+                      ))}
+                      {data.packages.map((pkg) => (
+                        <td
+                          key={`${row.date}-${pkg.name}-delta`}
+                          className="px-3 py-2 font-mono"
+                        >
+                          {formatDelta(row.values[pkg.name]?.delta ?? null)}
+                        </td>
+                      ))}
+                    </tr>
                   ))}
-                  {data.packages.map((pkg) => (
-                    <td key={`${row.date}-${pkg.name}-delta`} className="px-3 py-2 font-mono">
-                      {formatDelta(row.values[pkg.name]?.delta ?? null)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
+                </tbody>
               </table>
+              <p className="px-3 py-2 text-xs text-slate-400">
+                Δ = downloads today − downloads yesterday
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      <p className="text-xs text-slate-500">
-        Data from api.npmjs.org.
-      </p>
+      <p className="text-xs text-slate-500">Data from api.npmjs.org.</p>
     </main>
   );
 }
