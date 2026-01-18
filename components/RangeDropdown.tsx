@@ -29,9 +29,11 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
       onClose: close,
     });
     document.addEventListener("pointerdown", controller.handlePointerDown);
+    document.addEventListener("touchstart", controller.handlePointerDown);
     document.addEventListener("keydown", controller.handleKeyDown);
     return () => {
       document.removeEventListener("pointerdown", controller.handlePointerDown);
+      document.removeEventListener("touchstart", controller.handlePointerDown);
       document.removeEventListener("keydown", controller.handleKeyDown);
     };
   }, [open, close]);

@@ -1,3 +1,5 @@
+type InteractionEvent = PointerEvent | TouchEvent | MouseEvent;
+
 export function makeDropdownController({
   container,
   onClose,
@@ -5,7 +7,7 @@ export function makeDropdownController({
   container: HTMLElement;
   onClose: () => void;
 }) {
-  const handlePointerDown = (event: PointerEvent) => {
+  const handlePointerDown = (event: InteractionEvent) => {
     const target = event.target;
     if (!target) {
       return;

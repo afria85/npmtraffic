@@ -13,6 +13,14 @@ export type CompareTotals = {
   share: number;
 };
 
+export function calculatePackageShares(packages: { name: string; total: number }[]): CompareTotals[] {
+  const totalAll = packages.reduce((sum, pkg) => sum + pkg.total, 0) || 1;
+  return packages.map((pkg) => ({
+    ...pkg,
+    share: Math.round((pkg.total / totalAll) * 10000) / 100,
+  }));
+}
+
 export type CompareData = {
   days: number;
   range: ReturnType<typeof rangeForDays>;
@@ -75,16 +83,12 @@ export async function buildCompareData(rawPackages: string[], rawDays?: string |
     throw new Error("BAD_REQUEST: compare requires 2-5 packages");
   }
 
-  const totals = datasets.map(({ name, data }) => ({
-    name,
-    total: data.totals.sum,
-    share: 0,
-  }));
-
-  const totalAll = totals.reduce((sum, row) => sum + row.total, 0) || 1;
-  for (const row of totals) {
-    row.share = Math.round((row.total / totalAll) * 10000) / 100;
-  }
+  const totals = calculatePackageShares(
+    datasets.map(({ name, data }) => ({
+      name,
+      total: data.totals.sum,
+    }))
+  );
 
   const series: CompareSeriesRow[] = [];
   const dates = datasets[0]?.data.series.map((row) => row.date) ?? [];

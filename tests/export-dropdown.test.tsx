@@ -38,3 +38,16 @@ test("export dropdown supports compare list links", () => {
   assert(html.includes('href="/api/v1/compare.excel.csv?packages=react,vue&days=14"'));
   assert(html.includes('href="/api/v1/compare.json?packages=react,vue&days=14"'));
 });
+
+test("export dropdown button references menu for accessibility", () => {
+  const html = renderToStaticMarkup(
+    <ExportDropdown
+      items={[
+        { label: "CSV", href: "/api/export.csv", download: "export.csv" },
+      ]}
+    />
+  );
+  assert(/aria-controls="[^"]+"/.test(html));
+  assert.ok(/role="menu"/.test(html));
+  assert.ok(/aria-labelledby="[^"]+"/.test(html));
+});

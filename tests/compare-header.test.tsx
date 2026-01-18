@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CompareTableHeader } from "../app/compare/page";
 
-test("compare table header renders packages and delta columns once", () => {
+test("compare table header groups packages by metric", () => {
   const packageNames = ["react", "vue"];
   const html = renderToStaticMarkup(
     <table>
@@ -11,17 +11,23 @@ test("compare table header renders packages and delta columns once", () => {
     </table>
   );
 
-  const order = [
-    "Date",
-    "react Downloads",
-    "vue Downloads",
-    "react Δ",
-    "vue Δ",
-  ];
-  let previousIndex = -1;
-  for (const entry of order) {
-    const idx = html.indexOf(entry);
-    assert.ok(idx > previousIndex, `${entry} should appear after the previous entry`);
-    previousIndex = idx;
-  }
+  const colspanMatches = html.match(/colspan="2"/g) ?? [];
+  assert.equal(
+    colspanMatches.length,
+    packageNames.length,
+    "Each package should consume two numeric columns"
+  );
+  const downloadsMatches = html.match(/Downloads/g) ?? [];
+  assert.equal(
+    downloadsMatches.length,
+    packageNames.length,
+    "Downloads label should appear once per package"
+  );
+  const deltaMatches = html.match(/Delta vs prev day/g) ?? [];
+  assert.equal(
+    deltaMatches.length,
+    packageNames.length,
+    "Delta label should appear once per package"
+  );
+  assert.ok(html.includes('rowspan="2"'));
 });

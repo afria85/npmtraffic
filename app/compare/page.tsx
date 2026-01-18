@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Fragment } from "react";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
 import { clampDays, canonicalizePackages, parsePackageList, rangeForDays } from "@/lib/query";
@@ -43,16 +44,37 @@ export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
   return (
     <thead className="sticky top-0 bg-black/80 text-left text-xs uppercase tracking-wider text-slate-300 backdrop-blur">
       <tr>
-        <th className="px-3 py-2">Date</th>
+        <th rowSpan={2} className="px-3 py-2 text-left text-xs uppercase tracking-[0.3em] text-slate-300">
+          Date
+        </th>
         {packageNames.map((pkg) => (
-          <th key={`${pkg}-downloads`} className="px-3 py-2">
-            {pkg} Downloads
+          <th
+            key={`${pkg}-group`}
+            colSpan={2}
+            className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.3em] text-slate-100"
+          >
+            {pkg}
           </th>
         ))}
+      </tr>
+      <tr>
         {packageNames.map((pkg) => (
-          <th key={`${pkg}-delta`} className="px-3 py-2">
-            {pkg} Δ
-          </th>
+          <Fragment key={`${pkg}-metrics`}>
+            <th
+              scope="col"
+              className="px-3 py-2 text-left text-xs uppercase tracking-[0.3em] text-slate-400 whitespace-nowrap"
+              title="Downloads for the day"
+            >
+              Downloads
+            </th>
+            <th
+              scope="col"
+              className="px-3 py-2 text-left text-xs uppercase tracking-[0.3em] text-slate-400 whitespace-nowrap"
+              title="Delta vs previous day"
+            >
+              Delta vs prev day
+            </th>
+          </Fragment>
         ))}
       </tr>
     </thead>
@@ -260,7 +282,9 @@ export default async function ComparePage({ searchParams }: Props) {
             <p className="mt-2 text-xl font-semibold text-white">
               {formatNumber(pkg.total)}
             </p>
-            <p className="text-xs text-slate-400">{pkg.share}% of total</p>
+            <p className="text-xs text-slate-400">
+              {pkg.share}% share of combined downloads (selected range)
+            </p>
           </div>
         ))}
       </div>
@@ -298,7 +322,7 @@ export default async function ComparePage({ searchParams }: Props) {
                 </tbody>
               </table>
               <p className="px-3 py-2 text-xs text-slate-400">
-                Δ = downloads today − downloads yesterday
+                Delta vs previous day = downloads today - downloads yesterday
               </p>
             </div>
           </div>
