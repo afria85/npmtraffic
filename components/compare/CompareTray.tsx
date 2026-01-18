@@ -12,7 +12,7 @@ import { getCompareButtonLabel, isCompareReady } from "@/lib/compare-ui";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 const LIST_REMOVAL_CLASS =
-  "inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/5 px-3 py-1.5 text-xs text-slate-100 transition hover:border-white/60";
+  "inline-flex items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--surface)]/70 px-3 py-1.5 text-xs text-[color:var(--foreground)]/80 transition hover:border-[color:var(--border)]/80 hover:bg-[color:var(--surface)]";
 
 export default function CompareTray() {
   const [packages, setPackages] = useState<string[]>(() => loadCompareList());
@@ -33,9 +33,9 @@ export default function CompareTray() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-3">
-      <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/60 px-4 py-3 shadow-sm shadow-black/40 backdrop-blur">
+      <div className="flex flex-col gap-3 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)]/70 px-4 py-3 shadow-sm shadow-black/10 backdrop-blur">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">Compare</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.4em] text-[color:var(--muted)]">Compare</div>
           {packages.length ? (
             <div className="flex flex-wrap items-center gap-2">
               {packages.map((pkg) => (
@@ -52,7 +52,7 @@ export default function CompareTray() {
               ))}
             </div>
           ) : (
-            <p className="text-xs text-slate-500">Add packages to compare using the button on each package page.</p>
+            <p className="text-xs text-[color:var(--muted)]">Add packages to compare using the button on each package page.</p>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -65,7 +65,7 @@ export default function CompareTray() {
               {label}
             </button>
           )}
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-[color:var(--muted)]">
             {ready ? "Open the comparison table" : "Need at least two packages"}
           </span>
         </div>

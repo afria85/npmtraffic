@@ -1,13 +1,12 @@
 # npmtraffic
 
+[![CI](https://github.com/afria85/npmtraffic/actions/workflows/ci.yml/badge.svg)](https://github.com/afria85/npmtraffic/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Sponsor](https://img.shields.io/github/sponsors/afria85?label=Sponsor&logo=GitHub)](https://github.com/sponsors/afria85)
+
 GitHub-style daily npm download history: fast tables, compare views, and audit-grade exports.
 
 > Not affiliated with npm, Inc. Data sourced from `api.npmjs.org`.
-
-## Badges
-
-- CI (GitHub Actions): ![CI](https://github.com/afria85/npmtraffic/actions/workflows/ci.yml/badge.svg)
-- Sponsors: ![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-Support-ff69b4)
 
 ## Features
 
@@ -58,6 +57,8 @@ If npmtraffic is useful, sponsorship helps fund:
 
 Core features stay free. Sponsors help keep npmtraffic fast, reliable, and ad-free.
 
+If you want a lightweight roadmap and example sponsorship milestones, see `docs/MILESTONES.md`.
+
 ## License
 
-No license file is included in this repo snapshot. If you want npmtraffic to be open source, add a LICENSE (e.g. MIT) and update this section accordingly.
+Licensed under the Apache License, Version 2.0. See `LICENSE` (and `NOTICE`).

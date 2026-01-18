@@ -27,7 +27,12 @@ export default function Footer() {
         ) : null}
 
         {projectGithubUrl ? (
-          <a href={projectGithubUrl} target="_blank" rel="noreferrer" className={PILL}>
+          <a
+            href={projectGithubUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={`${PILL} w-fit self-start`}
+          >
             Star on GitHub
           </a>
         ) : null}
