@@ -230,7 +230,7 @@ function SearchPanel({
           onBlur={() => window.setTimeout(() => setIsListOpen(false), 120)}
           onKeyDown={handleKeyDown}
           placeholder="Search npm packages"
-          className="h-11 w-full rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white placeholder:text-slate-400 focus:border-white/30 focus:outline-none"
+          className="h-11 w-full rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 text-sm text-[color:var(--foreground)] placeholder:text-[color:var(--muted)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/30"
           role="combobox"
           aria-expanded={showList}
           aria-controls={listId}
@@ -239,7 +239,7 @@ function SearchPanel({
         />
         {showList ? (
           <div
-            className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-white/10 bg-[#0d141c] shadow-lg"
+            className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-lg"
             role="listbox"
             id={listId}
           >
@@ -254,15 +254,15 @@ function SearchPanel({
                   className={[
                     "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition",
                     activeOption?.id === option.id
-                      ? "bg-white/10 text-white"
-                      : "text-slate-200 hover:bg-white/5",
+                      ? "bg-black/5 text-[color:var(--foreground)]"
+                      : "text-[color:var(--foreground)]/90 hover:bg-black/5"
                   ].join(" ")}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => selectPackage(option.value)}
                 >
                   <span>{option.label}</span>
                   {option.helper ? (
-                    <span className="max-w-[50%] truncate text-xs text-slate-500">
+                    <span className="max-w-[50%] truncate text-xs text-[color:var(--muted)]">
                       {option.helper}
                     </span>
                   ) : null}
@@ -327,7 +327,7 @@ export default function SearchBox({
             id={sheetId}
             role="dialog"
             aria-modal="true"
-            className="fixed bottom-0 left-0 right-0 h-[70vh] rounded-t-2xl border border-white/10 bg-[#0b1119] p-6 shadow-2xl"
+            className="fixed bottom-0 left-0 right-0 h-[70vh] rounded-t-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-6 shadow-2xl"
           >
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-slate-200">Search packages</p>
