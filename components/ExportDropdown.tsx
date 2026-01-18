@@ -154,7 +154,7 @@ export default function ExportDropdown({
         ref={menuRef}
         role="menu"
         aria-label={`${label} menu`}
-        className="pointer-events-auto z-50 overflow-hidden rounded-xl border border-white/10 bg-[#04060d] shadow-xl"
+        className="pointer-events-auto z-50 overflow-hidden rounded-xl border border-white/10 bg-[color:var(--surface)] shadow-xl"
         style={{
           position: "fixed",
           top: menuPosition.top,
