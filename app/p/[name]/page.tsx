@@ -176,19 +176,22 @@ export default async function PackagePage({ params, searchParams }: Props) {
   const exportItems = data?.range
     ? [
         {
+          key: "csv",
           label: "CSV",
           href: `/api/v1/package/${encodedName}/daily.csv?days=${days}`,
-          download: csvFilename,
+          downloadName: csvFilename,
         },
         {
+          key: "excel",
           label: "Excel CSV",
           href: `/api/v1/package/${encodedName}/daily.excel.csv?days=${days}`,
-          download: excelFilename,
+          downloadName: excelFilename,
         },
         {
+          key: "json",
           label: "JSON",
           href: `/api/v1/package/${encodedName}/daily.json?days=${days}`,
-          download: jsonFilename,
+          downloadName: jsonFilename,
         },
       ]
     : [];

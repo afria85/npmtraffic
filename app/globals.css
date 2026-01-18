@@ -9,6 +9,19 @@
   --accent: #5eead4;
 }
 
+/* Light theme overrides (default stays dark; light is opt-in or system-driven). */
+:root[data-theme="light"] {
+  --bg0: #f8fafc;
+  --bg1: #f1f5f9;
+  --bg2: #e2e8f0;
+  --fg0: #0f172a;
+  --fg1: #334155;
+  --border: rgba(15, 23, 42, 0.14);
+  --shadow0: 0 10px 40px rgba(2, 6, 23, 0.10);
+  --shadow1: 0 12px 60px rgba(2, 6, 23, 0.12);
+  --accent: #0ea5e9;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -212,19 +212,22 @@ export default async function ComparePage({ searchParams }: Props) {
   const exportItems = data
     ? [
         {
+          key: "csv",
           label: "CSV",
           href: `/api/v1/compare.csv?packages=${canonicalPkgs}&days=${days}`,
-          download: csvFilename,
+          downloadName: csvFilename,
         },
         {
+          key: "excel",
           label: "Excel CSV",
           href: `/api/v1/compare.excel.csv?packages=${canonicalPkgs}&days=${days}`,
-          download: excelFilename,
+          downloadName: excelFilename,
         },
         {
+          key: "json",
           label: "JSON",
           href: `/api/v1/compare.json?packages=${canonicalPkgs}&days=${days}`,
-          download: jsonFilename,
+          downloadName: jsonFilename,
         },
       ]
     : [];
@@ -282,8 +285,11 @@ export default async function ComparePage({ searchParams }: Props) {
             <p className="mt-2 text-xl font-semibold text-white">
               {formatNumber(pkg.total)}
             </p>
-            <p className="text-xs text-slate-400">
-              {pkg.share}% share of combined downloads (selected range)
+            <p
+              className="text-xs text-slate-400"
+              title="Share of total downloads among the compared packages for the selected range"
+            >
+              {pkg.share.toFixed(2)}% share of combined downloads (selected range)
             </p>
           </div>
         ))}

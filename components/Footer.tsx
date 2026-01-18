@@ -8,7 +8,11 @@ export default function Footer() {
       <div className="mx-auto flex max-w-5xl flex-col gap-4">
         {donateLinks.length ? (
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Support this project</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Support npmtraffic</p>
+            <p className="mt-1 max-w-2xl text-xs text-slate-400">
+              If npmtraffic is useful, consider supporting ongoing maintenance. Funding helps keep caching reliable,
+              improve UX, and ship analysis-grade features over time.
+            </p>
             <div className="mt-2 flex flex-wrap gap-2">
               {donateLinks.map((link) => (
                 <a
@@ -32,7 +36,7 @@ export default function Footer() {
             rel="noreferrer"
             className="inline-flex max-w-fit items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.3em] text-slate-100 transition hover:border-white/20 hover:bg-white/10"
           >
-            ★ Star npmtraffic on GitHub
+            ★ Star on GitHub
           </a>
         ) : null}
         <p className="text-xs text-slate-500">

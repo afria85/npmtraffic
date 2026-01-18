@@ -27,7 +27,16 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
   const [open, setOpen] = useState(false);
   const [portalRoot] = useState<HTMLDivElement | null>(() => {
     if (typeof document === "undefined") return null;
-    return document.createElement("div");
+		const root = document.createElement("div");
+		// Full-viewport portal root:
+		// - avoids overflow clipping
+		// - guarantees the menu renders above all app chrome
+		// - does not steal pointer events except for the menu itself
+		root.style.position = "fixed";
+		root.style.inset = "0";
+		root.style.zIndex = "2147483647";
+		root.style.pointerEvents = "none";
+		return root;
   });
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -170,9 +179,13 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
           onClick={toggle}
         >
           More
-          <span aria-hidden className="ml-1 text-xs">
-            ▾
-          </span>
+				<span aria-hidden className="ml-1 inline-flex h-4 w-4 items-center justify-center opacity-80">
+					<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+						<path
+							d="M5.25 7.75a.75.75 0 0 1 1.06 0L10 11.44l3.69-3.69a.75.75 0 1 1 1.06 1.06l-4.22 4.22a.75.75 0 0 1-1.06 0L5.25 8.81a.75.75 0 0 1 0-1.06z"
+						/>
+					</svg>
+				</span>
         </button>
       </div>
       {menuPortal}

@@ -36,21 +36,13 @@ const ICONS: Record<string, DonateLink["icon"]> = {
   paypal: (
     <svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden>
       <path
-        d="M4 3.5h4a1.5 1.5 0 0 1 0 3H5a.5.5 0 0 0-.5.5v7.5"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M8.5 2h4a1.5 1.5 0 0 1 0 3h-2.5"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M6 4.5h2.5a1.5 1.5 0 0 1 0 3H6V4.5z"
         fill="currentColor"
-        opacity="0.15"
+        opacity="0.18"
+        d="M6.5 2.3h4.1c1.9 0 3.2 1.0 3.2 2.7 0 2.1-1.5 3.3-3.8 3.3H8.4l-.7 3.4H5.8L6.5 2.3z"
+      />
+      <path
+        fill="currentColor"
+        d="M5.7 2.3h4.0c2.1 0 3.3 1.0 3.3 2.6 0 2.2-1.6 3.5-4.0 3.5H7.8l-.7 3.3H4.9L5.7 2.3z"
       />
     </svg>
   ),

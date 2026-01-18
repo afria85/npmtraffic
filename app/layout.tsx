@@ -45,11 +45,27 @@ import CompareTray from "@/components/compare/CompareTray";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 
+const THEME_INIT_SCRIPT = `(() => {
+  try {
+    const key = "npmtraffic_theme";
+    const saved = localStorage.getItem(key);
+    const system = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+    const theme = (saved === "dark" || saved === "light") ? saved : system;
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+  } catch (e) {
+    // ignore
+  }
+})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${jetBrainsMono.variable}`}>
       <head>
         <link rel="icon" href="/favicon.ico" />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-screen antialiased">
         <div className="flex min-h-screen flex-col">
