@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "npmtraffic_theme";
 
@@ -64,25 +64,49 @@ export default function ThemeToggle({ className }: { className?: string }) {
     return () => mq.removeListener(onChange);
   }, [hasOverride]);
 
-  const label = useMemo(() => (theme === "dark" ? "Dark" : "Light"), [theme]);
+  const isDark = theme === "dark";
 
   return (
     <button
       type="button"
       className={className}
-      title="Toggle theme (defaults to your device setting)"
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       onClick={() => {
-        const next: Theme = theme === "dark" ? "light" : "dark";
+        const next: Theme = isDark ? "light" : "dark";
         setTheme(next);
         setHasOverride(true);
         try {
           window.localStorage.setItem(STORAGE_KEY, next);
-        } catch {
-          // ignore
-        }
+        } catch {}
       }}
     >
-      {label}
+      <span className="sr-only">{isDark ? "Light mode" : "Dark mode"}</span>
+      {isDark ? (
+        // Sun icon
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
+      ) : (
+        // Moon icon
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M21 14.5A8.5 8.5 0 0 1 9.5 3a7 7 0 1 0 11.5 11.5Z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
     </button>
   );
 }
