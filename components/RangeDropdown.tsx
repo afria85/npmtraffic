@@ -4,13 +4,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import { makeDropdownController } from "@/lib/dropdown-controller";
 import {
-  MORE_RANGES,
   moreItemClasses,
   MORE_SUMMARY_CLASSES,
 } from "@/components/range-selector-styles";
-import type { RangeSelectorProps } from "@/components/RangeDropdown.types";
+import type { RangeDropdownProps } from "@/components/RangeDropdown.types";
 
-export default function RangeDropdown({ currentDays, getHref }: RangeSelectorProps) {
+export default function RangeDropdown({ currentDays, items }: RangeDropdownProps) {
   const [open, setOpen] = useState(false);
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
 
@@ -61,15 +60,15 @@ export default function RangeDropdown({ currentDays, getHref }: RangeSelectorPro
         </span>
       </summary>
       <div className="absolute right-0 z-10 mt-2 flex w-40 flex-col gap-1 rounded-2xl border border-white/10 bg-black/80 p-2 text-xs text-slate-200 shadow-lg shadow-black/50 backdrop-blur">
-        {MORE_RANGES.map((range) => (
+        {items.map((item) => (
           <Link
-            key={range}
-            href={getHref(range)}
-            className={moreItemClasses(range === currentDays)}
-            aria-current={range === currentDays ? "page" : undefined}
+            key={item.days}
+            href={item.href}
+            className={moreItemClasses(item.days === currentDays)}
+            aria-current={item.days === currentDays ? "page" : undefined}
             onClick={handleItemClick}
           >
-            {range}d
+            {item.days}d
           </Link>
         ))}
       </div>

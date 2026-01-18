@@ -1,7 +1,7 @@
 import Link from "next/link";
 import RangeDropdown from "./RangeDropdown";
-import { primaryButtonClasses, PRIMARY_RANGES } from "@/components/range-selector-styles";
-import type { RangeSelectorProps } from "@/components/RangeDropdown.types";
+import { PRIMARY_RANGES, MORE_RANGES, primaryButtonClasses } from "@/components/range-selector-styles";
+import type { RangeSelectorProps, RangeDropdownItem } from "@/components/RangeDropdown.types";
 
 export default function RangeSelector({ currentDays, getHref, label = "Range" }: RangeSelectorProps) {
   return (
@@ -17,7 +17,10 @@ export default function RangeSelector({ currentDays, getHref, label = "Range" }:
           {range}d
         </Link>
       ))}
-      <RangeDropdown currentDays={currentDays} getHref={getHref} />
+      <RangeDropdown
+        currentDays={currentDays}
+        items={MORE_RANGES.map((range): RangeDropdownItem => ({ days: range, href: getHref(range) }))}
+      />
     </div>
   );
 }
