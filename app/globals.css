@@ -1,7 +1,6 @@
 @import "tailwindcss";
 
 :root {
-  /* Theme tokens used by the app chrome */
   --background: #0b0f14;
   --foreground: #e6edf3;
   --muted: #9aa4b2;
@@ -10,14 +9,17 @@
   --accent: #5eead4;
 }
 
-/* Light theme overrides */
+/* Light theme overrides (default stays dark; light is opt-in or system-driven). */
 :root[data-theme="light"] {
-  --background: #f6f8fb;
-  --foreground: #0b1220;
-  --muted: #526179;
-  --surface: #ffffff;
-  --border: rgba(11, 18, 32, 0.12);
-  --accent: #2563eb;
+  --bg0: #f8fafc;
+  --bg1: #f1f5f9;
+  --bg2: #e2e8f0;
+  --fg0: #0f172a;
+  --fg1: #334155;
+  --border: rgba(15, 23, 42, 0.14);
+  --shadow0: 0 10px 40px rgba(2, 6, 23, 0.10);
+  --shadow1: 0 12px 60px rgba(2, 6, 23, 0.12);
+  --accent: #0ea5e9;
 }
 
 @theme inline {
@@ -28,75 +30,13 @@
 }
 
 body {
-  color-scheme: light dark;
+  color-scheme: dark;
   background:
     radial-gradient(1200px 600px at 90% -10%, rgba(59, 130, 246, 0.18), transparent 60%),
     radial-gradient(900px 500px at -10% 10%, rgba(16, 185, 129, 0.14), transparent 55%),
     var(--background);
   color: var(--foreground);
   font-family: var(--font-space), "Space Grotesk", "Work Sans", sans-serif;
-}
-
-:root[data-theme="light"] body {
-  background:
-    radial-gradient(900px 520px at 85% -10%, rgba(37, 99, 235, 0.14), transparent 60%),
-    radial-gradient(780px 460px at -10% 8%, rgba(16, 185, 129, 0.10), transparent 55%),
-    var(--background);
-}
-
-/*
-  Pragmatic light-theme compatibility layer.
-  UI currently uses Tailwind slate/white/black utility classes tuned for dark.
-  Override the most common ones in light mode to keep the app legible.
-*/
-:root[data-theme="light"] .text-white,
-:root[data-theme="light"] .text-slate-50,
-:root[data-theme="light"] .text-slate-100,
-:root[data-theme="light"] .text-slate-200,
-:root[data-theme="light"] .text-slate-300 {
-  color: var(--foreground) !important;
-}
-
-:root[data-theme="light"] .text-slate-400,
-:root[data-theme="light"] .text-slate-500,
-:root[data-theme="light"] .text-slate-600 {
-  color: var(--muted) !important;
-}
-
-:root[data-theme="light"] .bg-white\/5 {
-  background-color: rgba(15, 23, 42, 0.03) !important;
-}
-
-:root[data-theme="light"] .bg-white\/10 {
-  background-color: rgba(15, 23, 42, 0.05) !important;
-}
-
-:root[data-theme="light"] .bg-black\/60 {
-  background-color: rgba(255, 255, 255, 0.75) !important;
-}
-
-:root[data-theme="light"] .bg-black\/80 {
-  background-color: rgba(255, 255, 255, 0.85) !important;
-}
-
-:root[data-theme="light"] .border-white\/10 {
-  border-color: var(--border) !important;
-}
-
-:root[data-theme="light"] .border-white\/20 {
-  border-color: rgba(15, 23, 42, 0.20) !important;
-}
-
-:root[data-theme="light"] .border-white\/30 {
-  border-color: rgba(15, 23, 42, 0.25) !important;
-}
-
-:root[data-theme="light"] .border-white\/60 {
-  border-color: rgba(15, 23, 42, 0.40) !important;
-}
-
-:root[data-theme="light"] .divide-white\/10 > :not([hidden]) ~ :not([hidden]) {
-  border-color: var(--border) !important;
 }
 
 details summary {

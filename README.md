@@ -1,6 +1,24 @@
 # npmtraffic
 
-npmtraffic is a mobile-first web app that shows daily npm package download traffic in a GitHub-style table view. It includes search, compare, and CSV export for npm packages, and uses npm registry APIs for data. It is not affiliated with npm.
+GitHub-style daily npm download history with audit-grade exports.
+
+[![CI](https://github.com/afria85/npmtraffic/actions/workflows/ci.yml/badge.svg)](https://github.com/afria85/npmtraffic/actions/workflows/ci.yml)
+[![Sponsor](https://img.shields.io/badge/sponsor-GitHub%20Sponsors-0ea5e9?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/afria85)
+
+npmtraffic is a mobile-first web app that shows **daily npm package downloads** in a GitHub-style table view. It supports search, compare, and exports (CSV/JSON), and surfaces cache freshness + staleness so users can trust what they are seeing.
+
+> Not affiliated with npm, Inc. Data from `api.npmjs.org`.
+
+## What you get
+
+- **Daily tables** (single package + compare)
+- **Ranges**: 7/14/30 + More (90/180/365)
+- **Cache TTL awareness** + stale surfacing (no blank screens)
+- **Audit-grade exports**
+  - CSV + JSON include metadata (`from/to`, UTC timestamps, source, cache status, request_id)
+  - Deterministic filenames and `Content-Disposition: attachment` for reliable downloads
+  - Excel-friendly CSV endpoints (semicolon + `sep=;`)
+- **Events**: local-first markers (CRUD + import/export + share payload)
 
 ## Run locally
 
@@ -11,36 +29,59 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-### Search examples
+### Examples
 
-- Search for `react` and press Enter to open `/p/react?days=30`.
-- Search for `logshield-cli` to validate a less common package.
-- Compare packages with `/compare?packages=react,vue,logshield-cli&days=30`.
-- Export CSV from `/api/v1/package/react/daily.csv?days=30`.
+- Package: `/p/react?days=30`
+- Compare: `/compare?packages=react,vue,logshield-cli&days=30`
+- Export CSV: `/api/v1/package/react/daily.csv?days=30`
+- Export JSON: `/api/v1/package/react/daily.json?days=30`
 
-## Deploy to Vercel + npmtraffic.com
+## Environment
 
-1. Import this repo in Vercel.
-2. Set the `BASE_URL` environment variable to `https://npmtraffic.com` in production (optional but recommended for canonical URLs).
-3. Add the custom domain `npmtraffic.com` in Vercel and follow DNS instructions.
+No configuration is required for local dev.
+
+For production and external links, copy `.env.example` to `.env.local` (or configure in Vercel):
+
+- `BASE_URL` (recommended in production)
+- `NEXT_PUBLIC_PROJECT_GITHUB` (shows "Star on GitHub" link)
+- `NEXT_PUBLIC_DONATE_GITHUB_SPONSORS` / `NEXT_PUBLIC_DONATE_PAYPAL` (enables `/donate` and footer donate buttons)
+
+More details: `docs/ENVIRONMENT.md`.
+
+## Deploy
+
+### Vercel + npmtraffic.com
+
+1. Import the repo in Vercel.
+2. Set `BASE_URL=https://npmtraffic.com` (recommended).
+3. Add custom domain `npmtraffic.com` and follow DNS instructions.
 4. Deploy.
 
-## Data source
+## Sponsorship
 
-Download counts are sourced from `api.npmjs.org`.
+Sponsorship is optional. It helps keep npmtraffic **fast, reliable, and ad-free** (hosting, caching reliability, monitoring, maintenance).
+
+- GitHub Sponsors: `https://github.com/sponsors/afria85`
+- In-app: `/donate` (enabled when donation env vars are set)
+
+See: `docs/SPONSORSHIP.md`.
+
+## Roadmap and milestones
+
+- Website: `/roadmap`
+- Repo milestones: `docs/MILESTONES.md`
 
 ## Ops
 
-- `/status` shows the latest build info (commit + environment), the most recent traffic success/error timestamps, and the last recorded cache status or stale indicator. It will always render even if no health data is recorded yet.
-- `/api/cron/prewarm` triggers warming the traffic cache for the curated package list (or a custom comma-separated `packages` parameter) across 7/14/30-day ranges. Call it via `curl https://npmtraffic.com/api/cron/prewarm` or with `?packages=react,vue&days=7,14`. The endpoint always returns a `200` JSON summary with counts, failures, and duration.
+- `/status` shows build info and recent health signals.
+- `/api/cron/prewarm` warms the traffic cache for curated packages (or custom `packages=`) across ranges.
 
-## Production Verification Checklist
+## Production verification checklist
 
-- **URLs to verify**: `/`, `/p/logshield-cli?days=14`, `/p/react?days=14`, `/compare?packages=react,vue&days=14`, `/donate`, `/status`, `/sitemap.xml`, `/robots.txt`.
-- **Expected UI**: package/compare tables show totals, freshness badge, stale banner when upstream errors occur, working copy link buttons, donate links/footer, and GitHub star buttons where available.
-- **Failure modes**: upstream `401/429/5xx` responses should never leave blank screens—show the stale banner or a typed error message (e.g., "npm API temporarily unavailable."); rate limits should surface a friendly retry hint.
-- **Tagging optional** (this repo currently does not publish tags).
+- **URLs**: `/`, `/p/logshield-cli?days=14`, `/p/react?days=14`, `/compare?packages=react,vue&days=14`, `/donate`, `/status`, `/sitemap.xml`, `/robots.txt`.
+- **Expected UI**: tables show totals and freshness, stale banners appear on upstream failures, copy/export actions work, donate links render when configured.
+- **Failure modes**: upstream `401/429/5xx` should never produce blank screens—show typed errors or stale indicators.
 
-## Disclaimer
+## License
 
-Not affiliated with npm, Inc.
+No license has been declared yet. If you plan to open-source npmtraffic, add a LICENSE file and update this section.

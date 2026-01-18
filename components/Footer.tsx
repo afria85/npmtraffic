@@ -4,12 +4,12 @@ export default function Footer() {
   const donateLinks = getDonateLinks();
   const projectGithubUrl = getProjectGithubUrl();
   return (
-    <footer className="border-t border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-6 text-sm text-[color:var(--foreground)]/80">
+    <footer className="border-t border-white/10 bg-black/70 px-4 py-6 text-sm text-slate-300">
       <div className="mx-auto flex max-w-5xl flex-col gap-4">
         {donateLinks.length ? (
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">Support npmtraffic</p>
-            <p className="mt-1 max-w-2xl text-xs text-[color:var(--muted)]">
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Support npmtraffic</p>
+            <p className="mt-1 max-w-2xl text-xs text-slate-400">
               If npmtraffic is useful, consider supporting ongoing maintenance. Funding helps keep caching reliable,
               improve UX, and ship analysis-grade features over time.
             </p>
@@ -39,7 +39,7 @@ export default function Footer() {
             ★ Star on GitHub
           </a>
         ) : null}
-        <p className="text-xs text-[color:var(--muted)]">
+        <p className="text-xs text-slate-500">
           npmtraffic is not affiliated with npm, Inc. Data from api.npmjs.org.
         </p>
       </div>

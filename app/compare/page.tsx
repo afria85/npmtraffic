@@ -289,7 +289,7 @@ export default async function ComparePage({ searchParams }: Props) {
               className="text-xs text-slate-400"
               title="Share of total downloads among the compared packages for the selected range"
             >
-              {pkg.share.toFixed(2)}% of total
+              {pkg.share.toFixed(2)}% share of combined downloads (selected range)
             </p>
           </div>
         ))}
@@ -308,14 +308,20 @@ export default async function ComparePage({ searchParams }: Props) {
                         {row.date}
                       </td>
                       {data.packages.map((pkg) => (
-                        <Fragment key={`${row.date}-${pkg.name}-pair`}>
-                          <td className="px-3 py-2 font-mono">
-                            {formatNumber(row.values[pkg.name]?.downloads ?? null)}
-                          </td>
-                          <td className="px-3 py-2 font-mono">
-                            {formatDelta(row.values[pkg.name]?.delta ?? null)}
-                          </td>
-                        </Fragment>
+                        <td
+                          key={`${row.date}-${pkg.name}-downloads`}
+                          className="px-3 py-2 font-mono"
+                        >
+                          {formatNumber(row.values[pkg.name]?.downloads ?? 0)}
+                        </td>
+                      ))}
+                      {data.packages.map((pkg) => (
+                        <td
+                          key={`${row.date}-${pkg.name}-delta`}
+                          className="px-3 py-2 font-mono"
+                        >
+                          {formatDelta(row.values[pkg.name]?.delta ?? null)}
+                        </td>
                       ))}
                     </tr>
                   ))}

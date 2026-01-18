@@ -8,7 +8,7 @@ const HEADER_PILL_CLASSES =
 export default function Header() {
   const showDonate = hasDonateLinks();
   return (
-    <header className="border-b border-white/10 bg-[color:var(--surface)] px-4 py-3">
+    <header className="border-b border-white/10 bg-[#04060d] px-4 py-3">
       <div className="mx-auto flex max-w-5xl items-center justify-between">
         <Link href="/" className="text-xs uppercase tracking-[0.3em] text-slate-400">
           npmtraffic
