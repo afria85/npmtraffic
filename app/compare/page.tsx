@@ -9,9 +9,13 @@ import { TrafficError, type TrafficResponse } from "@/lib/traffic";
 import { buildCompareCanonical } from "@/lib/canonical";
 import CopyLinkButton from "@/components/CopyLinkButton";
 import AlertBanner from "@/components/AlertBanner";
-import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 import RangeSelector from "@/components/RangeSelector";
+import ExportDropdown from "@/components/ExportDropdown";
 import { buildExportFilename } from "@/lib/export-filename";
+import {
+  COMPARE_ACTION_CONTAINER_CLASSES,
+  COMPARE_TABLE_WRAPPER_CLASSES,
+} from "@/components/compare/compare-classes";
 
 type Props = {
   searchParams?: Promise<{ packages?: string; pkgs?: string; days?: string }>;
@@ -159,6 +163,26 @@ export default async function ComparePage({ searchParams }: Props) {
       })
     : undefined;
 
+  const exportItems = data
+    ? [
+        {
+          label: "CSV",
+          href: `/api/v1/compare.csv?packages=${canonicalPkgs}&days=${days}`,
+          download: csvFilename,
+        },
+        {
+          label: "Excel CSV",
+          href: `/api/v1/compare.excel.csv?packages=${canonicalPkgs}&days=${days}`,
+          download: excelFilename,
+        },
+        {
+          label: "JSON",
+          href: `/api/v1/compare.json?packages=${canonicalPkgs}&days=${days}`,
+          download: jsonFilename,
+        },
+      ]
+    : [];
+
   const header = (
     <div className="flex w-full flex-col gap-3">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -178,28 +202,8 @@ export default async function ComparePage({ searchParams }: Props) {
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {rangeSelector}
-        <div className="flex flex-wrap gap-2">
-          <a
-            href={`/api/v1/compare.csv?packages=${canonicalPkgs}&days=${days}`}
-            className={ACTION_BUTTON_CLASSES}
-            download={csvFilename}
-          >
-            Export CSV
-          </a>
-          <a
-            href={`/api/v1/compare.excel.csv?packages=${canonicalPkgs}&days=${days}`}
-            className={`${ACTION_BUTTON_CLASSES} bg-white/5 text-slate-100`}
-            download={excelFilename}
-          >
-            Export Excel CSV
-          </a>
-          <a
-            href={`/api/v1/compare.json?packages=${canonicalPkgs}&days=${days}`}
-            className={ACTION_BUTTON_CLASSES}
-            download={jsonFilename}
-          >
-            Export JSON
-          </a>
+        <div className={COMPARE_ACTION_CONTAINER_CLASSES}>
+          {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
           <CopyLinkButton canonical={canonical} label="Copy link" />
         </div>
       </div>
@@ -236,7 +240,7 @@ export default async function ComparePage({ searchParams }: Props) {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
-        <div className="overflow-x-auto">
+        <div className={`${COMPARE_TABLE_WRAPPER_CLASSES} min-w-full`}>
           <div className="min-w-[720px]">
             <div className="max-h-[70vh] overflow-auto">
               <table className="min-w-[720px] w-full text-sm">

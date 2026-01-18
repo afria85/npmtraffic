@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { getBaseUrl } from "@/lib/base-url";
+import { getBaseUrl, resolveBaseUrl } from "@/lib/base-url";
 import { getStatusOverview } from "@/lib/status";
+
+const CACHE_TTL_SUMMARY = "Cache TTL: <=30d ranges refresh every 15m; longer windows refresh every 12h with stale-while-revalidate.";
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getBaseUrl();
@@ -25,7 +27,13 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function StatusPage() {
+export default async function StatusPage() {
+  let baseUrl: string;
+  try {
+    baseUrl = await getBaseUrl();
+  } catch {
+    baseUrl = resolveBaseUrl();
+  }
   const { build, health, hasHealth } = getStatusOverview();
 
   return (
@@ -79,6 +87,14 @@ export default function StatusPage() {
         ) : (
           <p className="text-sm text-slate-400">No cache data recorded yet.</p>
         )}
+      </section>
+
+      <section className="mt-6 space-y-2 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <h2 className="text-sm font-semibold text-slate-200">Diagnostics</h2>
+        <p className="text-sm text-slate-300">
+          Resolved base URL: <code>{baseUrl}</code>
+        </p>
+        <p className="text-sm text-slate-300">{CACHE_TTL_SUMMARY}</p>
       </section>
     </main>
   );

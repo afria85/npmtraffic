@@ -10,9 +10,9 @@ import AlertBanner from "@/components/AlertBanner";
 import { buildPackageCanonical } from "@/lib/canonical";
 import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
 import { getPackageGithubRepo } from "@/lib/npm-repo";
-import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 import DerivedSeriesTable from "@/components/package/DerivedSeriesTable";
 import RangeSelector from "@/components/RangeSelector";
+import ExportDropdown from "@/components/ExportDropdown";
 import { buildExportFilename } from "@/lib/export-filename";
 
 type Props = {
@@ -173,6 +173,26 @@ export default async function PackagePage({ params, searchParams }: Props) {
       })
     : undefined;
 
+  const exportItems = data?.range
+    ? [
+        {
+          label: "CSV",
+          href: `/api/v1/package/${encodedName}/daily.csv?days=${days}`,
+          download: csvFilename,
+        },
+        {
+          label: "Excel CSV",
+          href: `/api/v1/package/${encodedName}/daily.excel.csv?days=${days}`,
+          download: excelFilename,
+        },
+        {
+          label: "JSON",
+          href: `/api/v1/package/${encodedName}/daily.json?days=${days}`,
+          download: jsonFilename,
+        },
+      ]
+    : [];
+
   const header = (
     <div className="flex w-full flex-col gap-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -200,39 +220,19 @@ export default async function PackagePage({ params, searchParams }: Props) {
           <div className="hidden sm:block w-72">
             <SearchBox />
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 overflow-x-auto pb-1 sm:pb-0">
             <CompareButton name={name} />
             {repoUrl ? (
               <a
                 href={repoUrl}
                 target="_blank"
                 rel="noreferrer"
-                className={ACTION_BUTTON_CLASSES}
+                className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold tracking-wide text-slate-200 transition hover:border-white/30 hover:bg-white/10"
               >
                 Star on GitHub
               </a>
             ) : null}
-            <a
-              href={`/api/v1/package/${encodedName}/daily.csv?days=${days}`}
-              className={ACTION_BUTTON_CLASSES}
-              download={csvFilename}
-            >
-              Export CSV
-            </a>
-            <a
-              href={`/api/v1/package/${encodedName}/daily.excel.csv?days=${days}`}
-              className={`${ACTION_BUTTON_CLASSES} bg-white/5 text-slate-100`}
-              download={excelFilename}
-            >
-              Export Excel CSV
-            </a>
-            <a
-              href={`/api/v1/package/${encodedName}/daily.json?days=${days}`}
-              className={ACTION_BUTTON_CLASSES}
-              download={jsonFilename}
-            >
-              Export JSON
-            </a>
+            {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
             <CopyLinkButton canonical={canonical} label="Copy link" />
           </div>
         </div>
