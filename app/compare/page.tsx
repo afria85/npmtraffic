@@ -8,7 +8,7 @@ import { validatePackageName } from "@/lib/package-name";
 import { buildCompareData } from "@/lib/compare";
 import { TrafficError, type TrafficResponse } from "@/lib/traffic";
 import { buildCompareCanonical } from "@/lib/canonical";
-import CopyLinkButton from "@/components/CopyLinkButton";
+import ShareMenu from "@/components/ShareMenu";
 import AlertBanner from "@/components/AlertBanner";
 import RangeSelector from "@/components/RangeSelector";
 import ExportDropdown from "@/components/ExportDropdown";
@@ -279,7 +279,7 @@ export default async function ComparePage({ searchParams }: Props) {
         {rangeSelector}
         <div className={COMPARE_ACTION_CONTAINER_CLASSES}>
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
-          <CopyLinkButton canonical={canonical} label="Copy link" />
+          <ShareMenu url={canonical} />
         </div>
       </div>
     </div>
@@ -308,6 +308,7 @@ export default async function ComparePage({ searchParams }: Props) {
         {data.packages.map((pkg) => (
           <div key={pkg.name} className="rounded-xl border border-white/10 bg-white/5 p-4">
             <p className="text-xs uppercase tracking-widest text-slate-500">{pkg.name}</p>
+            <p className="mt-1 text-xs text-slate-400">Total downloads ({days} days)</p>
             <p className="mt-2 text-xl font-semibold text-white">
               {formatNumber(pkg.total)}
             </p>
@@ -324,6 +325,9 @@ export default async function ComparePage({ searchParams }: Props) {
       <CompareChart series={data.series} packageNames={tablePackageNames} />
 
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-3 py-2 text-sm text-slate-300">
+          <span>Daily downloads table ({days} days)</span>
+        </div>
         <ScrollHintContainer className={COMPARE_TABLE_WRAPPER_CLASSES} hint="Scroll">
           <table className="min-w-[720px] w-full text-sm">
             <CompareTableHeader packageNames={tablePackageNames} />

@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "About | npmtraffic",
   description:
-    "Why npmtraffic exists and how it differs from other npm download charts.",
+    "What npmtraffic focuses on: daily tables, deterministic exports, and local-first events.",
 };
 
 export default function AboutPage() {
@@ -44,42 +44,15 @@ export default function AboutPage() {
           </li>
         </ul>
       </section>
-
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-white">How is this different from npmtrends?</h2>
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-          <table className="w-full text-sm">
-            <thead className="bg-white/5 text-left text-xs uppercase tracking-[0.3em] text-slate-400">
-              <tr>
-                <th className="px-4 py-3">Feature</th>
-                <th className="px-4 py-3">npmtraffic</th>
-                <th className="px-4 py-3">npmtrends</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/10 text-slate-200">
-              <tr>
-                <td className="px-4 py-3 text-slate-300">Daily table</td>
-                <td className="px-4 py-3">Yes</td>
-                <td className="px-4 py-3">No (chart-first)</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 text-slate-300">Delta per day</td>
-                <td className="px-4 py-3">Yes</td>
-                <td className="px-4 py-3">Limited</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 text-slate-300">Audit metadata in exports</td>
-                <td className="px-4 py-3">Yes</td>
-                <td className="px-4 py-3">No</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 text-slate-300">Event markers</td>
-                <td className="px-4 py-3">Yes (local-first)</td>
-                <td className="px-4 py-3">No</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <h2 className="text-sm font-semibold text-white">Scope and design goals</h2>
+        <ul className="list-disc space-y-2 pl-5 text-sm text-slate-300">
+          <li><span className="font-semibold text-slate-100">Operational readability</span>: default to a daily table and deltas so you can pinpoint when a change started.</li>
+          <li><span className="font-semibold text-slate-100">Deterministic exports</span>: CSV/JSON downloads include metadata so datasets are traceable and repeatable.</li>
+          <li><span className="font-semibold text-slate-100">Local-first events</span>: event markers are stored in your browser, not on a server.</li>
+          <li><span className="font-semibold text-slate-100">Cache transparency</span>: the UI surfaces stale/cached status when upstream is unavailable.</li>
+        </ul>
+        <p className="text-sm text-slate-400">npmtraffic does not try to replace every charting site. It is opinionated toward maintainer workflows: attribution, incident timelines, and exports you can audit.</p>
       </section>
 
       <section className="space-y-2 text-sm text-slate-300">

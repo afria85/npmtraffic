@@ -5,7 +5,7 @@ import { getBaseUrl } from "@/lib/base-url";
 import { clampDays } from "@/lib/query";
 import SearchBox from "@/components/SearchBox";
 import CompareButton from "@/components/compare/CompareButton";
-import CopyLinkButton from "@/components/CopyLinkButton";
+import ShareMenu from "@/components/ShareMenu";
 import AlertBanner from "@/components/AlertBanner";
 import { buildPackageCanonical } from "@/lib/canonical";
 import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
@@ -239,11 +239,15 @@ export default async function PackagePage({ params, searchParams }: Props) {
               </a>
             ) : null}
             {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
-            <CopyLinkButton canonical={canonical} label="Copy link" />
           </div>
         </div>
       </div>
-      {rangeSelector}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {rangeSelector}
+        <div className="flex justify-end">
+          <ShareMenu url={canonical} />
+        </div>
+      </div>
     </div>
   );
 
@@ -270,7 +274,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
           <p className="text-xs uppercase tracking-widest text-slate-500">
-            Total downloads
+            Total downloads ({days} days)
           </p>
           <p className="mt-2 text-xl font-semibold text-white">
             {formatNumber(traffic.totals.sum)}
@@ -278,7 +282,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
           <p className="text-xs uppercase tracking-widest text-slate-500">
-            Avg per day
+            Avg per day (last {days} days)
           </p>
           <p className="mt-2 text-xl font-semibold text-white">
             {formatNumber(traffic.totals.avgPerDay)}
@@ -288,7 +292,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
       <TrafficChart series={traffic.series} derived={traffic.derived} pkgName={name} />
 
-      <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} />
+      <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
 
       <EventsPanel key={`${name}:${sp.events ?? ""}`} pkgName={name} encoded={sp.events} />
 

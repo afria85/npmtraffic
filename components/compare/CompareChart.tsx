@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import ActionMenu from "@/components/ui/ActionMenu";
 
 const CHART_BUTTON_CLASSES =
@@ -168,12 +169,22 @@ function buildDefaultLineStyles(packageNames: string[]) {
 
 export default function CompareChart({ series, packageNames }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const stylePanelRef = useRef<HTMLDivElement | null>(null);
 
   const settingsKey = `npmtraffic_chart_settings:compare:${packageNames.join("|")}`;
 
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [styleOpen, setStyleOpen] = useState(false);
+
+  // Full-viewport portal root to avoid overflow clipping on mobile/compare
+  const [modalRoot] = useState<HTMLDivElement | null>(() => {
+    if (typeof document === "undefined") return null;
+    const root = document.createElement("div");
+    root.style.position = "fixed";
+    root.style.inset = "0";
+    root.style.zIndex = "2147483647";
+    root.style.pointerEvents = "none";
+    return root;
+  });
   const [settings, setSettings] = useState<CompareChartSettings>(() => {
     if (typeof window === "undefined") {
       return { lineStyles: buildDefaultLineStyles(packageNames), colors: buildDefaultColors(packageNames) };
@@ -189,22 +200,28 @@ export default function CompareChart({ series, packageNames }: Props) {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(settingsKey, JSON.stringify(settings));
   }, [settingsKey, settings]);
+  useEffect(() => {
+    if (!modalRoot || typeof document === "undefined") return;
+    document.body.appendChild(modalRoot);
+    return () => {
+      document.body.removeChild(modalRoot);
+    };
+  }, [modalRoot]);
 
   useEffect(() => {
     if (!styleOpen) return;
-    const onPointerDown = (event: Event) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-      if (stylePanelRef.current?.contains(target)) return;
-      setStyleOpen(false);
-    };
+    if (typeof document === "undefined") return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setStyleOpen(false);
     };
-    document.addEventListener("pointerdown", onPointerDown);
+
     document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
+      document.body.style.overflow = prevOverflow;
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [styleOpen]);
@@ -289,6 +306,96 @@ export default function CompareChart({ series, packageNames }: Props) {
     [packageNames.length]
   );
 
+  const styleModal = useMemo(() => {
+    if (!styleOpen || !modalRoot) return null;
+
+    return createPortal(
+      <div
+        className="pointer-events-auto fixed inset-0"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Chart style"
+      >
+        <div
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          onClick={() => setStyleOpen(false)}
+        />
+
+        <div
+          className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-lg rounded-t-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-4 text-[color:var(--foreground)] shadow-2xl sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-[min(32rem,92vw)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Chart style</div>
+              <div className="mt-1 text-sm text-[color:var(--foreground)]">Series formatting (local only)</div>
+            </div>
+            <button
+              type="button"
+              className={CHART_BUTTON_CLASSES + " px-2 py-1"}
+              onClick={() => setStyleOpen(false)}
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {packageNames.map((pkg) => (
+              <div
+                key={pkg}
+                className="rounded-xl border border-white/10 bg-white/5 p-3"
+              >
+                <div className="truncate text-sm font-semibold text-[color:var(--foreground)]">{pkg}</div>
+
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className="space-y-1">
+                    <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Color</div>
+                    <select
+                      value={settings.colors[pkg] ?? "slate"}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          colors: { ...prev.colors, [pkg]: e.target.value as PaletteKey },
+                        }))
+                      }
+                      className="w-full rounded-xl border border-white/10 bg-[color:var(--surface)] px-3 py-2 text-sm text-[color:var(--foreground)]"
+                    >
+                      {PALETTE.map((p) => (
+                        <option key={p.key} value={p.key}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="space-y-1">
+                    <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Line</div>
+                    <select
+                      value={settings.lineStyles[pkg] ?? "solid"}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          lineStyles: { ...prev.lineStyles, [pkg]: e.target.value as LineStyleKey },
+                        }))
+                      }
+                      className="w-full rounded-xl border border-white/10 bg-[color:var(--surface)] px-3 py-2 text-sm text-[color:var(--foreground)]"
+                    >
+                      <option value="solid">Solid</option>
+                      <option value="dashed">Dashed</option>
+                      <option value="dotted">Dotted</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>,
+      modalRoot
+    );
+  }, [styleOpen, modalRoot, packageNames, settings]);
+
+  
   return (
     <section className="relative rounded-2xl border border-white/10 bg-white/5 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -356,72 +463,7 @@ export default function CompareChart({ series, packageNames }: Props) {
             />
           ) : null}
         </svg>
-
-        {styleOpen ? (
-          <div ref={stylePanelRef} className="absolute right-3 top-3 z-20 w-[min(26rem,92vw)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-xl">
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Chart style</div>
-              <button
-                type="button"
-                className={CHART_BUTTON_CLASSES + " px-2 py-1"}
-                onClick={() => setStyleOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="mt-3 grid grid-cols-1 gap-3">
-              <div className="grid grid-cols-1 gap-2">
-                <span className="text-[color:var(--muted)]">Series (per package)</span>
-                <div className="space-y-2">
-                  {packageNames.map((pkg) => (
-                    <div key={pkg} className="grid grid-cols-1 gap-2 rounded-xl border border-white/10 bg-white/5 p-2 sm:grid-cols-3 sm:items-center">
-                      <div className="min-w-0 text-sm text-[color:var(--foreground)]">
-                        <div className="truncate">{pkg}</div>
-                      </div>
-                      <label className="flex items-center justify-between gap-2 sm:block">
-                        <span className="sr-only">Color</span>
-                        <select
-                          value={settings.colors[pkg] ?? "slate"}
-                          onChange={(e) =>
-                            setSettings((prev) => ({
-                              ...prev,
-                              colors: { ...prev.colors, [pkg]: e.target.value as PaletteKey },
-                            }))
-                          }
-                          className="w-full rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                        >
-                          {PALETTE.map((p) => (
-                            <option key={p.key} value={p.key}>
-                              {p.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="flex items-center justify-between gap-2 sm:block">
-                        <span className="sr-only">Line style</span>
-                        <select
-                          value={settings.lineStyles[pkg] ?? "solid"}
-                          onChange={(e) =>
-                            setSettings((prev) => ({
-                              ...prev,
-                              lineStyles: { ...prev.lineStyles, [pkg]: e.target.value as LineStyleKey },
-                            }))
-                          }
-                          className="w-full rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                        >
-                          <option value="solid">Solid</option>
-                          <option value="dashed">Dashed</option>
-                          <option value="dotted">Dotted</option>
-                        </select>
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
+        {styleModal}
 
         {hovered ? (
           <div className={tooltipDockClass}>

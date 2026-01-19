@@ -25,6 +25,7 @@ type Props = {
   derived: DerivedMetrics;
   series: TrafficSeriesRow[];
   pkgName: string;
+  days: number;
 };
 
 const DEFAULT_FORM: EventEntry = {
@@ -37,7 +38,7 @@ const DEFAULT_FORM: EventEntry = {
 
 const formatDerived = (value: number | null) => (value == null ? "-" : value.toFixed(1));
 
-export default function DerivedSeriesTable({ series, derived, pkgName }: Props) {
+export default function DerivedSeriesTable({ series, derived, pkgName, days }: Props) {
   const [showDerived, setShowDerived] = useState(false);
   const [showEventsList, setShowEventsList] = useState(false);
   const [form, setForm] = useState<EventEntry>(DEFAULT_FORM);
@@ -178,7 +179,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
     <>
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-3 text-sm text-slate-300">
-          <span>Daily downloads table</span>
+          <span>Daily downloads table ({days} days)</span>
           <div className="flex flex-wrap gap-2">
             {totalEvents ? (
               <button
