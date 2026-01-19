@@ -1,52 +1,124 @@
 # npmtraffic
 
-npmtraffic is a mobile-first web app that shows daily npm package download traffic in a GitHub-style table view. It includes search, compare, and CSV export for npm packages, and uses npm registry APIs for data. It is not affiliated with npm.
+[![CI](https://github.com/afria85/npmtraffic/actions/workflows/ci.yml/badge.svg)](https://github.com/afria85/npmtraffic/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
-If you find npmtraffic useful, you can support ongoing maintenance via GitHub Sponsors.
+Mobile-first web app for **GitHub-style daily npm download history** — including **search**, **compare tables**, and **audit-grade exports** (CSV/JSON).  
+Not affiliated with npm, Inc.
 
-## Run locally
+- Website: https://npmtraffic.com
 
+---
+
+## What you get
+
+- **Daily download table** (GitHub-style) with day-to-day deltas
+- **Compare** multiple packages in a single view
+- **Export**:
+  - CSV (`.csv`)
+  - Excel-friendly CSV (`.excel.csv`, delimiter `;` + `sep=;`)
+  - JSON (`.json`) with **audit metadata** (time range, generated_at, cache/freshness, request_id, etc.)
+- **Ranges**: 7/14/30 + “More” (90/180/365) with consistent validation/labeling
+- **Events / markers** (local-first): add/edit/delete, import/export, and share via URL payload (capped)
+- **Resilience**: cache-aware freshness/stale indicators; upstream errors should not blank the UI
+
+---
+
+## Data source
+
+Download counts are fetched from the public npm downloads API (`api.npmjs.org`).  
+Numbers reflect npm’s reported download metrics and their limitations.
+
+---
+
+## API endpoints
+
+### Package daily
+- JSON: `/api/v1/package/:name/daily.json?days=30`
+- CSV: `/api/v1/package/:name/daily.csv?days=30`
+- Excel CSV: `/api/v1/package/:name/daily.excel.csv?days=30`
+
+### Compare
+- JSON: `/api/v1/compare.json?packages=react,vue&days=30`
+- CSV: `/api/v1/compare.csv?packages=react,vue&days=30`
+- Excel CSV: `/api/v1/compare.excel.csv?packages=react,vue&days=30`
+
+### Search & validation
+- Search: `/api/v1/search?q=react`
+- Exists check: `/api/v1/validate/:name/exists`
+
+---
+
+## Operational endpoints
+
+- Status page: `/status`  
+  Shows build info and recent cache/traffic health signals (when available).
+
+- Cache prewarm: `/api/cron/prewarm`  
+  Warms cache for curated packages (or pass custom `packages` and `days`).
+  Example:
+  - `/api/cron/prewarm?packages=react,vue&days=7,14,30`
+
+---
+
+## Local development
+
+### Requirements
+- Node.js 20+
+
+### Install & run
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open http://localhost:3000
 
-### Search examples
+### Tests & quality gates
+```bash
+npm test
+npm run lint
+npm run build
+```
 
-- Search for `react` and press Enter to open `/p/react?days=30`.
-- Search for `logshield-cli` to validate a less common package.
-- Compare packages with `/compare?packages=react,vue,logshield-cli&days=30`.
-- Export CSV from `/api/v1/package/react/daily.csv?days=30`.
+---
 
-## Deploy to Vercel + npmtraffic.com
+## Deployment
 
-1. Import this repo in Vercel.
-2. Set the `BASE_URL` environment variable to `https://npmtraffic.com` in production (optional but recommended for canonical URLs).
-3. Add the custom domain `npmtraffic.com` in Vercel and follow DNS instructions.
-4. Deploy.
+This project is designed to deploy cleanly to Vercel.
 
-## Data source
+1. Import the repo in Vercel
+2. (Optional) set `BASE_URL` to your production URL for canonical links
+3. Attach your domain and deploy
 
-Download counts are sourced from `api.npmjs.org`.
+---
 
-## Ops
+## Security & privacy notes
 
-- `/status` shows the latest build info (commit + environment), the most recent traffic success/error timestamps, and the last recorded cache status or stale indicator. It will always render even if no health data is recorded yet.
-- `/api/cron/prewarm` triggers warming the traffic cache for the curated package list (or a custom comma-separated `packages` parameter) across 7/14/30-day ranges. Call it via `curl https://npmtraffic.com/api/cron/prewarm` or with `?packages=react,vue&days=7,14`. The endpoint always returns a `200` JSON summary with counts, failures, and duration.
+- No authentication is required for core usage.
+- Inputs from query params are validated/normalized.
+- Export endpoints include audit metadata for traceability (range, timestamps, cache/freshness, request_id).
 
-## Production Verification Checklist
+If you find a security issue, please open a GitHub issue with reproduction steps (avoid posting sensitive data).
 
-- **URLs to verify**: `/`, `/p/logshield-cli?days=14`, `/p/react?days=14`, `/compare?packages=react,vue&days=14`, `/donate`, `/status`, `/sitemap.xml`, `/robots.txt`.
-- **Expected UI**: package/compare tables show totals, freshness badge, stale banner when upstream errors occur, working copy link buttons, donate links/footer, and GitHub star buttons where available.
-- **Failure modes**: upstream `401/429/5xx` responses should never leave blank screens—show the stale banner or a typed error message (e.g., "npm API temporarily unavailable."); rate limits should surface a friendly retry hint.
-- **Tagging optional** (this repo currently does not publish tags).
+---
+
+## Support
+
+If npmtraffic is useful, consider supporting ongoing maintenance:
+- GitHub Sponsors: https://github.com/sponsors/afria85
+- PayPal: see `/donate`
+
+Starring the repo and filing high-quality bug reports also helps.
+
+---
 
 ## Disclaimer
 
-Not affiliated with npm, Inc.
+Not affiliated with npm, Inc. Data sourced from `api.npmjs.org`.
+
+---
 
 ## License
 
-Apache-2.0. See `LICENSE`.
+Apache-2.0 — see [LICENSE](LICENSE).

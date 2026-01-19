@@ -355,7 +355,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
             onChange={(e) => setDraftStrength(e.target.value as "" | "1" | "2" | "3")}
             className="mt-1 w-full rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-2 text-sm text-[color:var(--foreground)] outline-none focus:border-[color:var(--ring)]"
           >
-            <option value="">?</option>
+            <option value="">None</option>
             <option value="1">1 (low)</option>
             <option value="2">2 (medium)</option>
             <option value="3">3 (high)</option>
