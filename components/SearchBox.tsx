@@ -230,7 +230,7 @@ function SearchPanel({
           onBlur={() => window.setTimeout(() => setIsListOpen(false), 120)}
           onKeyDown={handleKeyDown}
           placeholder="Search npm packages"
-          className="h-11 w-full rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 text-sm text-[color:var(--foreground)] placeholder:text-[color:var(--muted)] focus:border-[color:var(--border)]/80 focus:outline-none"
+          className="h-11 w-full rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 text-sm text-[color:var(--foreground)] placeholder:text-[color:var(--muted)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/30"
           role="combobox"
           aria-expanded={showList}
           aria-controls={listId}
@@ -254,8 +254,8 @@ function SearchPanel({
                   className={[
                     "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition",
                     activeOption?.id === option.id
-                      ? "bg-[color:var(--surface)]/80 text-[color:var(--foreground)]"
-                      : "text-[color:var(--foreground)]/90 hover:bg-[color:var(--surface)]/60",
+                      ? "bg-black/5 text-[color:var(--foreground)]"
+                      : "text-[color:var(--foreground)]/90 hover:bg-black/5"
                   ].join(" ")}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => selectPackage(option.value)}
@@ -274,7 +274,7 @@ function SearchPanel({
       </div>
 
       {statusMessage ? (
-        <p className="mt-2 text-xs text-[color:var(--muted)]" aria-live="polite">
+        <p className="mt-2 text-xs text-slate-400" aria-live="polite">
           {statusMessage}
           {requestId ? ` (req ${requestId})` : ""}
         </p>
@@ -311,7 +311,7 @@ export default function SearchBox({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="h-11 rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 text-sm text-[color:var(--foreground)]/90 transition hover:border-[color:var(--border)]/80 hover:bg-[color:var(--surface)]/80"
+        className="h-11 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
         aria-expanded={isOpen}
         aria-controls={sheetId}
       >
@@ -330,11 +330,11 @@ export default function SearchBox({
             className="fixed bottom-0 left-0 right-0 h-[70vh] rounded-t-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-6 shadow-2xl"
           >
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-[color:var(--foreground)]">Search packages</p>
+              <p className="text-sm font-semibold text-slate-200">Search packages</p>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="h-9 rounded-full border border-[color:var(--border)] px-3 text-xs text-[color:var(--foreground)]/80"
+                className="h-9 rounded-full border border-white/10 px-3 text-xs text-slate-300"
               >
                 Close
               </button>

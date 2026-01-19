@@ -105,7 +105,7 @@ export async function GET(req: Request) {
     const csv =
       ["sep=;"].concat(buildExportCommentHeader(exportMeta).split("\n")).join("\n") +
       "\n" +
-      buildCsv(rows, ";");
+      buildCsv(rows, ";", { excelSafe: true });
     const response = new NextResponse(csv, {
       status: 200,
       headers: {

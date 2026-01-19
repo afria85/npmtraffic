@@ -42,16 +42,16 @@ type CompareTableHeaderProps = {
 
 export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
   return (
-    <thead className="sticky top-0 bg-[color:var(--surface)]/85 text-left text-xs uppercase tracking-wider text-[color:var(--muted)] backdrop-blur">
+    <thead className="sticky top-0 bg-black/80 text-left text-xs uppercase tracking-wider text-slate-300 backdrop-blur">
       <tr>
-        <th rowSpan={2} className="px-3 py-2 text-left text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
+        <th rowSpan={2} className="px-3 py-2 text-left text-xs uppercase tracking-[0.3em] text-slate-300">
           Date
         </th>
         {packageNames.map((pkg) => (
           <th
             key={`${pkg}-group`}
             colSpan={2}
-            className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.3em] text-[color:var(--foreground)]"
+            className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.3em] text-slate-100"
           >
             {pkg}
           </th>
@@ -62,14 +62,14 @@ export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
           <Fragment key={`${pkg}-metrics`}>
             <th
               scope="col"
-              className="px-3 py-2 text-left text-xs uppercase tracking-[0.3em] text-[color:var(--muted)] whitespace-nowrap"
+              className="px-3 py-2 text-left text-xs uppercase tracking-[0.3em] text-slate-400 whitespace-nowrap"
               title="Downloads for the day"
             >
               Downloads
             </th>
             <th
               scope="col"
-              className="px-3 py-2 text-left text-xs uppercase tracking-[0.3em] text-[color:var(--muted)] whitespace-nowrap"
+              className="px-3 py-2 text-left text-xs uppercase tracking-[0.3em] text-slate-400 whitespace-nowrap"
               title="Delta vs previous day"
             >
               Delta vs prev day
@@ -236,14 +236,14 @@ export default async function ComparePage({ searchParams }: Props) {
     <div className="flex w-full flex-col gap-3">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-2">
-          <Link href="/" className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
+          <Link href="/" className="text-xs uppercase tracking-[0.3em] text-slate-400">
             npmtraffic
           </Link>
           <div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Compare packages
             </h1>
-            <p className="text-sm text-[color:var(--muted)]">
+            <p className="text-sm text-slate-400">
               {pkgs.join(", ")} - {days} days
             </p>
           </div>
@@ -281,15 +281,15 @@ export default async function ComparePage({ searchParams }: Props) {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {data.packages.map((pkg) => (
           <div key={pkg.name} className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-widest text-[color:var(--muted)]">{pkg.name}</p>
-            <p className="mt-2 text-xl font-semibold text-[color:var(--foreground)]">
+            <p className="text-xs uppercase tracking-widest text-slate-500">{pkg.name}</p>
+            <p className="mt-2 text-xl font-semibold text-white">
               {formatNumber(pkg.total)}
             </p>
             <p
-              className="text-xs text-[color:var(--muted)]"
+              className="text-xs text-slate-400"
               title="Share of total downloads among the compared packages for the selected range"
             >
-              {pkg.share.toFixed(2)}% share of combined downloads (selected range)
+              {pkg.share.toFixed(2)}% of total
             </p>
           </div>
         ))}
@@ -303,28 +303,25 @@ export default async function ComparePage({ searchParams }: Props) {
                 <CompareTableHeader packageNames={tablePackageNames} />
                 <tbody className="divide-y divide-white/10">
                   {data.series.map((row) => (
-                    <tr key={row.date} className="text-[color:var(--foreground)]">
-                      <td className="px-3 py-2 text-xs uppercase tracking-wide text-[color:var(--muted)]">
+                    <tr key={row.date} className="text-slate-100">
+                      <td className="px-3 py-2 text-xs uppercase tracking-wide text-slate-400">
                         {row.date}
                       </td>
-                      {data.packages.map((pkg) => {
-                        const v = row.values[pkg.name];
-                        return (
-                          <Fragment key={`${row.date}-${pkg.name}`}>
-                            <td className="px-3 py-2 font-mono">
-                              {formatNumber(v?.downloads ?? null)}
-                            </td>
-                            <td className="px-3 py-2 font-mono">
-                              {formatDelta(v?.delta ?? null)}
-                            </td>
-                          </Fragment>
-                        );
-                      })}
+                      {data.packages.map((pkg) => (
+                        <Fragment key={`${row.date}-${pkg.name}-pair`}>
+                          <td className="px-3 py-2 font-mono">
+                            {formatNumber(row.values[pkg.name]?.downloads ?? null)}
+                          </td>
+                          <td className="px-3 py-2 font-mono">
+                            {formatDelta(row.values[pkg.name]?.delta ?? null)}
+                          </td>
+                        </Fragment>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <p className="px-3 py-2 text-xs text-[color:var(--muted)]">
+              <p className="px-3 py-2 text-xs text-slate-400">
                 Delta vs previous day = downloads today - downloads yesterday
               </p>
             </div>
@@ -332,7 +329,7 @@ export default async function ComparePage({ searchParams }: Props) {
         </div>
       </div>
 
-      <p className="text-xs text-[color:var(--muted)]">Data from api.npmjs.org.</p>
+      <p className="text-xs text-slate-500">Data from api.npmjs.org.</p>
     </main>
   );
 }

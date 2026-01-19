@@ -29,13 +29,16 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: `${config.site.url}/og.png`,
+        url: `${config.site.url}/og.png`, 
+        width: 1200, 
+        height: 630,
         alt: "npmtraffic logo",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
+    images: ["/og.png"],
     title: config.site.name,
     description: config.site.tagline,
   },
@@ -65,6 +68,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${spaceGrotesk.variable} ${jetBrainsMono.variable}`}>
       <head>
         <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-screen antialiased">

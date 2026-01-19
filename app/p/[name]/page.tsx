@@ -14,10 +14,11 @@ import DerivedSeriesTable from "@/components/package/DerivedSeriesTable";
 import RangeSelector from "@/components/RangeSelector";
 import ExportDropdown from "@/components/ExportDropdown";
 import { buildExportFilename } from "@/lib/export-filename";
+import EventsPanel from "@/components/events/EventsPanel";
 
 type Props = {
   params: Promise<{ name: string }>;
-  searchParams?: Promise<{ days?: string }>;
+  searchParams?: Promise<{ days?: string; events?: string }>;
 };
 
 const ALLOWED_DAYS = new Set(["7", "14", "30", "90", "180", "365"]);
@@ -284,6 +285,8 @@ export default async function PackagePage({ params, searchParams }: Props) {
       </div>
 
       <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} />
+
+      <EventsPanel key={`${name}:${sp.events ?? ""}`} pkgName={name} encoded={sp.events} />
 
       <p className="text-xs text-slate-500">Data from api.npmjs.org.</p>
     </main>

@@ -42,3 +42,18 @@ next-env.d.ts
 
 .vercel
 .env*.local
+
+#docs
+/docs/ENVIRONMENT.md 
+/docs/MILESTONES.md
+/docs/SPONSORSHIP.md
+
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+node_modules/
+.next/
+dist/
+out/

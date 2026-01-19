@@ -1,23 +1,8 @@
 # npmtraffic
 
-[![CI](https://github.com/afria85/npmtraffic/actions/workflows/ci.yml/badge.svg)](https://github.com/afria85/npmtraffic/actions/workflows/ci.yml)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Sponsor](https://img.shields.io/github/sponsors/afria85?label=Sponsor&logo=GitHub)](https://github.com/sponsors/afria85)
+npmtraffic is a mobile-first web app that shows daily npm package download traffic in a GitHub-style table view. It includes search, compare, and CSV export for npm packages, and uses npm registry APIs for data. It is not affiliated with npm.
 
-GitHub-style daily npm download history: fast tables, compare views, and audit-grade exports.
-
-> Not affiliated with npm, Inc. Data sourced from `api.npmjs.org`.
-
-## Features
-
-- **Daily history table** (GitHub-style) for npm package downloads.
-- **Compare view** across multiple packages with day-by-day downloads and deltas.
-- **Export, audit-grade**:
-  - CSV and JSON exports include metadata (`from/to`, `generated_at`, cache status, stale info, request id).
-  - Deterministic filenames + `Content-Disposition: attachment`.
-  - Excel-friendly CSV endpoints using `;` delimiter.
-- **Ranges**: 7/14/30 with a “More” menu for 90/180/365 (UTC-aligned).
-- **Local-first event markers** (create/update/delete) and shareable compare payloads.
+If you find npmtraffic useful, you can support ongoing maintenance via GitHub Sponsors.
 
 ## Run locally
 
@@ -28,37 +13,40 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-## Environment variables
+### Search examples
 
-See `.env.example`. The most relevant are:
+- Search for `react` and press Enter to open `/p/react?days=30`.
+- Search for `logshield-cli` to validate a less common package.
+- Compare packages with `/compare?packages=react,vue,logshield-cli&days=30`.
+- Export CSV from `/api/v1/package/react/daily.csv?days=30`.
 
-- `BASE_URL` (recommended for canonical URLs in production)
-- `NEXT_PUBLIC_PROJECT_GITHUB` (for the “Star on GitHub” link)
-- `NEXT_PUBLIC_DONATE_GITHUB_SPONSORS` / PayPal / etc. (for `/donate` + footer buttons)
+## Deploy to Vercel + npmtraffic.com
 
-## Deploy (Vercel)
+1. Import this repo in Vercel.
+2. Set the `BASE_URL` environment variable to `https://npmtraffic.com` in production (optional but recommended for canonical URLs).
+3. Add the custom domain `npmtraffic.com` in Vercel and follow DNS instructions.
+4. Deploy.
 
-1. Import the repo in Vercel.
-2. Set `BASE_URL` to your public origin (e.g. `https://npmtraffic.com`).
-3. Add a custom domain and follow DNS instructions.
+## Data source
 
-## Ops endpoints
+Download counts are sourced from `api.npmjs.org`.
 
-- `/status` shows build info and the latest traffic/cache health signals.
-- `/api/cron/prewarm` warms the traffic cache for curated packages (or custom `packages=` and `days=`).
+## Ops
 
-## Sponsorship
+- `/status` shows the latest build info (commit + environment), the most recent traffic success/error timestamps, and the last recorded cache status or stale indicator. It will always render even if no health data is recorded yet.
+- `/api/cron/prewarm` triggers warming the traffic cache for the curated package list (or a custom comma-separated `packages` parameter) across 7/14/30-day ranges. Call it via `curl https://npmtraffic.com/api/cron/prewarm` or with `?packages=react,vue&days=7,14`. The endpoint always returns a `200` JSON summary with counts, failures, and duration.
 
-If npmtraffic is useful, sponsorship helps fund:
+## Production Verification Checklist
 
-- Hosting & bandwidth
-- Monitoring and cache reliability
-- Maintenance and UX improvements
+- **URLs to verify**: `/`, `/p/logshield-cli?days=14`, `/p/react?days=14`, `/compare?packages=react,vue&days=14`, `/donate`, `/status`, `/sitemap.xml`, `/robots.txt`.
+- **Expected UI**: package/compare tables show totals, freshness badge, stale banner when upstream errors occur, working copy link buttons, donate links/footer, and GitHub star buttons where available.
+- **Failure modes**: upstream `401/429/5xx` responses should never leave blank screens—show the stale banner or a typed error message (e.g., "npm API temporarily unavailable."); rate limits should surface a friendly retry hint.
+- **Tagging optional** (this repo currently does not publish tags).
 
-Core features stay free. Sponsors help keep npmtraffic fast, reliable, and ad-free.
+## Disclaimer
 
-If you want a lightweight roadmap and example sponsorship milestones, see `docs/MILESTONES.md`.
+Not affiliated with npm, Inc.
 
 ## License
 
-Licensed under the Apache License, Version 2.0. See `LICENSE` (and `NOTICE`).
+Apache-2.0. See `LICENSE`.

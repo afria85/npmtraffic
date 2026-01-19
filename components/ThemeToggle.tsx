@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "npmtraffic_theme";
 
@@ -25,37 +25,6 @@ function applyTheme(theme: Theme) {
   if (typeof document === "undefined") return;
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
-}
-
-function SunIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden>
-      <path
-        d="M12 18a6 6 0 1 0 0-12a6 6 0 0 0 0 12Z"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <path
-        d="M12 2v2.5M12 19.5V22M4.22 4.22l1.77 1.77M18.01 18.01l1.77 1.77M2 12h2.5M19.5 12H22M4.22 19.78l1.77-1.77M18.01 5.99l1.77-1.77"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden>
-      <path
-        d="M21 14.5A7.5 7.5 0 0 1 9.5 3a6.5 6.5 0 1 0 11.5 11.5Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
 }
 
 export default function ThemeToggle({ className }: { className?: string }) {
@@ -89,35 +58,55 @@ export default function ThemeToggle({ className }: { className?: string }) {
     }
 
     // Safari fallback
+
     mq.addListener(onChange);
+
     return () => mq.removeListener(onChange);
   }, [hasOverride]);
 
-  const nextTheme = useMemo<Theme>(() => (theme === "dark" ? "light" : "dark"), [theme]);
-  const ariaLabel = useMemo(
-    () => `Switch to ${nextTheme === "dark" ? "dark" : "light"} theme`,
-    [nextTheme]
-  );
+  const isDark = theme === "dark";
 
   return (
     <button
       type="button"
       className={className}
-      title="Toggle theme (defaults to your device setting)"
-      aria-label={ariaLabel}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       onClick={() => {
-        const next: Theme = nextTheme;
+        const next: Theme = isDark ? "light" : "dark";
         setTheme(next);
         setHasOverride(true);
         try {
           window.localStorage.setItem(STORAGE_KEY, next);
-        } catch {
-          // ignore
-        }
+        } catch {}
       }}
     >
-      <span className="sr-only">{ariaLabel}</span>
-      {theme === "dark" ? <MoonIcon /> : <SunIcon />}
+      <span className="sr-only">{isDark ? "Light mode" : "Dark mode"}</span>
+      {isDark ? (
+        // Sun icon
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
+      ) : (
+        // Moon icon
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M21 14.5A8.5 8.5 0 0 1 9.5 3a7 7 0 1 0 11.5 11.5Z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
     </button>
   );
 }

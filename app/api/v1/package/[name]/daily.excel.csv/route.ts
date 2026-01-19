@@ -78,7 +78,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
         const csv =
           ["sep=;"].concat(buildExportCommentHeader(exportMeta).split("\n")).join("\n") +
           "\n" +
-          buildCsv(rows, ";");
+          buildCsv(rows, ";", { excelSafe: true });
         logApiEvent({
           requestId,
           route,
@@ -180,7 +180,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
     const csv =
       ["sep=;"].concat(buildExportCommentHeader(exportMeta).split("\n")).join("\n") +
       "\n" +
-      buildCsv(rows, ";");
+      buildCsv(rows, ";", { excelSafe: true });
     const response = new NextResponse(csv, {
       status: 200,
       headers: {
