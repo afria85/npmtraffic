@@ -37,7 +37,7 @@ export default function DataPage() {
   const endDate = yesterday.toISOString().slice(0, 10);
 
   return (
-    <main className="mx-auto min-h-screen max-w-4xl px-4 py-12">
+    <main className="mx-auto min-h-full max-w-4xl px-4 py-12">
       <header className="mb-6">
         <Link href="/" className="text-xs uppercase tracking-[0.3em] text-slate-400">
           npmtraffic

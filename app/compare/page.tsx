@@ -17,6 +17,7 @@ import {
   COMPARE_ACTION_CONTAINER_CLASSES,
   COMPARE_TABLE_WRAPPER_CLASSES,
 } from "@/components/compare/compare-classes";
+import CompareChart from "@/components/compare/CompareChart";
 
 type Props = {
   searchParams?: Promise<{ packages?: string; pkgs?: string; days?: string }>;
@@ -261,7 +262,7 @@ export default async function ComparePage({ searchParams }: Props) {
 
   if (errorText || !data) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-4 py-6">
+      <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-6">
         {header}
         <AlertBanner message={errorText ?? "Failed to load."} />
       </main>
@@ -271,7 +272,7 @@ export default async function ComparePage({ searchParams }: Props) {
   const tablePackageNames = data.packages.map((pkg) => pkg.name);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-4 py-6">
+    <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-6">
       {header}
       {data?.warnings?.length ? (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
@@ -295,38 +296,36 @@ export default async function ComparePage({ searchParams }: Props) {
         ))}
       </div>
 
+      <CompareChart series={data.series} packageNames={tablePackageNames} />
+
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
-        <div className={`${COMPARE_TABLE_WRAPPER_CLASSES} min-w-full`}>
-          <div className="min-w-[720px]">
-            <div className="max-h-[70vh] overflow-auto">
-              <table className="min-w-[720px] w-full text-sm">
-                <CompareTableHeader packageNames={tablePackageNames} />
-                <tbody className="divide-y divide-white/10">
-                  {data.series.map((row) => (
-                    <tr key={row.date} className="text-slate-100">
-                      <td className="px-3 py-2 text-xs uppercase tracking-wide text-slate-400">
-                        {row.date}
+        <div className={`${COMPARE_TABLE_WRAPPER_CLASSES}`}>
+          <table className="min-w-[720px] w-full text-sm">
+            <CompareTableHeader packageNames={tablePackageNames} />
+            <tbody className="divide-y divide-white/10">
+              {data.series.map((row) => (
+                <tr key={row.date} className="text-slate-100">
+                  <td className="px-3 py-2 text-xs uppercase tracking-wide text-slate-400">
+                    {row.date}
+                  </td>
+                  {data.packages.map((pkg) => (
+                    <Fragment key={`${row.date}-${pkg.name}-pair`}>
+                      <td className="px-3 py-2 font-mono">
+                        {formatNumber(row.values[pkg.name]?.downloads ?? null)}
                       </td>
-                      {data.packages.map((pkg) => (
-                        <Fragment key={`${row.date}-${pkg.name}-pair`}>
-                          <td className="px-3 py-2 font-mono">
-                            {formatNumber(row.values[pkg.name]?.downloads ?? null)}
-                          </td>
-                          <td className="px-3 py-2 font-mono">
-                            {formatDelta(row.values[pkg.name]?.delta ?? null)}
-                          </td>
-                        </Fragment>
-                      ))}
-                    </tr>
+                      <td className="px-3 py-2 font-mono">
+                        {formatDelta(row.values[pkg.name]?.delta ?? null)}
+                      </td>
+                    </Fragment>
                   ))}
-                </tbody>
-              </table>
-              <p className="px-3 py-2 text-xs text-slate-400">
-                Delta vs previous day = downloads today - downloads yesterday
-              </p>
-            </div>
-          </div>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+        <p className="px-3 py-2 text-xs text-slate-400">
+          Delta vs previous day = downloads today - downloads yesterday
+        </p>
       </div>
 
       <p className="text-xs text-slate-500">Data from api.npmjs.org.</p>

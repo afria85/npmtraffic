@@ -172,7 +172,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
             ) : null}
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="max-h-[65vh] overflow-auto">
           <table className="min-w-[420px] w-full text-sm">
             <thead className="sticky top-0 bg-black/80 text-left text-xs uppercase tracking-wider text-slate-300 backdrop-blur">
               <tr>

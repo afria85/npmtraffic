@@ -42,7 +42,7 @@ export default async function Home() {
   const jsonLd = homepageJsonLd(baseUrl);
 
   return (
-    <main className="min-h-screen px-6 py-12">
+    <main className="min-h-full px-6 py-12">
       <div className="mx-auto flex max-w-2xl flex-col gap-10">
         <header className="space-y-4 text-center">
           <p className="text-xs uppercase tracking-[0.4em] text-slate-400">npmtraffic</p>

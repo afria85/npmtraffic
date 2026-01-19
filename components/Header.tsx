@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { hasDonateLinks } from "@/lib/donate";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -10,8 +11,16 @@ export default function Header() {
   return (
     <header className="border-b border-white/10 bg-[color:var(--surface)] px-4 py-3">
       <div className="mx-auto flex max-w-5xl items-center justify-between">
-        <Link href="/" className="text-xs uppercase tracking-[0.3em] text-slate-400">
-          npmtraffic
+        <Link href="/" className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-400">
+          <Image
+            src="/brand-mark.png"
+            alt="npmtraffic"
+            width={20}
+            height={20}
+            priority
+            className="h-5 w-5"
+          />
+          <span>npmtraffic</span>
         </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle className={HEADER_PILL_CLASSES} />

@@ -37,7 +37,7 @@ export default async function StatusPage() {
   const { build, health, hasHealth } = getStatusOverview();
 
   return (
-    <main className="mx-auto min-h-screen max-w-4xl px-4 py-12">
+    <main className="mx-auto min-h-full max-w-4xl px-4 py-12">
       <header className="mb-6">
         <p className="text-xs uppercase tracking-[0.3em] text-slate-400">npmtraffic</p>
         <h1 className="mt-2 text-4xl font-semibold">Status</h1>

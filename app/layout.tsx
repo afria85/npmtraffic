@@ -71,13 +71,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+        <meta name="theme-color" content="#0b0f14" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)" />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="min-h-screen antialiased">
-        <div className="flex min-h-screen flex-col">
+      <body className="h-screen overflow-hidden antialiased">
+        <div className="flex h-screen flex-col">
           <Header />
           <CompareTray />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 overflow-y-auto">{children}</main>
           <Footer />
         </div>
       </body>

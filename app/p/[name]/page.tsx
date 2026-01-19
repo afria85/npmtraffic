@@ -11,6 +11,7 @@ import { buildPackageCanonical } from "@/lib/canonical";
 import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
 import { getPackageGithubRepo } from "@/lib/npm-repo";
 import DerivedSeriesTable from "@/components/package/DerivedSeriesTable";
+import TrafficChart from "@/components/package/TrafficChart";
 import RangeSelector from "@/components/RangeSelector";
 import ExportDropdown from "@/components/ExportDropdown";
 import { buildExportFilename } from "@/lib/export-filename";
@@ -247,7 +248,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
   if (errorText || !data) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-6">
+      <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 px-4 py-6">
         {header}
         <AlertBanner message={`${errorText ?? "Failed to load data."} Please try again.`} />
       </main>
@@ -257,7 +258,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
   const traffic = data;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-6">
+    <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 px-4 py-6">
       {header}
       {traffic.meta.isStale ? (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
@@ -283,6 +284,8 @@ export default async function PackagePage({ params, searchParams }: Props) {
           </p>
         </div>
       </div>
+
+      <TrafficChart series={traffic.series} derived={traffic.derived} pkgName={name} />
 
       <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} />
 

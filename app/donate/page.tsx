@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function DonatePage() {
   const donateLinks = getDonateLinks();
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-12">
+    <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 px-4 py-12">
       <section className="space-y-3">
         <p className="text-xs uppercase tracking-[0.3em] text-slate-400">npmtraffic</p>
         <h1 className="text-3xl font-semibold tracking-tight">Support npmtraffic</h1>
