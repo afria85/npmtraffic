@@ -251,6 +251,17 @@ export default function CompareChart({ series, packageNames }: Props) {
 
   const hovered = hoverIndex == null ? null : series[hoverIndex];
 
+  const primaryPoints = pointsByPkg.get(packageNames[0] ?? "") ?? [];
+  const hoverPoint = hoverIndex == null ? null : primaryPoints[hoverIndex] ?? null;
+
+  const tooltipSide = hoverPoint && hoverPoint.x > PAD.l + innerW * 0.6 ? "left" : "right";
+  const tooltipV = hoverPoint && hoverPoint.y < PAD.t + innerH * 0.35 ? "bottom" : "top";
+  const tooltipDockClass =
+    "pointer-events-none absolute w-[min(18rem,90%)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur " +
+    (tooltipSide === "left" ? "left-3" : "right-3") +
+    " " +
+    (tooltipV === "bottom" ? "bottom-3" : "top-3");
+
   const exports = useMemo(
     () => [
       {
@@ -413,7 +424,7 @@ export default function CompareChart({ series, packageNames }: Props) {
         ) : null}
 
         {hovered ? (
-          <div className="pointer-events-none absolute right-3 top-3 w-[min(18rem,90%)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur">
+          <div className={tooltipDockClass}>
             <div className="flex items-center justify-between gap-2">
               <span className="font-mono text-[color:var(--foreground)]">{hovered.date}</span>
               <span className="text-[color:var(--muted)]">UTC</span>

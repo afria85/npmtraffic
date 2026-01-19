@@ -286,6 +286,15 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
   }, [maxValue, innerH, pad.t]);
 
   const hovered = hoverIndex == null ? null : series[hoverIndex];
+  const hoverPoint = hoverIndex == null ? null : downloadsPoints[hoverIndex] ?? null;
+
+  const tooltipSide = hoverPoint && hoverPoint.x > pad.l + innerW * 0.6 ? "left" : "right";
+  const tooltipV = hoverPoint && hoverPoint.y < pad.t + innerH * 0.35 ? "bottom" : "top";
+  const tooltipDockClass =
+    "pointer-events-none absolute w-[min(18rem,90%)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur " +
+    (tooltipSide === "left" ? "left-3" : "right-3") +
+    " " +
+    (tooltipV === "bottom" ? "bottom-3" : "top-3");
   const hoveredMA7 = hoverIndex == null ? null : derived?.ma7?.[hoverIndex]?.value ?? null;
   const hoveredMA3 = hoverIndex == null ? null : derived?.ma3?.[hoverIndex]?.value ?? null;
   const hoveredOutlier = hoverIndex == null ? null : derived?.outliers?.[hoverIndex] ?? null;
@@ -595,7 +604,7 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
         ) : null}
 
         {hovered ? (
-          <div className="pointer-events-none absolute right-3 top-3 w-[min(18rem,90%)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur">
+          <div className={tooltipDockClass}>
             <div className="flex items-center justify-between gap-2">
               <span className="font-mono text-[color:var(--foreground)]">{hovered.date}</span>
               <span className="text-[color:var(--muted)]">UTC</span>
@@ -627,14 +636,16 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
             {hoveredEvents.length ? (
               <div className="mt-2 border-t border-white/10 pt-2">
                 <p className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Events</p>
-                <ul className="mt-1 space-y-1">
+                <div className="mt-1 max-h-28 overflow-auto pr-1">
+                  <ul className="space-y-1">
                   {hoveredEvents.slice(0, 3).map((evt) => (
                     <li key={`${evt.date_utc}|${evt.event_type}|${evt.label}`}>
                       <span className="text-[color:var(--muted)]">{evt.event_type}</span>: {evt.label}
                     </li>
                   ))}
                   {hoveredEvents.length > 3 ? <li className="text-[color:var(--muted)]">...</li> : null}
-                </ul>
+                  </ul>
+                </div>
               </div>
             ) : null}
           </div>
