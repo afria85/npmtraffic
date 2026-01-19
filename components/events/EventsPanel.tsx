@@ -235,7 +235,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
             Add contextual markers (releases, posts, docs changes) to explain spikes. Stored locally in your browser.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:justify-end">
           <button
             type="button"
             onClick={onCopyShareLink}

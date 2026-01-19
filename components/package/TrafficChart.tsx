@@ -6,6 +6,9 @@ import type { TrafficSeriesRow } from "@/lib/traffic";
 import { groupEventsByDate, loadEvents } from "@/lib/events";
 import ActionMenu from "@/components/ui/ActionMenu";
 
+const CHART_BUTTON_CLASSES =
+  "inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold leading-none text-slate-100 transition hover:border-white/20 hover:bg-white/10";
+
 type Point = { x: number; y: number };
 
 type Props = {
@@ -14,7 +17,7 @@ type Props = {
   pkgName: string;
 };
 
-type PaletteKey = "accent" | "slate" | "blue" | "emerald" | "violet";
+type PaletteKey = "accent" | "slate" | "blue" | "emerald" | "violet" | "amber" | "orange" | "pink" | "cyan";
 type LineStyleKey = "solid" | "dashed" | "dotted";
 
 type ChartSettings = {
@@ -35,6 +38,10 @@ const PALETTE: { key: PaletteKey; label: string; cssVar: string }[] = [
   { key: "blue", label: "Blue", cssVar: "--chart-palette-blue" },
   { key: "emerald", label: "Emerald", cssVar: "--chart-palette-emerald" },
   { key: "violet", label: "Violet", cssVar: "--chart-palette-violet" },
+  { key: "amber", label: "Amber", cssVar: "--chart-palette-amber" },
+  { key: "orange", label: "Orange", cssVar: "--chart-palette-orange" },
+  { key: "pink", label: "Pink", cssVar: "--chart-palette-pink" },
+  { key: "cyan", label: "Cyan", cssVar: "--chart-palette-cyan" },
 ];
 
 function clamp(value: number, min: number, max: number) {
@@ -156,8 +163,8 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
         showMA7: true,
         showMA3: false,
         downloadsColor: "accent",
-        ma7Color: "slate",
-        ma3Color: "blue",
+        ma7Color: "violet",
+        ma3Color: "orange",
         downloadsStyle: "solid",
         maStyle: "dashed",
       };
@@ -168,8 +175,8 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
       showMA7: saved.showMA7 ?? true,
       showMA3: saved.showMA3 ?? false,
       downloadsColor: (saved.downloadsColor as PaletteKey) ?? "accent",
-      ma7Color: (saved.ma7Color as PaletteKey) ?? "slate",
-      ma3Color: (saved.ma3Color as PaletteKey) ?? "blue",
+      ma7Color: (saved.ma7Color as PaletteKey) ?? "violet",
+      ma3Color: (saved.ma3Color as PaletteKey) ?? "orange",
       downloadsStyle: (saved.downloadsStyle as LineStyleKey) ?? "solid",
       maStyle: (saved.maStyle as LineStyleKey) ?? "dashed",
     };
@@ -295,14 +302,15 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
   );
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <section className="relative rounded-2xl border border-white/10 bg-white/5 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-widest text-slate-500">Trend</p>
           <p className="mt-1 text-sm text-slate-200">Daily downloads</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="inline-flex items-center gap-2 text-xs text-slate-300">
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="inline-flex items-center gap-2 text-xs text-slate-300">
             <input
               type="checkbox"
               checked={settings.showMA7}
@@ -311,8 +319,8 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
               className="h-4 w-4 accent-[color:var(--accent)]"
             />
             MA 7
-          </label>
-          <label className="inline-flex items-center gap-2 text-xs text-slate-300">
+            </label>
+            <label className="inline-flex items-center gap-2 text-xs text-slate-300">
             <input
               type="checkbox"
               checked={settings.showMA3}
@@ -321,7 +329,20 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
               className="h-4 w-4 accent-[color:var(--accent)]"
             />
             MA 3
-          </label>
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className={CHART_BUTTON_CLASSES}
+              onClick={() => setStyleOpen((v) => !v)}
+              aria-expanded={styleOpen}
+            >
+              Style
+            </button>
+            <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
+          </div>
         </div>
       </div>
 
@@ -416,29 +437,16 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
           ) : null}
         </svg>
 
-        {/* chart actions */}
-        <div className="absolute bottom-3 right-3 flex items-center gap-2">
-          <button
-            type="button"
-            className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-100 transition hover:border-white/20 hover:bg-white/10"
-            onClick={() => setStyleOpen((v) => !v)}
-            aria-expanded={styleOpen}
-          >
-            Style
-          </button>
-          <ActionMenu label="Export" items={exports} />
-        </div>
-
         {styleOpen ? (
           <div
             ref={stylePanelRef}
-            className="absolute bottom-14 right-3 w-[min(22rem,92vw)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-xl"
+            className="absolute right-3 top-3 z-20 w-[min(22rem,92vw)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-xl"
           >
             <div className="flex items-center justify-between gap-2">
               <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Chart style</div>
               <button
                 type="button"
-                className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+                className={CHART_BUTTON_CLASSES + " px-2 py-1"}
                 onClick={() => setStyleOpen(false)}
               >
                 Close

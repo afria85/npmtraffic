@@ -20,6 +20,10 @@
   --chart-palette-blue: rgba(96, 165, 250, 0.90);
   --chart-palette-emerald: rgba(52, 211, 153, 0.90);
   --chart-palette-violet: rgba(167, 139, 250, 0.90);
+  --chart-palette-amber: rgba(251, 191, 36, 0.92);
+  --chart-palette-orange: rgba(251, 146, 60, 0.92);
+  --chart-palette-pink: rgba(244, 114, 182, 0.92);
+  --chart-palette-cyan: rgba(34, 211, 238, 0.92);
 }
 
 /* Light theme overrides */
@@ -43,6 +47,10 @@
   --chart-palette-blue: rgba(29, 78, 216, 0.92);
   --chart-palette-emerald: rgba(5, 150, 105, 0.92);
   --chart-palette-violet: rgba(109, 40, 217, 0.90);
+  --chart-palette-amber: rgba(217, 119, 6, 0.92);
+  --chart-palette-orange: rgba(234, 88, 12, 0.92);
+  --chart-palette-pink: rgba(219, 39, 119, 0.92);
+  --chart-palette-cyan: rgba(8, 145, 178, 0.92);
 }
 
 @theme inline {

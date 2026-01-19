@@ -18,10 +18,12 @@ export default function ActionMenu({
   label,
   items,
   className,
+  buttonClassName,
 }: {
   label: string;
   items: ActionMenuItem[];
   className?: string;
+  buttonClassName?: string;
 }) {
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -184,7 +186,7 @@ export default function ActionMenu({
           aria-haspopup="menu"
           aria-expanded={open}
           onClick={toggle}
-          className={`${ACTION_BUTTON_CLASSES} inline-flex items-center gap-2`}
+          className={`${buttonClassName ?? ACTION_BUTTON_CLASSES} inline-flex items-center gap-2`}
         >
           <span>{label}</span>
           <span aria-hidden className="text-slate-300">

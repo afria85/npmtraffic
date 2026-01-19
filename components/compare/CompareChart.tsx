@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ActionMenu from "@/components/ui/ActionMenu";
 
+const CHART_BUTTON_CLASSES =
+  "inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold leading-none text-slate-100 transition hover:border-white/20 hover:bg-white/10";
+
 type CompareSeriesRow = {
   date: string;
   values: Record<string, { downloads: number; delta: number | null }>;
@@ -15,11 +18,11 @@ type Props = {
 
 type Point = { x: number; y: number };
 
-type PaletteKey = "accent" | "slate" | "blue" | "emerald" | "violet";
+type PaletteKey = "accent" | "slate" | "blue" | "emerald" | "violet" | "amber" | "orange" | "pink" | "cyan";
 type LineStyleKey = "solid" | "dashed" | "dotted";
 
 type CompareChartSettings = {
-  lineStyle: LineStyleKey;
+  lineStyles: Record<string, LineStyleKey>;
   colors: Record<string, PaletteKey>;
 };
 
@@ -31,6 +34,10 @@ const PALETTE: { key: PaletteKey; label: string; cssVar: string }[] = [
   { key: "blue", label: "Blue", cssVar: "--chart-palette-blue" },
   { key: "emerald", label: "Emerald", cssVar: "--chart-palette-emerald" },
   { key: "violet", label: "Violet", cssVar: "--chart-palette-violet" },
+  { key: "amber", label: "Amber", cssVar: "--chart-palette-amber" },
+  { key: "orange", label: "Orange", cssVar: "--chart-palette-orange" },
+  { key: "pink", label: "Pink", cssVar: "--chart-palette-pink" },
+  { key: "cyan", label: "Cyan", cssVar: "--chart-palette-cyan" },
 ];
 
 const WIDTH = 1000;
@@ -143,12 +150,20 @@ async function svgToPngBlob(svgEl: SVGSVGElement, background: string) {
 }
 
 function buildDefaultColors(packageNames: string[]) {
-  const order: PaletteKey[] = ["accent", "slate", "blue", "emerald", "violet"];
+  const order: PaletteKey[] = ["accent", "amber", "pink", "blue", "emerald", "violet", "cyan", "orange", "slate"];
   const colors: Record<string, PaletteKey> = {};
   packageNames.forEach((pkg, idx) => {
     colors[pkg] = order[idx] ?? "slate";
   });
   return colors;
+}
+
+function buildDefaultLineStyles(packageNames: string[]) {
+  const styles: Record<string, LineStyleKey> = {};
+  packageNames.forEach((pkg) => {
+    styles[pkg] = "solid";
+  });
+  return styles;
 }
 
 export default function CompareChart({ series, packageNames }: Props) {
@@ -161,11 +176,11 @@ export default function CompareChart({ series, packageNames }: Props) {
   const [styleOpen, setStyleOpen] = useState(false);
   const [settings, setSettings] = useState<CompareChartSettings>(() => {
     if (typeof window === "undefined") {
-      return { lineStyle: "solid", colors: buildDefaultColors(packageNames) };
+      return { lineStyles: buildDefaultLineStyles(packageNames), colors: buildDefaultColors(packageNames) };
     }
     const saved = safeParseSettings(window.localStorage.getItem(settingsKey));
     return {
-      lineStyle: (saved.lineStyle as LineStyleKey) ?? "solid",
+      lineStyles: { ...buildDefaultLineStyles(packageNames), ...(saved.lineStyles ?? {}) },
       colors: { ...buildDefaultColors(packageNames), ...(saved.colors ?? {}) },
     };
   });
@@ -264,21 +279,17 @@ export default function CompareChart({ series, packageNames }: Props) {
   );
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <section className="relative rounded-2xl border border-white/10 bg-white/5 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-widest text-slate-500">Trend</p>
           <p className="mt-1 text-sm text-slate-200">Daily downloads (overlay)</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-100 transition hover:border-white/20 hover:bg-white/10"
-            onClick={() => setStyleOpen((v) => !v)}
-            aria-expanded={styleOpen}
-          >
+          <button type="button" className={CHART_BUTTON_CLASSES} onClick={() => setStyleOpen((v) => !v)} aria-expanded={styleOpen}>
             Style
           </button>
+          <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
         </div>
       </div>
 
@@ -311,6 +322,7 @@ export default function CompareChart({ series, packageNames }: Props) {
             const path = toPath(points);
             if (!path) return null;
             const color = paletteValue(settings.colors[pkg] ?? "slate");
+            const style = settings.lineStyles[pkg] ?? "solid";
             return (
               <path
                 key={pkg}
@@ -318,7 +330,7 @@ export default function CompareChart({ series, packageNames }: Props) {
                 fill="none"
                 stroke={color}
                 strokeWidth={2}
-                strokeDasharray={dashFor(settings.lineStyle)}
+                strokeDasharray={dashFor(style)}
               />
             );
           })}
@@ -334,20 +346,13 @@ export default function CompareChart({ series, packageNames }: Props) {
           ) : null}
         </svg>
 
-        <div className="absolute bottom-3 right-3 flex items-center gap-2">
-          <ActionMenu label="Export" items={exports} />
-        </div>
-
         {styleOpen ? (
-          <div
-            ref={stylePanelRef}
-            className="absolute bottom-14 right-3 w-[min(24rem,92vw)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-xl"
-          >
+          <div ref={stylePanelRef} className="absolute right-3 top-3 z-20 w-[min(26rem,92vw)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-xl">
             <div className="flex items-center justify-between gap-2">
               <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Chart style</div>
               <button
                 type="button"
-                className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+                className={CHART_BUTTON_CLASSES + " px-2 py-1"}
                 onClick={() => setStyleOpen(false)}
               >
                 Close
@@ -355,42 +360,51 @@ export default function CompareChart({ series, packageNames }: Props) {
             </div>
 
             <div className="mt-3 grid grid-cols-1 gap-3">
-              <label className="flex flex-col gap-1">
-                <span className="text-[color:var(--muted)]">Line style</span>
-                <select
-                  value={settings.lineStyle}
-                  onChange={(e) => setSettings((prev) => ({ ...prev, lineStyle: e.target.value as LineStyleKey }))}
-                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                >
-                  <option value="solid">Solid</option>
-                  <option value="dashed">Dashed</option>
-                  <option value="dotted">Dotted</option>
-                </select>
-              </label>
-
               <div className="grid grid-cols-1 gap-2">
-                <span className="text-[color:var(--muted)]">Series colors</span>
+                <span className="text-[color:var(--muted)]">Series (per package)</span>
                 <div className="space-y-2">
                   {packageNames.map((pkg) => (
-                    <label key={pkg} className="flex items-center justify-between gap-3">
-                      <span className="truncate text-sm">{pkg}</span>
-                      <select
-                        value={settings.colors[pkg] ?? "slate"}
-                        onChange={(e) =>
-                          setSettings((prev) => ({
-                            ...prev,
-                            colors: { ...prev.colors, [pkg]: e.target.value as PaletteKey },
-                          }))
-                        }
-                        className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                      >
-                        {PALETTE.map((p) => (
-                          <option key={p.key} value={p.key}>
-                            {p.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    <div key={pkg} className="grid grid-cols-1 gap-2 rounded-xl border border-white/10 bg-white/5 p-2 sm:grid-cols-3 sm:items-center">
+                      <div className="min-w-0 text-sm text-[color:var(--foreground)]">
+                        <div className="truncate">{pkg}</div>
+                      </div>
+                      <label className="flex items-center justify-between gap-2 sm:block">
+                        <span className="sr-only">Color</span>
+                        <select
+                          value={settings.colors[pkg] ?? "slate"}
+                          onChange={(e) =>
+                            setSettings((prev) => ({
+                              ...prev,
+                              colors: { ...prev.colors, [pkg]: e.target.value as PaletteKey },
+                            }))
+                          }
+                          className="w-full rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                        >
+                          {PALETTE.map((p) => (
+                            <option key={p.key} value={p.key}>
+                              {p.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="flex items-center justify-between gap-2 sm:block">
+                        <span className="sr-only">Line style</span>
+                        <select
+                          value={settings.lineStyles[pkg] ?? "solid"}
+                          onChange={(e) =>
+                            setSettings((prev) => ({
+                              ...prev,
+                              lineStyles: { ...prev.lineStyles, [pkg]: e.target.value as LineStyleKey },
+                            }))
+                          }
+                          className="w-full rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                        >
+                          <option value="solid">Solid</option>
+                          <option value="dashed">Dashed</option>
+                          <option value="dotted">Dotted</option>
+                        </select>
+                      </label>
+                    </div>
                   ))}
                 </div>
               </div>
