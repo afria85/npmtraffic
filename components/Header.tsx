@@ -9,7 +9,7 @@ const HEADER_PILL_CLASSES =
 export default function Header() {
   const showDonate = hasDonateLinks();
   return (
-    <header className="border-b border-white/10 bg-[color:var(--surface)] px-4 py-3">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[color:var(--surface)] px-4 py-3 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between">
         <Link href="/" className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-400">
           <Image

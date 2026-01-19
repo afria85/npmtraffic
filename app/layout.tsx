@@ -76,11 +76,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)" />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="h-screen overflow-hidden antialiased">
-        <div className="flex h-screen flex-col">
+      {/*
+        World-class dashboard ergonomics:
+        - Keep the header always available (sticky)
+        - Avoid a fixed footer on small screens (it truncates content)
+        - Constrain long tables with their own scroll containers (handled at component level)
+      */}
+      <body className="min-h-screen antialiased">
+        <div className="flex min-h-screen flex-col">
           <Header />
           <CompareTray />
-          <main className="flex-1 overflow-y-auto">{children}</main>
+          <main className="flex-1">{children}</main>
           <Footer />
         </div>
       </body>

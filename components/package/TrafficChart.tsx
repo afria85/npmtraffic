@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { DerivedMetrics } from "@/lib/derived";
 import type { TrafficSeriesRow } from "@/lib/traffic";
 import { groupEventsByDate, loadEvents } from "@/lib/events";
+import ActionMenu from "@/components/ui/ActionMenu";
 
 type Point = { x: number; y: number };
 
@@ -13,7 +14,28 @@ type Props = {
   pkgName: string;
 };
 
+type PaletteKey = "accent" | "slate" | "blue" | "emerald" | "violet";
+type LineStyleKey = "solid" | "dashed" | "dotted";
+
+type ChartSettings = {
+  showMA7: boolean;
+  showMA3: boolean;
+  downloadsColor: PaletteKey;
+  ma7Color: PaletteKey;
+  ma3Color: PaletteKey;
+  downloadsStyle: LineStyleKey;
+  maStyle: LineStyleKey;
+};
+
 const numberFormatter = new Intl.NumberFormat("en-US");
+
+const PALETTE: { key: PaletteKey; label: string; cssVar: string }[] = [
+  { key: "accent", label: "Accent", cssVar: "--chart-palette-accent" },
+  { key: "slate", label: "Slate", cssVar: "--chart-palette-slate" },
+  { key: "blue", label: "Blue", cssVar: "--chart-palette-blue" },
+  { key: "emerald", label: "Emerald", cssVar: "--chart-palette-emerald" },
+  { key: "violet", label: "Violet", cssVar: "--chart-palette-violet" },
+];
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -32,17 +54,163 @@ function pickClosestIndex(x: number, count: number) {
   return clamp(Math.round(x * (count - 1)), 0, count - 1);
 }
 
+function dashFor(style: LineStyleKey) {
+  if (style === "dashed") return "6 4";
+  if (style === "dotted") return "2 4";
+  return undefined;
+}
+
+function paletteValue(key: PaletteKey) {
+  const item = PALETTE.find((p) => p.key === key) ?? PALETTE[0];
+  return `var(${item.cssVar})`;
+}
+
+function safeParseSettings(input: string | null): Partial<ChartSettings> {
+  if (!input) return {};
+  try {
+    const parsed = JSON.parse(input) as Partial<ChartSettings>;
+    if (!parsed || typeof parsed !== "object") return {};
+    return parsed;
+  } catch {
+    return {};
+  }
+}
+
+function readCssVar(name: string) {
+  if (typeof window === "undefined") return "#0b0f14";
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || "#0b0f14";
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function svgToBlob(svgEl: SVGSVGElement) {
+  const cloned = svgEl.cloneNode(true) as SVGSVGElement;
+  cloned.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  const viewBox = cloned.getAttribute("viewBox") ?? "0 0 1000 260";
+  const [, , w, h] = viewBox.split(" ").map((v) => Number(v));
+  if (Number.isFinite(w) && Number.isFinite(h)) {
+    cloned.setAttribute("width", String(w));
+    cloned.setAttribute("height", String(h));
+  }
+  const xml = new XMLSerializer().serializeToString(cloned);
+  return new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
+}
+
+async function svgToPngBlob(svgEl: SVGSVGElement, background: string) {
+  const svgBlob = svgToBlob(svgEl);
+  const svgText = await svgBlob.text();
+  const encoded = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgText)}`;
+
+  const img = new Image();
+  img.decoding = "async";
+
+  const viewBox = svgEl.getAttribute("viewBox") ?? "0 0 1000 260";
+  const [, , w, h] = viewBox.split(" ").map((v) => Number(v));
+  const width = Number.isFinite(w) ? w : 1000;
+  const height = Number.isFinite(h) ? h : 260;
+
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error("Failed to render SVG"));
+    img.src = encoded;
+  });
+
+  const scale = 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(width * scale);
+  canvas.height = Math.round(height * scale);
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not available");
+
+  ctx.scale(scale, scale);
+  ctx.fillStyle = background;
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(img, 0, 0, width, height);
+
+  const pngBlob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b as Blob), "image/png"));
+  return pngBlob;
+}
+
 export default function TrafficChart({ series, derived, pkgName }: Props) {
-  const [showMA7, setShowMA7] = useState(true);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const stylePanelRef = useRef<HTMLDivElement | null>(null);
+
+  const settingsKey = `npmtraffic_chart_settings:${pkgName}`;
+
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [styleOpen, setStyleOpen] = useState(false);
+  const [settings, setSettings] = useState<ChartSettings>(() => {
+    if (typeof window === "undefined") {
+      return {
+        showMA7: true,
+        showMA3: false,
+        downloadsColor: "accent",
+        ma7Color: "slate",
+        ma3Color: "blue",
+        downloadsStyle: "solid",
+        maStyle: "dashed",
+      };
+    }
+
+    const saved = safeParseSettings(window.localStorage.getItem(settingsKey));
+    return {
+      showMA7: saved.showMA7 ?? true,
+      showMA3: saved.showMA3 ?? false,
+      downloadsColor: (saved.downloadsColor as PaletteKey) ?? "accent",
+      ma7Color: (saved.ma7Color as PaletteKey) ?? "slate",
+      ma3Color: (saved.ma3Color as PaletteKey) ?? "blue",
+      downloadsStyle: (saved.downloadsStyle as LineStyleKey) ?? "solid",
+      maStyle: (saved.maStyle as LineStyleKey) ?? "dashed",
+    };
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(settingsKey, JSON.stringify(settings));
+  }, [settingsKey, settings]);
+
+  useEffect(() => {
+    if (!styleOpen) return;
+    const onPointerDown = (event: Event) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (stylePanelRef.current?.contains(target)) return;
+      setStyleOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setStyleOpen(false);
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [styleOpen]);
 
   const eventsByDate = useMemo(() => groupEventsByDate(loadEvents(pkgName)), [pkgName]);
 
-  const { maxValue, downloadsPoints, ma7Points } = useMemo(() => {
+  const { maxValue, downloadsPoints, ma7Points, ma3Points } = useMemo(() => {
     const downloads = series.map((row) => row.downloads);
     const ma7 = derived?.ma7?.map((v) => v?.value ?? null) ?? [];
+    const ma3 = derived?.ma3?.map((v) => v?.value ?? null) ?? [];
+
     const candidateValues: number[] = [...downloads];
     for (const v of ma7) if (typeof v === "number" && Number.isFinite(v)) candidateValues.push(v);
+    for (const v of ma3) if (typeof v === "number" && Number.isFinite(v)) candidateValues.push(v);
+
     const maxValue = Math.max(1, ...candidateValues);
 
     const width = 1000;
@@ -60,8 +228,13 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
       if (typeof value !== "number" || !Number.isFinite(value)) return null;
       return { x: xFor(i), y: yFor(value) };
     });
+    const ma3Points = series.map((_, i) => {
+      const value = ma3[i];
+      if (typeof value !== "number" || !Number.isFinite(value)) return null;
+      return { x: xFor(i), y: yFor(value) };
+    });
 
-    return { maxValue, downloadsPoints, ma7Points };
+    return { maxValue, downloadsPoints, ma7Points, ma3Points };
   }, [series, derived]);
 
   const width = 1000;
@@ -72,6 +245,7 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
 
   const downloadsPath = useMemo(() => toPath(downloadsPoints), [downloadsPoints]);
   const ma7Path = useMemo(() => toPath(ma7Points.filter(Boolean) as Point[]), [ma7Points]);
+  const ma3Path = useMemo(() => toPath(ma3Points.filter(Boolean) as Point[]), [ma3Points]);
 
   const yTicks = useMemo(() => {
     const ticks = 4;
@@ -87,7 +261,38 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
 
   const hovered = hoverIndex == null ? null : series[hoverIndex];
   const hoveredMA7 = hoverIndex == null ? null : derived?.ma7?.[hoverIndex]?.value ?? null;
+  const hoveredMA3 = hoverIndex == null ? null : derived?.ma3?.[hoverIndex]?.value ?? null;
   const hoveredEvents = hovered ? eventsByDate.get(hovered.date) ?? [] : [];
+
+  const canShowMA7 = Boolean(ma7Path);
+  const canShowMA3 = Boolean(ma3Path);
+
+  const exports = useMemo(
+    () => [
+      {
+        key: "svg",
+        label: "Export SVG",
+        onClick: () => {
+          const svg = svgRef.current;
+          if (!svg) return;
+          const blob = svgToBlob(svg);
+          downloadBlob(blob, `${pkgName}-traffic.svg`);
+        },
+      },
+      {
+        key: "png",
+        label: "Export PNG",
+        onClick: async () => {
+          const svg = svgRef.current;
+          if (!svg) return;
+          const bg = readCssVar("--surface");
+          const blob = await svgToPngBlob(svg, bg);
+          downloadBlob(blob, `${pkgName}-traffic.png`);
+        },
+      },
+    ],
+    [pkgName]
+  );
 
   return (
     <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -96,19 +301,33 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
           <p className="text-xs uppercase tracking-widest text-slate-500">Trend</p>
           <p className="mt-1 text-sm text-slate-200">Daily downloads</p>
         </div>
-        <label className="inline-flex items-center gap-2 text-xs text-slate-300">
-          <input
-            type="checkbox"
-            checked={showMA7}
-            onChange={(event) => setShowMA7(event.target.checked)}
-            className="h-4 w-4 accent-[color:var(--accent)]"
-          />
-          MA 7
-        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="inline-flex items-center gap-2 text-xs text-slate-300">
+            <input
+              type="checkbox"
+              checked={settings.showMA7}
+              disabled={!canShowMA7}
+              onChange={(event) => setSettings((prev) => ({ ...prev, showMA7: event.target.checked }))}
+              className="h-4 w-4 accent-[color:var(--accent)]"
+            />
+            MA 7
+          </label>
+          <label className="inline-flex items-center gap-2 text-xs text-slate-300">
+            <input
+              type="checkbox"
+              checked={settings.showMA3}
+              disabled={!canShowMA3}
+              onChange={(event) => setSettings((prev) => ({ ...prev, showMA3: event.target.checked }))}
+              className="h-4 w-4 accent-[color:var(--accent)]"
+            />
+            MA 3
+          </label>
+        </div>
       </div>
 
       <div className="relative mt-4">
         <svg
+          ref={svgRef}
           viewBox={`0 0 ${width} ${height}`}
           className="h-64 w-full"
           role="img"
@@ -124,8 +343,8 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
           {/* grid */}
           {yTicks.map((tick) => (
             <g key={tick.y}>
-              <line x1={pad.l} x2={pad.l + innerW} y1={tick.y} y2={tick.y} stroke="rgba(255,255,255,0.08)" />
-              <text x={pad.l - 8} y={tick.y + 4} textAnchor="end" fontSize="11" fill="rgba(230,237,243,0.6)">
+              <line x1={pad.l} x2={pad.l + innerW} y1={tick.y} y2={tick.y} stroke="var(--chart-grid)" />
+              <text x={pad.l - 8} y={tick.y + 4} textAnchor="end" fontSize="11" fill="var(--chart-axis)">
                 {tick.label}
               </text>
             </g>
@@ -139,18 +358,42 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
             if (x == null) return null;
             return (
               <g key={`evt-${row.date}`}>
-                <line x1={x} x2={x} y1={pad.t} y2={pad.t + innerH} stroke="rgba(94,234,212,0.15)" />
-                <circle cx={x} cy={pad.t + 6} r={4} fill="rgba(94,234,212,0.45)" />
+                <line x1={x} x2={x} y1={pad.t} y2={pad.t + innerH} stroke="var(--chart-palette-accent)" opacity={0.14} />
+                <circle cx={x} cy={pad.t + 6} r={4} fill="var(--chart-palette-accent)" opacity={0.45} />
               </g>
             );
           })}
 
           {/* downloads */}
-          <path d={downloadsPath} fill="none" stroke="rgba(94,234,212,0.95)" strokeWidth={2.25} />
+          <path
+            d={downloadsPath}
+            fill="none"
+            stroke={paletteValue(settings.downloadsColor)}
+            strokeWidth={2.25}
+            strokeDasharray={dashFor(settings.downloadsStyle)}
+          />
 
-          {/* MA 7 */}
-          {showMA7 && ma7Path ? (
-            <path d={ma7Path} fill="none" stroke="rgba(230,237,243,0.55)" strokeWidth={1.6} strokeDasharray="5 4" />
+          {/* MA lines */}
+          {settings.showMA7 && canShowMA7 ? (
+            <path
+              d={ma7Path}
+              fill="none"
+              stroke={paletteValue(settings.ma7Color)}
+              strokeWidth={1.8}
+              strokeDasharray={dashFor(settings.maStyle) ?? "6 4"}
+              opacity={0.92}
+            />
+          ) : null}
+
+          {settings.showMA3 && canShowMA3 ? (
+            <path
+              d={ma3Path}
+              fill="none"
+              stroke={paletteValue(settings.ma3Color)}
+              strokeWidth={1.6}
+              strokeDasharray={dashFor(settings.maStyle) ?? "2 4"}
+              opacity={0.88}
+            />
           ) : null}
 
           {/* hover */}
@@ -161,46 +404,158 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
                 x2={downloadsPoints[hoverIndex].x}
                 y1={pad.t}
                 y2={pad.t + innerH}
-                stroke="rgba(230,237,243,0.16)"
+                stroke="var(--chart-grid)"
               />
               <circle
                 cx={downloadsPoints[hoverIndex].x}
                 cy={downloadsPoints[hoverIndex].y}
                 r={4.5}
-                fill="rgba(94,234,212,0.95)"
+                fill={paletteValue(settings.downloadsColor)}
               />
             </g>
           ) : null}
         </svg>
 
-        {hovered ? (
-          <div className="pointer-events-none absolute right-3 top-3 w-[min(18rem,90%)] rounded-2xl border border-white/10 bg-black/80 p-3 text-xs text-slate-200 shadow-sm shadow-black/40 backdrop-blur">
+        {/* chart actions */}
+        <div className="absolute bottom-3 right-3 flex items-center gap-2">
+          <button
+            type="button"
+            className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+            onClick={() => setStyleOpen((v) => !v)}
+            aria-expanded={styleOpen}
+          >
+            Style
+          </button>
+          <ActionMenu label="Export" items={exports} />
+        </div>
+
+        {styleOpen ? (
+          <div
+            ref={stylePanelRef}
+            className="absolute bottom-14 right-3 w-[min(22rem,92vw)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-xl"
+          >
             <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-slate-100">{hovered.date}</span>
-              <span className="text-slate-400">UTC</span>
+              <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Chart style</div>
+              <button
+                type="button"
+                className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+                onClick={() => setStyleOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1">
+                  <span className="text-[color:var(--muted)]">Downloads color</span>
+                  <select
+                    value={settings.downloadsColor}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, downloadsColor: e.target.value as PaletteKey }))}
+                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                  >
+                    {PALETTE.map((p) => (
+                      <option key={p.key} value={p.key}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[color:var(--muted)]">Downloads line</span>
+                  <select
+                    value={settings.downloadsStyle}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, downloadsStyle: e.target.value as LineStyleKey }))}
+                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                  >
+                    <option value="solid">Solid</option>
+                    <option value="dashed">Dashed</option>
+                    <option value="dotted">Dotted</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1">
+                  <span className="text-[color:var(--muted)]">MA 7 color</span>
+                  <select
+                    value={settings.ma7Color}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, ma7Color: e.target.value as PaletteKey }))}
+                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                  >
+                    {PALETTE.map((p) => (
+                      <option key={p.key} value={p.key}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[color:var(--muted)]">MA 3 color</span>
+                  <select
+                    value={settings.ma3Color}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, ma3Color: e.target.value as PaletteKey }))}
+                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                  >
+                    {PALETTE.map((p) => (
+                      <option key={p.key} value={p.key}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-[color:var(--muted)]">MA line style</span>
+                <select
+                  value={settings.maStyle}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, maStyle: e.target.value as LineStyleKey }))}
+                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                >
+                  <option value="solid">Solid</option>
+                  <option value="dashed">Dashed</option>
+                  <option value="dotted">Dotted</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        ) : null}
+
+        {hovered ? (
+          <div className="pointer-events-none absolute right-3 top-3 w-[min(18rem,90%)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono text-[color:var(--foreground)]">{hovered.date}</span>
+              <span className="text-[color:var(--muted)]">UTC</span>
             </div>
             <div className="mt-2 space-y-1">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-slate-400">Downloads</span>
+                <span className="text-[color:var(--muted)]">Downloads</span>
                 <span className="font-mono">{numberFormatter.format(hovered.downloads)}</span>
               </div>
-              {showMA7 && typeof hoveredMA7 === "number" ? (
+              {settings.showMA7 && typeof hoveredMA7 === "number" ? (
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-slate-400">MA 7</span>
+                  <span className="text-[color:var(--muted)]">MA 7</span>
                   <span className="font-mono">{hoveredMA7.toFixed(1)}</span>
+                </div>
+              ) : null}
+              {settings.showMA3 && typeof hoveredMA3 === "number" ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[color:var(--muted)]">MA 3</span>
+                  <span className="font-mono">{hoveredMA3.toFixed(1)}</span>
                 </div>
               ) : null}
             </div>
             {hoveredEvents.length ? (
               <div className="mt-2 border-t border-white/10 pt-2">
-                <p className="text-[11px] uppercase tracking-[0.35em] text-slate-400">Events</p>
+                <p className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Events</p>
                 <ul className="mt-1 space-y-1">
                   {hoveredEvents.slice(0, 3).map((evt) => (
-                    <li key={`${evt.date_utc}|${evt.event_type}|${evt.label}`} className="text-slate-200">
-                      <span className="text-slate-400">{evt.event_type}</span>: {evt.label}
+                    <li key={`${evt.date_utc}|${evt.event_type}|${evt.label}`}>
+                      <span className="text-[color:var(--muted)]">{evt.event_type}</span>: {evt.label}
                     </li>
                   ))}
-                  {hoveredEvents.length > 3 ? <li className="text-slate-400">...</li> : null}
+                  {hoveredEvents.length > 3 ? <li className="text-[color:var(--muted)]">...</li> : null}
                 </ul>
               </div>
             ) : null}

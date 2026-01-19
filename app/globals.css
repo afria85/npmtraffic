@@ -8,6 +8,18 @@
   --surface: #0f1621;
   --border: #1f2a37;
   --accent: #5eead4;
+
+  /* Chart tokens (theme-aware defaults) */
+  --chart-grid: rgba(255, 255, 255, 0.08);
+  --chart-axis: rgba(230, 237, 243, 0.60);
+  --chart-tooltip-bg: rgba(0, 0, 0, 0.82);
+  --chart-tooltip-border: rgba(255, 255, 255, 0.10);
+
+  --chart-palette-accent: rgba(94, 234, 212, 0.95);
+  --chart-palette-slate: rgba(230, 237, 243, 0.70);
+  --chart-palette-blue: rgba(96, 165, 250, 0.90);
+  --chart-palette-emerald: rgba(52, 211, 153, 0.90);
+  --chart-palette-violet: rgba(167, 139, 250, 0.90);
 }
 
 /* Light theme overrides */
@@ -18,6 +30,19 @@
   --surface: #ffffff;
   --border: rgba(11, 18, 32, 0.12);
   --accent: #2563eb;
+
+  /* Chart tokens tuned for light backgrounds */
+  --chart-grid: rgba(11, 18, 32, 0.10);
+  --chart-axis: rgba(11, 18, 32, 0.65);
+  --chart-tooltip-bg: rgba(255, 255, 255, 0.94);
+  --chart-tooltip-border: rgba(11, 18, 32, 0.12);
+
+  /* Palette stays within the app's look but remains legible in light mode */
+  --chart-palette-accent: rgba(37, 99, 235, 0.95);
+  --chart-palette-slate: rgba(11, 18, 32, 0.78);
+  --chart-palette-blue: rgba(29, 78, 216, 0.92);
+  --chart-palette-emerald: rgba(5, 150, 105, 0.92);
+  --chart-palette-violet: rgba(109, 40, 217, 0.90);
 }
 
 @theme inline {

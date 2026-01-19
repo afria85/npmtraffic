@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import ActionMenu from "@/components/ui/ActionMenu";
 
 type CompareSeriesRow = {
   date: string;
@@ -14,7 +15,27 @@ type Props = {
 
 type Point = { x: number; y: number };
 
+type PaletteKey = "accent" | "slate" | "blue" | "emerald" | "violet";
+type LineStyleKey = "solid" | "dashed" | "dotted";
+
+type CompareChartSettings = {
+  lineStyle: LineStyleKey;
+  colors: Record<string, PaletteKey>;
+};
+
 const numberFormatter = new Intl.NumberFormat("en-US");
+
+const PALETTE: { key: PaletteKey; label: string; cssVar: string }[] = [
+  { key: "accent", label: "Accent", cssVar: "--chart-palette-accent" },
+  { key: "slate", label: "Slate", cssVar: "--chart-palette-slate" },
+  { key: "blue", label: "Blue", cssVar: "--chart-palette-blue" },
+  { key: "emerald", label: "Emerald", cssVar: "--chart-palette-emerald" },
+  { key: "violet", label: "Violet", cssVar: "--chart-palette-violet" },
+];
+
+const WIDTH = 1000;
+const HEIGHT = 260;
+const PAD = { l: 46, r: 16, t: 16, b: 30 } as const;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -33,16 +54,145 @@ function pickClosestIndex(x: number, count: number) {
   return clamp(Math.round(x * (count - 1)), 0, count - 1);
 }
 
-const STROKES = [
-  "rgba(94,234,212,0.95)",
-  "rgba(230,237,243,0.70)",
-  "rgba(230,237,243,0.55)",
-  "rgba(230,237,243,0.40)",
-  "rgba(230,237,243,0.28)",
-];
+function dashFor(style: LineStyleKey) {
+  if (style === "dashed") return "6 4";
+  if (style === "dotted") return "2 4";
+  return undefined;
+}
+
+function paletteValue(key: PaletteKey) {
+  const item = PALETTE.find((p) => p.key === key) ?? PALETTE[0];
+  return `var(${item.cssVar})`;
+}
+
+function safeParseSettings(input: string | null): Partial<CompareChartSettings> {
+  if (!input) return {};
+  try {
+    const parsed = JSON.parse(input) as Partial<CompareChartSettings>;
+    if (!parsed || typeof parsed !== "object") return {};
+    return parsed;
+  } catch {
+    return {};
+  }
+}
+
+function readCssVar(name: string) {
+  if (typeof window === "undefined") return "#0b0f14";
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || "#0b0f14";
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function svgToBlob(svgEl: SVGSVGElement) {
+  const cloned = svgEl.cloneNode(true) as SVGSVGElement;
+  cloned.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  const viewBox = cloned.getAttribute("viewBox") ?? "0 0 1000 260";
+  const [, , w, h] = viewBox.split(" ").map((v) => Number(v));
+  if (Number.isFinite(w) && Number.isFinite(h)) {
+    cloned.setAttribute("width", String(w));
+    cloned.setAttribute("height", String(h));
+  }
+  const xml = new XMLSerializer().serializeToString(cloned);
+  return new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
+}
+
+async function svgToPngBlob(svgEl: SVGSVGElement, background: string) {
+  const svgBlob = svgToBlob(svgEl);
+  const svgText = await svgBlob.text();
+  const encoded = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgText)}`;
+
+  const img = new Image();
+  img.decoding = "async";
+
+  const viewBox = svgEl.getAttribute("viewBox") ?? "0 0 1000 260";
+  const [, , w, h] = viewBox.split(" ").map((v) => Number(v));
+  const width = Number.isFinite(w) ? w : 1000;
+  const height = Number.isFinite(h) ? h : 260;
+
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error("Failed to render SVG"));
+    img.src = encoded;
+  });
+
+  const scale = 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(width * scale);
+  canvas.height = Math.round(height * scale);
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not available");
+
+  ctx.scale(scale, scale);
+  ctx.fillStyle = background;
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(img, 0, 0, width, height);
+
+  const pngBlob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b as Blob), "image/png"));
+  return pngBlob;
+}
+
+function buildDefaultColors(packageNames: string[]) {
+  const order: PaletteKey[] = ["accent", "slate", "blue", "emerald", "violet"];
+  const colors: Record<string, PaletteKey> = {};
+  packageNames.forEach((pkg, idx) => {
+    colors[pkg] = order[idx] ?? "slate";
+  });
+  return colors;
+}
 
 export default function CompareChart({ series, packageNames }: Props) {
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const stylePanelRef = useRef<HTMLDivElement | null>(null);
+
+  const settingsKey = `npmtraffic_chart_settings:compare:${packageNames.join("|")}`;
+
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [styleOpen, setStyleOpen] = useState(false);
+  const [settings, setSettings] = useState<CompareChartSettings>(() => {
+    if (typeof window === "undefined") {
+      return { lineStyle: "solid", colors: buildDefaultColors(packageNames) };
+    }
+    const saved = safeParseSettings(window.localStorage.getItem(settingsKey));
+    return {
+      lineStyle: (saved.lineStyle as LineStyleKey) ?? "solid",
+      colors: { ...buildDefaultColors(packageNames), ...(saved.colors ?? {}) },
+    };
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(settingsKey, JSON.stringify(settings));
+  }, [settingsKey, settings]);
+
+  useEffect(() => {
+    if (!styleOpen) return;
+    const onPointerDown = (event: Event) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (stylePanelRef.current?.contains(target)) return;
+      setStyleOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setStyleOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [styleOpen]);
 
   const { maxValue, pointsByPkg } = useMemo(() => {
     const values: number[] = [];
@@ -54,13 +204,10 @@ export default function CompareChart({ series, packageNames }: Props) {
     }
     const maxValue = Math.max(1, ...values);
 
-    const width = 1000;
-    const height = 260;
-    const pad = { l: 46, r: 16, t: 16, b: 30 };
-    const innerW = width - pad.l - pad.r;
-    const innerH = height - pad.t - pad.b;
-    const xFor = (i: number) => pad.l + innerW * (series.length <= 1 ? 0 : i / (series.length - 1));
-    const yFor = (v: number) => pad.t + innerH * (1 - v / maxValue);
+    const innerW = WIDTH - PAD.l - PAD.r;
+    const innerH = HEIGHT - PAD.t - PAD.b;
+    const xFor = (i: number) => PAD.l + innerW * (series.length <= 1 ? 0 : i / (series.length - 1));
+    const yFor = (v: number) => PAD.t + innerH * (1 - v / maxValue);
 
     const pointsByPkg = new Map<string, Point[]>();
     for (const pkg of packageNames) {
@@ -72,11 +219,8 @@ export default function CompareChart({ series, packageNames }: Props) {
     return { maxValue, pointsByPkg };
   }, [series, packageNames]);
 
-  const width = 1000;
-  const height = 260;
-  const pad = { l: 46, r: 16, t: 16, b: 30 };
-  const innerW = width - pad.l - pad.r;
-  const innerH = height - pad.t - pad.b;
+  const innerW = WIDTH - PAD.l - PAD.r;
+  const innerH = HEIGHT - PAD.t - PAD.b;
 
   const yTicks = useMemo(() => {
     const ticks = 4;
@@ -84,24 +228,64 @@ export default function CompareChart({ series, packageNames }: Props) {
     for (let i = 0; i <= ticks; i += 1) {
       const ratio = i / ticks;
       const value = Math.round(maxValue * (1 - ratio));
-      const y = pad.t + innerH * ratio;
+      const y = PAD.t + innerH * ratio;
       values.push({ y, label: numberFormatter.format(value) });
     }
     return values;
-  }, [maxValue, innerH, pad.t]);
+  }, [maxValue, innerH]);
 
   const hovered = hoverIndex == null ? null : series[hoverIndex];
 
+  const exports = useMemo(
+    () => [
+      {
+        key: "svg",
+        label: "Export SVG",
+        onClick: () => {
+          const svg = svgRef.current;
+          if (!svg) return;
+          const blob = svgToBlob(svg);
+          downloadBlob(blob, `compare-${packageNames.length}-packages.svg`);
+        },
+      },
+      {
+        key: "png",
+        label: "Export PNG",
+        onClick: async () => {
+          const svg = svgRef.current;
+          if (!svg) return;
+          const bg = readCssVar("--surface");
+          const blob = await svgToPngBlob(svg, bg);
+          downloadBlob(blob, `compare-${packageNames.length}-packages.png`);
+        },
+      },
+    ],
+    [packageNames.length]
+  );
+
   return (
     <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div>
-        <p className="text-xs uppercase tracking-widest text-slate-500">Trend</p>
-        <p className="mt-1 text-sm text-slate-200">Daily downloads (overlay)</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-slate-500">Trend</p>
+          <p className="mt-1 text-sm text-slate-200">Daily downloads (overlay)</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+            onClick={() => setStyleOpen((v) => !v)}
+            aria-expanded={styleOpen}
+          >
+            Style
+          </button>
+        </div>
       </div>
 
       <div className="relative mt-4">
         <svg
-          viewBox={`0 0 ${width} ${height}`}
+          ref={svgRef}
+          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
           className="h-64 w-full"
           role="img"
           aria-label="Compare daily downloads line chart"
@@ -115,49 +299,115 @@ export default function CompareChart({ series, packageNames }: Props) {
         >
           {yTicks.map((tick) => (
             <g key={tick.y}>
-              <line x1={pad.l} x2={pad.l + innerW} y1={tick.y} y2={tick.y} stroke="rgba(255,255,255,0.08)" />
-              <text x={pad.l - 8} y={tick.y + 4} textAnchor="end" fontSize="11" fill="rgba(230,237,243,0.6)">
+              <line x1={PAD.l} x2={PAD.l + innerW} y1={tick.y} y2={tick.y} stroke="var(--chart-grid)" />
+              <text x={PAD.l - 8} y={tick.y + 4} textAnchor="end" fontSize="11" fill="var(--chart-axis)">
                 {tick.label}
               </text>
             </g>
           ))}
 
-          {packageNames.map((pkg, idx) => {
+          {packageNames.map((pkg) => {
             const points = pointsByPkg.get(pkg) ?? [];
             const path = toPath(points);
             if (!path) return null;
+            const color = paletteValue(settings.colors[pkg] ?? "slate");
             return (
               <path
                 key={pkg}
                 d={path}
                 fill="none"
-                stroke={STROKES[idx] ?? STROKES[STROKES.length - 1]}
+                stroke={color}
                 strokeWidth={2}
+                strokeDasharray={dashFor(settings.lineStyle)}
               />
             );
           })}
 
           {hoverIndex != null ? (
             <line
-              x1={(pointsByPkg.get(packageNames[0]) ?? [])[hoverIndex]?.x ?? pad.l}
-              x2={(pointsByPkg.get(packageNames[0]) ?? [])[hoverIndex]?.x ?? pad.l}
-              y1={pad.t}
-              y2={pad.t + innerH}
-              stroke="rgba(230,237,243,0.16)"
+              x1={(pointsByPkg.get(packageNames[0]) ?? [])[hoverIndex]?.x ?? PAD.l}
+              x2={(pointsByPkg.get(packageNames[0]) ?? [])[hoverIndex]?.x ?? PAD.l}
+              y1={PAD.t}
+              y2={PAD.t + innerH}
+              stroke="var(--chart-grid)"
             />
           ) : null}
         </svg>
 
-        {hovered ? (
-          <div className="pointer-events-none absolute right-3 top-3 w-[min(18rem,90%)] rounded-2xl border border-white/10 bg-black/80 p-3 text-xs text-slate-200 shadow-sm shadow-black/40 backdrop-blur">
+        <div className="absolute bottom-3 right-3 flex items-center gap-2">
+          <ActionMenu label="Export" items={exports} />
+        </div>
+
+        {styleOpen ? (
+          <div
+            ref={stylePanelRef}
+            className="absolute bottom-14 right-3 w-[min(24rem,92vw)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-xl"
+          >
             <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-slate-100">{hovered.date}</span>
-              <span className="text-slate-400">UTC</span>
+              <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Chart style</div>
+              <button
+                type="button"
+                className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+                onClick={() => setStyleOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 gap-3">
+              <label className="flex flex-col gap-1">
+                <span className="text-[color:var(--muted)]">Line style</span>
+                <select
+                  value={settings.lineStyle}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, lineStyle: e.target.value as LineStyleKey }))}
+                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                >
+                  <option value="solid">Solid</option>
+                  <option value="dashed">Dashed</option>
+                  <option value="dotted">Dotted</option>
+                </select>
+              </label>
+
+              <div className="grid grid-cols-1 gap-2">
+                <span className="text-[color:var(--muted)]">Series colors</span>
+                <div className="space-y-2">
+                  {packageNames.map((pkg) => (
+                    <label key={pkg} className="flex items-center justify-between gap-3">
+                      <span className="truncate text-sm">{pkg}</span>
+                      <select
+                        value={settings.colors[pkg] ?? "slate"}
+                        onChange={(e) =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            colors: { ...prev.colors, [pkg]: e.target.value as PaletteKey },
+                          }))
+                        }
+                        className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                      >
+                        {PALETTE.map((p) => (
+                          <option key={p.key} value={p.key}>
+                            {p.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {hovered ? (
+          <div className="pointer-events-none absolute right-3 top-3 w-[min(18rem,90%)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-mono text-[color:var(--foreground)]">{hovered.date}</span>
+              <span className="text-[color:var(--muted)]">UTC</span>
             </div>
             <div className="mt-2 space-y-1">
               {packageNames.map((pkg) => (
                 <div key={pkg} className="flex items-center justify-between gap-2">
-                  <span className="text-slate-400">{pkg}</span>
+                  <span className="text-[color:var(--muted)]">{pkg}</span>
                   <span className="font-mono">{numberFormatter.format(hovered.values[pkg]?.downloads ?? 0)}</span>
                 </div>
               ))}
@@ -167,9 +417,12 @@ export default function CompareChart({ series, packageNames }: Props) {
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-300">
-        {packageNames.map((pkg, idx) => (
+        {packageNames.map((pkg) => (
           <span key={pkg} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1">
-            <span className="h-2.5 w-2.5 rounded-full" style={{ background: STROKES[idx] ?? STROKES[STROKES.length - 1] }} />
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ background: paletteValue(settings.colors[pkg] ?? "slate") }}
+            />
             {pkg}
           </span>
         ))}
