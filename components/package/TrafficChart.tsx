@@ -28,6 +28,8 @@ type ChartSettings = {
   ma3Color: PaletteKey;
   downloadsStyle: LineStyleKey;
   maStyle: LineStyleKey;
+  showOutliers: boolean;
+  outlierColor: PaletteKey;
 };
 
 const numberFormatter = new Intl.NumberFormat("en-US");
@@ -167,6 +169,8 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
         ma3Color: "orange",
         downloadsStyle: "solid",
         maStyle: "dashed",
+        showOutliers: true,
+        outlierColor: "amber",
       };
     }
 
@@ -179,6 +183,8 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
       ma3Color: (saved.ma3Color as PaletteKey) ?? "orange",
       downloadsStyle: (saved.downloadsStyle as LineStyleKey) ?? "solid",
       maStyle: (saved.maStyle as LineStyleKey) ?? "dashed",
+      showOutliers: saved.showOutliers ?? true,
+      outlierColor: (saved.outlierColor as PaletteKey) ?? "amber",
     };
   });
 
@@ -254,6 +260,19 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
   const ma7Path = useMemo(() => toPath(ma7Points.filter(Boolean) as Point[]), [ma7Points]);
   const ma3Path = useMemo(() => toPath(ma3Points.filter(Boolean) as Point[]), [ma3Points]);
 
+  const outlierPoints = useMemo(() => {
+    const outliers = derived?.outliers ?? [];
+    const pts: { index: number; x: number; y: number; score: number }[] = [];
+    for (let i = 0; i < outliers.length; i += 1) {
+      const o = outliers[i];
+      if (!o || !o.is_outlier) continue;
+      const p = downloadsPoints[i];
+      if (!p) continue;
+      pts.push({ index: i, x: p.x, y: p.y, score: o.score });
+    }
+    return pts;
+  }, [derived, downloadsPoints]);
+
   const yTicks = useMemo(() => {
     const ticks = 4;
     const values: { y: number; label: string }[] = [];
@@ -269,6 +288,7 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
   const hovered = hoverIndex == null ? null : series[hoverIndex];
   const hoveredMA7 = hoverIndex == null ? null : derived?.ma7?.[hoverIndex]?.value ?? null;
   const hoveredMA3 = hoverIndex == null ? null : derived?.ma3?.[hoverIndex]?.value ?? null;
+  const hoveredOutlier = hoverIndex == null ? null : derived?.outliers?.[hoverIndex] ?? null;
   const hoveredEvents = hovered ? eventsByDate.get(hovered.date) ?? [] : [];
 
   const canShowMA7 = Boolean(ma7Path);
@@ -384,6 +404,24 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
               </g>
             );
           })}
+
+          {/* outlier markers */}
+          {settings.showOutliers && outlierPoints.length ? (
+            <g>
+              {outlierPoints.map((p) => (
+                <circle
+                  key={`out-${p.index}`}
+                  cx={p.x}
+                  cy={p.y}
+                  r={4.6}
+                  fill={paletteValue(settings.outlierColor)}
+                  opacity={0.82}
+                  stroke="var(--background)"
+                  strokeWidth={2}
+                />
+              ))}
+            </g>
+          ) : null}
 
           {/* downloads */}
           <path
@@ -527,6 +565,32 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
                 </select>
               </label>
             </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="inline-flex items-center gap-2 text-xs text-[color:var(--muted)]">
+                  <input
+                    type="checkbox"
+                    checked={settings.showOutliers}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, showOutliers: e.target.checked }))}
+                    className="h-4 w-4 accent-[color:var(--accent)]"
+                  />
+                  Outliers
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[color:var(--muted)]">Outlier color</span>
+                  <select
+                    value={settings.outlierColor}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, outlierColor: e.target.value as PaletteKey }))}
+                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                  >
+                    {PALETTE.map((p) => (
+                      <option key={p.key} value={p.key}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
           </div>
         ) : null}
 
@@ -551,6 +615,12 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[color:var(--muted)]">MA 3</span>
                   <span className="font-mono">{hoveredMA3.toFixed(1)}</span>
+                </div>
+              ) : null}
+              {settings.showOutliers && hoveredOutlier?.is_outlier ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[color:var(--muted)]">Outlier score</span>
+                  <span className="font-mono">{hoveredOutlier.score.toFixed(2)}</span>
                 </div>
               ) : null}
             </div>

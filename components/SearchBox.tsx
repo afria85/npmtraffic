@@ -237,6 +237,11 @@ function SearchPanel({
           aria-autocomplete="list"
           aria-activedescendant={activeOption?.id}
         />
+        {state === "loading" ? (
+          <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[color:var(--border)] border-t-[color:var(--accent)]" aria-hidden />
+          </div>
+        ) : null}
         {showList ? (
           <div
             className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-lg"

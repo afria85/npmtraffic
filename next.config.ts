@@ -1,24 +1,26 @@
 import type { NextConfig } from "next";
 
 function buildCsp() {
-  // Pragmatic CSP: prevents common injection classes while remaining compatible with Next.js.
-  // If you later remove all inline scripts, you can tighten this by switching to nonces.
-  const directives = [
+  const isProd = process.env.NODE_ENV === "production";
+  const scriptSrc = ["'self'", "'unsafe-inline'"];
+  // Next.js dev tooling may require eval; avoid it in production.
+  if (!isProd) scriptSrc.push("'unsafe-eval'");
+
+  return [
     "default-src 'self'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'none'",
-    "object-src 'none'",
-    // Next.js requires inline styles for some runtime-injected CSS.
+    `script-src ${scriptSrc.join(' ')}`,
     "style-src 'self' 'unsafe-inline'",
-    // Next.js may rely on eval in dev; keep it for compatibility.
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
     "img-src 'self' data: https:",
     "font-src 'self' data:",
     "connect-src 'self' https://api.npmjs.org https://registry.npmjs.org",
-    "upgrade-insecure-requests",
-  ];
-  return directives.join("; ");
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    // Avoid mixed-content warnings in production.
+    isProd ? "upgrade-insecure-requests" : "",
+  ]
+    .filter(Boolean)
+    .join("; ");
 }
 
 const nextConfig: NextConfig = {
