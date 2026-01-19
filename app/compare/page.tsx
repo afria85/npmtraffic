@@ -12,12 +12,14 @@ import CopyLinkButton from "@/components/CopyLinkButton";
 import AlertBanner from "@/components/AlertBanner";
 import RangeSelector from "@/components/RangeSelector";
 import ExportDropdown from "@/components/ExportDropdown";
+import SearchBox from "@/components/SearchBox";
 import { buildExportFilename } from "@/lib/export-filename";
 import {
   COMPARE_ACTION_CONTAINER_CLASSES,
   COMPARE_TABLE_WRAPPER_CLASSES,
 } from "@/components/compare/compare-classes";
 import CompareChart from "@/components/compare/CompareChart";
+import ScrollHintContainer from "@/components/ScrollHintContainer";
 
 type Props = {
   searchParams?: Promise<{ packages?: string; pkgs?: string; days?: string }>;
@@ -148,7 +150,29 @@ export default async function ComparePage({ searchParams }: Props) {
     .filter((pkg) => validatePackageName(pkg).ok)
     .slice(0, 5);
   const days = clampDays(rawDays);
-  if (pkgs.length < 2) notFound();
+  if (pkgs.length < 2) {
+    return (
+      <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-12">
+        <div className="space-y-3">
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">npmtraffic</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-white">Compare npm packages</h1>
+          <p className="text-sm text-slate-300">
+            Add at least two packages to compare daily downloads, deltas, and trends.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Start here</p>
+          <p className="mt-2 text-sm text-slate-300">
+            Search for a package, open it, then use <span className="font-semibold text-slate-100">Add to compare</span>.
+            When you have two or more, this page will show the overlay chart and the table.
+          </p>
+          <div className="mt-4">
+            <SearchBox className="w-full max-w-xl" />
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   const canonicalPkgs = pkgs.map((pkg) => encodeURIComponent(pkg)).join(",");
   if (
@@ -299,7 +323,7 @@ export default async function ComparePage({ searchParams }: Props) {
       <CompareChart series={data.series} packageNames={tablePackageNames} />
 
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
-        <div className={`${COMPARE_TABLE_WRAPPER_CLASSES}`}>
+        <ScrollHintContainer className={COMPARE_TABLE_WRAPPER_CLASSES} hint="Scroll">
           <table className="min-w-[720px] w-full text-sm">
             <CompareTableHeader packageNames={tablePackageNames} />
             <tbody className="divide-y divide-white/10">
@@ -322,7 +346,7 @@ export default async function ComparePage({ searchParams }: Props) {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollHintContainer>
         <p className="px-3 py-2 text-xs text-slate-400">
           Delta vs previous day = downloads today - downloads yesterday
         </p>

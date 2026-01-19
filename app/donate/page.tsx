@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getDonateLinks } from "@/lib/donate";
 import { config } from "@/lib/config";
+import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 export const metadata: Metadata = {
   title: "Donate | npmtraffic",
@@ -31,7 +32,7 @@ export default function DonatePage() {
                 href={link.url}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+                className={`${ACTION_BUTTON_CLASSES} w-full justify-between rounded-xl`}
               >
                 <span className="flex items-center gap-2">
                   <span aria-hidden>{link.icon}</span>
