@@ -27,16 +27,16 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
   const [open, setOpen] = useState(false);
   const [portalRoot] = useState<HTMLDivElement | null>(() => {
     if (typeof document === "undefined") return null;
-		const root = document.createElement("div");
-		// Full-viewport portal root:
-		// - avoids overflow clipping
-		// - guarantees the menu renders above all app chrome
-		// - does not steal pointer events except for the menu itself
-		root.style.position = "fixed";
-		root.style.inset = "0";
-		root.style.zIndex = "2147483647";
-		root.style.pointerEvents = "none";
-		return root;
+    const root = document.createElement("div");
+    // Full-viewport portal root:
+    // - avoids overflow clipping
+    // - guarantees the menu renders above all app chrome
+    // - does not steal pointer events except for the menu itself
+    root.style.position = "fixed";
+    root.style.inset = "0";
+    root.style.zIndex = "2147483647";
+    root.style.pointerEvents = "none";
+    return root;
   });
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -137,7 +137,7 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
             role="menu"
             aria-labelledby={buttonId}
             aria-hidden={!open}
-            className="z-50 flex flex-col gap-1 rounded-2xl border border-white/10 bg-black/80 p-2 text-xs text-slate-200 shadow-lg shadow-black/50 backdrop-blur pointer-events-auto"
+            className="pointer-events-auto z-50 flex flex-col gap-1 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2 text-xs text-[color:var(--foreground)] shadow-xl backdrop-blur"
             style={{
               position: "fixed",
               top: menuPosition.top,
@@ -179,13 +179,11 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
           onClick={toggle}
         >
           More
-				<span aria-hidden className="ml-1 inline-flex h-4 w-4 items-center justify-center opacity-80">
-					<svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-						<path
-							d="M5.25 7.75a.75.75 0 0 1 1.06 0L10 11.44l3.69-3.69a.75.75 0 1 1 1.06 1.06l-4.22 4.22a.75.75 0 0 1-1.06 0L5.25 8.81a.75.75 0 0 1 0-1.06z"
-						/>
-					</svg>
-				</span>
+          <span aria-hidden className="ml-1 inline-flex h-4 w-4 items-center justify-center opacity-80">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+              <path d="M5.25 7.75a.75.75 0 0 1 1.06 0L10 11.44l3.69-3.69a.75.75 0 1 1 1.06 1.06l-4.22 4.22a.75.75 0 0 1-1.06 0L5.25 8.81a.75.75 0 0 1 0-1.06z" />
+            </svg>
+          </span>
         </button>
       </div>
       {menuPortal}

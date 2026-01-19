@@ -5,9 +5,14 @@ import ExportDropdown from "../components/ExportDropdown";
 
 test("export dropdown renders package and compare links", () => {
   const itemList = [
-    { label: "CSV", href: "/api/v1/package/react/daily.csv?days=30", download: "react.csv" },
-    { label: "Excel CSV", href: "/api/v1/package/react/daily.excel.csv?days=30", download: "react-excel.csv" },
-    { label: "JSON", href: "/api/v1/package/react/daily.json?days=30", download: "react.json" },
+    { key: "csv", label: "CSV", href: "/api/v1/package/react/daily.csv?days=30", downloadName: "react.csv" },
+    {
+      key: "excel",
+      label: "Excel CSV",
+      href: "/api/v1/package/react/daily.excel.csv?days=30",
+      downloadName: "react-excel.csv",
+    },
+    { key: "json", label: "JSON", href: "/api/v1/package/react/daily.json?days=30", downloadName: "react.json" },
   ];
   const html = renderToStaticMarkup(<ExportDropdown items={itemList} />);
   assert(html.includes('href="/api/v1/package/react/daily.csv?days=30"'));
@@ -18,19 +23,22 @@ test("export dropdown renders package and compare links", () => {
 test("export dropdown supports compare list links", () => {
   const compareList = [
     {
+      key: "csv",
       label: "CSV",
       href: "/api/v1/compare.csv?packages=react,vue&days=14",
-      download: "compare.csv",
+      downloadName: "compare.csv",
     },
     {
+      key: "excel",
       label: "Excel CSV",
       href: "/api/v1/compare.excel.csv?packages=react,vue&days=14",
-      download: "compare-excel.csv",
+      downloadName: "compare-excel.csv",
     },
     {
+      key: "json",
       label: "JSON",
       href: "/api/v1/compare.json?packages=react,vue&days=14",
-      download: "compare.json",
+      downloadName: "compare.json",
     },
   ];
   const html = renderToStaticMarkup(<ExportDropdown items={compareList} />);
@@ -43,7 +51,7 @@ test("export dropdown button references menu for accessibility", () => {
   const html = renderToStaticMarkup(
     <ExportDropdown
       items={[
-        { label: "CSV", href: "/api/export.csv", download: "export.csv" },
+        { key: "csv", label: "CSV", href: "/api/export.csv", downloadName: "export.csv" },
       ]}
     />
   );
