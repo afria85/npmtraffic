@@ -13,12 +13,12 @@ import AlertBanner from "@/components/AlertBanner";
 import RangeSelector from "@/components/RangeSelector";
 import ExportDropdown from "@/components/ExportDropdown";
 import SearchBox from "@/components/SearchBox";
+import CompareChart from "@/components/compare/CompareChartClient";
 import { buildExportFilename } from "@/lib/export-filename";
 import {
   COMPARE_ACTION_CONTAINER_CLASSES,
   COMPARE_TABLE_WRAPPER_CLASSES,
 } from "@/components/compare/compare-classes";
-import CompareChart from "@/components/compare/CompareChart";
 import ScrollHintContainer from "@/components/ScrollHintContainer";
 
 type Props = {
@@ -122,7 +122,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const canonical = buildCompareCanonical(baseUrl, pkgs, days);
   const title = `Compare npm downloads (${days} days) | npmtraffic`;
   const description = `Compare npm download history for ${pkgs.join(", ")}.`;
-  const ogImage = `${baseUrl}/og.png`;
+  const ogPkgs = pkgs.map((p) => encodeURIComponent(p)).join(',');
+  const ogImage = `${baseUrl}/api/og?mode=compare&pkgs=${ogPkgs}&days=${days}`;
 
   return {
     title,

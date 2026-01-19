@@ -11,11 +11,11 @@ import { buildPackageCanonical } from "@/lib/canonical";
 import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
 import { getPackageGithubRepo } from "@/lib/npm-repo";
 import DerivedSeriesTable from "@/components/package/DerivedSeriesTable";
-import TrafficChart from "@/components/package/TrafficChart";
 import RangeSelector from "@/components/RangeSelector";
 import ExportDropdown from "@/components/ExportDropdown";
 import { buildExportFilename } from "@/lib/export-filename";
 import EventsPanel from "@/components/events/EventsPanel";
+import TrafficChart from "@/components/package/TrafficChartClient";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -70,7 +70,7 @@ export async function generateMetadata({
   const canonical = buildPackageCanonical(baseUrl, name, days);
   const title = `${name} npm downloads (${days} days) | npmtraffic`;
   const description = `Daily npm download history for ${name} in a GitHub-style table`;
-  const ogImage = `${baseUrl}/og.png`;
+  const ogImage = `${baseUrl}/api/og?pkg=${encodeURIComponent(name)}&days=${days}`;
 
   return {
     title,
@@ -88,6 +88,7 @@ export async function generateMetadata({
       card: "summary_large_image",
       title,
       description,
+      images: [ogImage],
     },
   };
 }

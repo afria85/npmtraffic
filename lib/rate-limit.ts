@@ -106,7 +106,10 @@ async function upstashRateLimit(
 
 export async function rateLimit(req: Request, route: string, limit = 60, windowMs = 60_000) {
   const ip = getClientIp(req) ?? "unknown";
-  const key = `ratelimit:${route}:${hashKey(ip)}`;
+  const ua = req.headers.get("user-agent") ?? "";
+  const lang = req.headers.get("accept-language") ?? "";
+  const fingerprint = `${ip}:${ua}:${lang}`;
+  const key = `ratelimit:${route}:${hashKey(fingerprint)}`;
   if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
     return upstashRateLimit(key, limit, windowMs);
   }

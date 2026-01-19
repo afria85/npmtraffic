@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState, type ChangeEvent } from "react";
+import {useEffect, useMemo, useRef, useState, type ChangeEvent} from "react";
 import {
   EVENT_TYPES,
+  SHARE_MAX_LENGTH,
   addEvent,
-  decodeSharePayload,
+  decodeSharePayloadV2,
   deleteEvent,
-  encodeSharePayload,
+  encodeSharePayloadV2,
   eventIdentifier,
   exportEvents,
   importEventsFromPayload,
@@ -22,7 +23,7 @@ type Props = {
 
 type ImportBanner =
   | { kind: "none" }
-  | { kind: "ready"; encoded: string; count: number }
+  | { kind: "ready"; encoded: string; count: number; events: EventEntry[] }
   | { kind: "error"; message: string };
 
 function todayUtc() {
@@ -71,12 +72,26 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
   const [dismissed, setDismissed] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [importBanner, setImportBanner] = useState<ImportBanner>({ kind: "none" });
 
-  const importBanner: ImportBanner = useMemo(() => {
-    if (!encoded) return { kind: "none" };
-    const decoded = decodeSharePayload(encoded);
-    if (decoded.error) return { kind: "error", message: decoded.error };
-    return { kind: "ready", encoded, count: decoded.events.length };
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!encoded) {
+        setImportBanner({ kind: "none" });
+        return;
+      }
+      const decoded = await decodeSharePayloadV2(encoded);
+      if (cancelled) return;
+      if (decoded.error) {
+        setImportBanner({ kind: "error", message: decoded.error });
+        return;
+      }
+      setImportBanner({ kind: "ready", encoded, count: decoded.events.length, events: decoded.events });
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [encoded]);
 
   const grouped = useMemo(() => {
@@ -166,8 +181,8 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
       setStatusFor("No events to share yet.");
       return;
     }
-    const encodedPayload = encodeSharePayload(events);
-    if (encodedPayload.length > 1500) {
+    const encodedPayload = await encodeSharePayloadV2(events);
+    if (encodedPayload.length > SHARE_MAX_LENGTH) {
       setStatusFor("Share link too long. Remove some events or shorten labels.");
       return;
     }
@@ -213,12 +228,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
 
   function onImportShared() {
     if (importBanner.kind !== "ready") return;
-    const decoded = decodeSharePayload(importBanner.encoded);
-    if (decoded.error) {
-      setStatusFor(`Invalid shared payload: ${decoded.error}`);
-      return;
-    }
-    const result = importEventsFromPayload(pkgName, JSON.stringify(decoded.events));
+    const result = importEventsFromPayload(pkgName, JSON.stringify(importBanner.events));
     setEvents(result.events);
     setDismissed(true);
     setStatusFor(`Imported shared events: +${result.added} / updated ${result.updated}.`);

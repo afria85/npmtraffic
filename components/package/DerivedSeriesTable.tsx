@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 import type { DerivedMetrics } from "@/lib/derived";
@@ -11,14 +11,14 @@ import {
   deleteEvent,
   EVENT_TYPES,
   eventIdentifier,
-  encodeSharePayload,
+  encodeSharePayloadV2,
   exportEvents,
   groupEventsByDate,
   importEventsFromPayload,
   loadEvents,
   updateEvent,
   SHARE_MAX_LENGTH,
-  decodeSharePayload,
+  decodeSharePayloadV2,
 } from "@/lib/events";
 
 type Props = {
@@ -47,7 +47,19 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
 
   const searchParams = useSearchParams();
   const sharedParam = searchParams?.get("events") ?? "";
-  const sharedData = useMemo(() => decodeSharePayload(sharedParam), [sharedParam]);
+  const [sharedData, setSharedData] = useState<{ events: EventEntry[]; error: string | null }>({ events: [], error: null });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const decoded = await decodeSharePayloadV2(sharedParam);
+      if (cancelled) return;
+      setSharedData(decoded);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sharedParam]);
 
   const events = useMemo(() => {
     void refreshKey;
@@ -57,7 +69,24 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
   const totalEvents = events.length;
   const hasDerived = useMemo(() => derived?.ma3?.length === series.length, [derived, series.length]);
 
-  const shareEncoded = useMemo(() => (events.length ? encodeSharePayload(events) : ""), [events]);
+  const [shareEncoded, setShareEncoded] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!events.length) {
+        setShareEncoded("");
+        return;
+      }
+      const encoded = await encodeSharePayloadV2(events);
+      if (cancelled) return;
+      setShareEncoded(encoded);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [events]);
+
   const shareTooLarge = shareEncoded.length > SHARE_MAX_LENGTH;
   const shareEnabled = Boolean(shareEncoded) && !shareTooLarge;
 
@@ -126,18 +155,17 @@ export default function DerivedSeriesTable({ series, derived, pkgName }: Props) 
     refresh();
   };
 
-  const handleCopyShareLink = () => {
+  const handleCopyShareLink = async () => {
     if (!shareEnabled) return;
     const url = new URL(window.location.href);
     url.searchParams.set("events", shareEncoded);
-    if (sharedParam) url.searchParams.set("events", shareEncoded);
     navigator.clipboard?.writeText(url.toString());
     setStatusMessage("Share link copied.");
   };
 
   const handleImportShared = () => {
     if (!pkgName || !sharedParam || !sharedData.events.length) return;
-    const result = importEventsFromPayload(pkgName, sharedParam);
+    const result = importEventsFromPayload(pkgName, JSON.stringify(sharedData.events));
     setStatusMessage(
       `Imported ${result.added} new, ${result.updated} updated.` +
         (result.errors.length ? ` ${result.errors.join(" ")}` : "")
