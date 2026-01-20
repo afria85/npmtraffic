@@ -127,30 +127,36 @@ export default function ShareMenu({ url, title, iconOnlyOnMobile, className }: S
   };
 
   const labelText = status === "copied" ? "Copied" : status === "failed" ? "Copy failed" : "Share";
+  const compact = Boolean(iconOnlyOnMobile);
 
   return (
     <div className={className}>
       <button
         ref={triggerRef}
         type="button"
-        className={`${ACTION_BUTTON_CLASSES} inline-flex items-center gap-2`}
+        className={
+          compact
+            ? `${ACTION_BUTTON_CLASSES} w-11 px-0 border-transparent bg-transparent hover:bg-white/5 hover:border-transparent`
+            : `${ACTION_BUTTON_CLASSES} inline-flex items-center gap-2`
+        }
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={`${id}-menu`}
-        aria-label={iconOnlyOnMobile ? "Share" : undefined}
+        aria-label={compact ? labelText : undefined}
+        title={compact ? labelText : undefined}
         onClick={() => setOpen((v) => !v)}
       >
         <ShareIcon />
-        {iconOnlyOnMobile ? (
-          <span className="hidden sm:inline">{labelText}</span>
-        ) : (
-          <span>{labelText}</span>
+        {compact ? null : (
+          <>
+            <span>{labelText}</span>
+            <span aria-hidden className="text-slate-300">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                <path d="M5.25 7.75a.75.75 0 0 1 1.06 0L10 11.44l3.69-3.69a.75.75 0 1 1 1.06 1.06l-4.22 4.22a.75.75 0 0 1-1.06 0L5.25 8.81a.75.75 0 0 1 0-1.06z" />
+              </svg>
+            </span>
+          </>
         )}
-        <span aria-hidden className="text-slate-300">
-          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-            <path d="M5.25 7.75a.75.75 0 0 1 1.06 0L10 11.44l3.69-3.69a.75.75 0 1 1 1.06 1.06l-4.22 4.22a.75.75 0 0 1-1.06 0L5.25 8.81a.75.75 0 0 1 0-1.06z" />
-          </svg>
-        </span>
       </button>
 
       {open ? (
