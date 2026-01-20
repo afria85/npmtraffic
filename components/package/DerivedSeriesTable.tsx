@@ -178,9 +178,9 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
   return (
     <>
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-3 text-sm text-slate-300">
-          <span>Daily downloads table ({days} days)</span>
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 border-b border-white/10 px-4 py-3 text-sm text-slate-300 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-sm font-medium text-slate-200">Daily downloads ({days} days)</span>
+          <div className="flex w-full flex-wrap justify-end gap-2 sm:w-auto">
             {totalEvents ? (
               <button
                 type="button"

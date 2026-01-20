@@ -16,6 +16,7 @@ import ShareMenu from "@/components/ShareMenu";
 import { buildExportFilename } from "@/lib/export-filename";
 import EventsPanel from "@/components/events/EventsPanel";
 import TrafficChart from "@/components/package/TrafficChartClient";
+import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -214,7 +215,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
           </div>
           {updatedLabel ? (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
+              <span className="inline-flex items-center rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
                 {updatedLabel}
               </span>
               {repoUrl ? (
@@ -222,7 +223,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
                   href={repoUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold tracking-wide text-slate-200 transition hover:border-white/30 hover:bg-white/10"
+                  className={`${ACTION_BUTTON_CLASSES} h-9 px-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-black bg-white border-white hover:bg-white focus-visible:outline-white`}
                 >
                   Star on GitHub
                 </a>
@@ -231,21 +232,22 @@ export default async function PackagePage({ params, searchParams }: Props) {
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-3 sm:items-end">
-          <div className="sm:hidden">
-            <SearchBox variant="modal" triggerLabel="Search another package" />
+        <div className="flex flex-col gap-3 sm:min-w-[18rem] sm:items-end">
+          <div className="sm:hidden flex w-full flex-col items-end gap-2">
+            <SearchBox variant="modal" triggerLabel="Search another package" className="w-full max-w-[260px]" />
+            <CompareButton name={name} />
           </div>
           <div className="hidden sm:block w-72">
             <SearchBox />
           </div>
-          <div className="flex w-full justify-end">
+          <div className="hidden sm:flex w-full justify-end">
             <CompareButton name={name} />
           </div>
         </div>
       </div>
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        {rangeSelector}
-        <div className="flex items-center justify-end gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="min-w-[230px] flex-1 sm:flex-none">{rangeSelector}</div>
+        <div className="ml-auto flex flex-shrink-0 items-center justify-end gap-2">
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
           <ShareMenu url={canonical} title={`${name} npm downloads (${days} days) | npmtraffic`} iconOnlyOnMobile />
         </div>
@@ -292,7 +294,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <TrafficChart series={traffic.series} derived={traffic.derived} pkgName={name} />
+      <TrafficChart series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
 
       <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
 

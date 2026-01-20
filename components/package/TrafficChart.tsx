@@ -15,6 +15,7 @@ type Props = {
   series: TrafficSeriesRow[];
   derived: DerivedMetrics;
   pkgName: string;
+  days: number;
 };
 
 type PaletteKey = "accent" | "slate" | "blue" | "emerald" | "violet" | "amber" | "orange" | "pink" | "cyan";
@@ -174,7 +175,7 @@ async function svgToPngBlob(svgEl: SVGSVGElement, background: string) {
   return pngBlob;
 }
 
-export default function TrafficChart({ series, derived, pkgName }: Props) {
+export default function TrafficChart({ series, derived, pkgName, days }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const stylePanelRef = useRef<HTMLDivElement | null>(null);
 
@@ -355,12 +356,12 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
 
   return (
     <section className="relative rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div>
           <p className="text-xs uppercase tracking-widest text-slate-500">Trend</p>
-          <p className="mt-1 text-sm text-slate-200">Daily downloads</p>
+          <p className="mt-1 text-sm text-slate-200">Daily downloads ({days}d)</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-1 flex-wrap items-center gap-3 sm:justify-end">
           <div className="flex flex-wrap items-center gap-3">
             <label className="inline-flex items-center gap-2 text-xs text-slate-300">
             <input
@@ -384,7 +385,7 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
             </label>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-2">
             <button
               type="button"
               className={CHART_BUTTON_CLASSES}
@@ -404,7 +405,7 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
           viewBox={`0 0 ${width} ${height}`}
           className="h-64 w-full"
           role="img"
-          aria-label="Daily downloads line chart"
+          aria-label={`Daily downloads line chart (${days} days)`}
           onMouseLeave={() => setHoverIndex(null)}
           onMouseMove={(event) => {
             const svg = event.currentTarget;

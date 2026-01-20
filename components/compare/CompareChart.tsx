@@ -14,6 +14,7 @@ type CompareSeriesRow = {
 type Props = {
   series: CompareSeriesRow[];
   packageNames: string[];
+  days?: number;
 };
 
 type Point = { x: number; y: number };
@@ -186,7 +187,7 @@ function buildDefaultLineStyles(packageNames: string[]) {
   return styles;
 }
 
-export default function CompareChart({ series, packageNames }: Props) {
+export default function CompareChart({ series, packageNames, days }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const stylePanelRef = useRef<HTMLDivElement | null>(null);
 
@@ -304,16 +305,20 @@ export default function CompareChart({ series, packageNames }: Props) {
 
   return (
     <section className="relative rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div>
           <p className="text-xs uppercase tracking-widest text-slate-500">Trend</p>
-          <p className="mt-1 text-sm text-slate-200">Daily downloads (overlay)</p>
+          <p className="mt-1 text-sm text-slate-200">
+            Daily downloads ({days ? `${days}d overlay` : "overlay"})
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button type="button" className={CHART_BUTTON_CLASSES} onClick={() => setStyleOpen((v) => !v)} aria-expanded={styleOpen}>
-            Style
-          </button>
-          <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
+        <div className="flex flex-1 flex-wrap items-center gap-3 sm:justify-end">
+          <div className="ml-auto flex items-center gap-2">
+            <button type="button" className={CHART_BUTTON_CLASSES} onClick={() => setStyleOpen((v) => !v)} aria-expanded={styleOpen}>
+              Style
+            </button>
+            <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
+          </div>
         </div>
       </div>
 
@@ -323,7 +328,7 @@ export default function CompareChart({ series, packageNames }: Props) {
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
           className="h-64 w-full"
           role="img"
-          aria-label="Compare daily downloads line chart"
+          aria-label={`Compare daily downloads line chart${days ? ` (${days} days)` : ""}`}
           onMouseLeave={() => setHoverIndex(null)}
           onMouseMove={(event) => {
             const svg = event.currentTarget;

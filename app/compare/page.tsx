@@ -275,9 +275,9 @@ export default async function ComparePage({ searchParams }: Props) {
           </div>
         </div>
       </div>
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        {rangeSelector}
-        <div className={`${COMPARE_ACTION_CONTAINER_CLASSES} self-end sm:self-auto`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="min-w-[230px] flex-1 sm:flex-none">{rangeSelector}</div>
+        <div className={`${COMPARE_ACTION_CONTAINER_CLASSES} ml-auto self-end sm:self-auto`}>
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
           <ShareMenu url={canonical} title={`npmtraffic compare (${days} days)`} iconOnlyOnMobile />
         </div>
@@ -322,7 +322,7 @@ export default async function ComparePage({ searchParams }: Props) {
         ))}
       </div>
 
-      <CompareChart series={data.series} packageNames={tablePackageNames} />
+      <CompareChart series={data.series} packageNames={tablePackageNames} days={days} />
 
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
         <ScrollHintContainer className={COMPARE_TABLE_WRAPPER_CLASSES}>

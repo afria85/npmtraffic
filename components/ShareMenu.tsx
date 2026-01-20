@@ -16,7 +16,6 @@ export type ShareMenuProps = {
 };
 
 function ShareIcon() {
-  // Modern "share" glyph: three nodes connected (familiar across platforms).
   return (
     <svg
       viewBox="0 0 24 24"
@@ -28,11 +27,9 @@ function ShareIcon() {
       className="h-4 w-4"
       aria-hidden
     >
-      <circle cx="18" cy="5" r="2" />
-      <circle cx="6" cy="12" r="2" />
-      <circle cx="18" cy="19" r="2" />
-      <path d="M8 12l8-6" />
-      <path d="M8 12l8 6" />
+      <path d="M12 3l4 4m-4-4L8 7" />
+      <path d="M12 3v12" />
+      <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
     </svg>
   );
 }

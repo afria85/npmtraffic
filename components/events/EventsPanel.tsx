@@ -223,20 +223,20 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
             Add contextual markers (releases, posts, docs changes) to explain spikes. Stored locally in your browser.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
-          <button
-            type="button"
-            onClick={onExportJson}
-            className="inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1.5 text-xs font-semibold tracking-wide text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]"
-          >
-            Export
-          </button>
+        <div className="flex flex-wrap items-center gap-2 sm:items-center sm:justify-end">
           <button
             type="button"
             onClick={onPickImportFile}
             className="inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1.5 text-xs font-semibold tracking-wide text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]"
           >
             Import
+          </button>
+          <button
+            type="button"
+            onClick={onExportJson}
+            className="inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1.5 text-xs font-semibold tracking-wide text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]"
+          >
+            Export
           </button>
           <input
             ref={fileInputRef}
@@ -375,7 +375,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
           />
         </div>
 
-        <div className="sm:col-span-6 flex flex-wrap justify-end gap-2">
+        <div className="sm:col-span-6 flex w-full flex-wrap justify-end gap-2">
           <button
             type="button"
             onClick={onSubmit}
