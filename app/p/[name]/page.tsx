@@ -213,9 +213,21 @@ export default async function PackagePage({ params, searchParams }: Props) {
             </p>
           </div>
           {updatedLabel ? (
-            <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
-              {updatedLabel}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
+                {updatedLabel}
+              </span>
+              {repoUrl ? (
+                <a
+                  href={repoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold tracking-wide text-slate-200 transition hover:border-white/30 hover:bg-white/10"
+                >
+                  Star on GitHub
+                </a>
+              ) : null}
+            </div>
           ) : null}
         </div>
 
@@ -226,28 +238,18 @@ export default async function PackagePage({ params, searchParams }: Props) {
           <div className="hidden sm:block w-72">
             <SearchBox />
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <CompareButton name={name} />
-              {repoUrl ? (
-                <a
-                  href={repoUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold tracking-wide text-slate-200 transition hover:border-white/30 hover:bg-white/10"
-                >
-                  Star on GitHub
-                </a>
-              ) : null}
-            </div>
-            <div className="ml-auto flex items-center gap-2">
-              {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
-              <ShareMenu url={canonical} title={`${name} npm downloads (${days} days) | npmtraffic`} iconOnlyOnMobile />
-            </div>
+          <div className="flex w-full justify-end">
+            <CompareButton name={name} />
           </div>
         </div>
       </div>
-      {rangeSelector}
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        {rangeSelector}
+        <div className="flex items-center justify-end gap-2">
+          {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
+          <ShareMenu url={canonical} title={`${name} npm downloads (${days} days) | npmtraffic`} iconOnlyOnMobile />
+        </div>
+      </div>
     </div>
   );
 

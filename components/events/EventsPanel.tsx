@@ -3,11 +3,9 @@
 import {useEffect, useMemo, useRef, useState, type ChangeEvent} from "react";
 import {
   EVENT_TYPES,
-  SHARE_MAX_LENGTH,
   addEvent,
   decodeSharePayloadV2,
   deleteEvent,
-  encodeSharePayloadV2,
   eventIdentifier,
   exportEvents,
   importEventsFromPayload,
@@ -176,26 +174,6 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
     setStatusFor("Event deleted.");
   }
 
-  async function onCopyShareLink() {
-    if (!events.length) {
-      setStatusFor("No events to share yet.");
-      return;
-    }
-    const encodedPayload = await encodeSharePayloadV2(events);
-    if (encodedPayload.length > SHARE_MAX_LENGTH) {
-      setStatusFor("Share link too long. Remove some events or shorten labels.");
-      return;
-    }
-    const url = new URL(window.location.href);
-    url.searchParams.set("events", encodedPayload);
-    try {
-      await navigator.clipboard.writeText(url.toString());
-      setStatusFor("Share link copied.");
-    } catch {
-      setStatusFor("Failed to copy. Please copy manually from the address bar.");
-    }
-  }
-
   function onExportJson() {
     const json = exportEvents(pkgName);
     const safeName = pkgName.toLowerCase().replace(/[^a-z0-9@._-]+/g, "-");
@@ -245,14 +223,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
             Add contextual markers (releases, posts, docs changes) to explain spikes. Stored locally in your browser.
           </p>
         </div>
-        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:justify-end">
-          <button
-            type="button"
-            onClick={onCopyShareLink}
-            className="inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1.5 text-xs font-semibold tracking-wide text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]"
-          >
-            Share
-          </button>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
           <button
             type="button"
             onClick={onExportJson}
@@ -404,7 +375,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
           />
         </div>
 
-        <div className="sm:col-span-6 flex flex-wrap gap-2">
+        <div className="sm:col-span-6 flex flex-wrap justify-end gap-2">
           <button
             type="button"
             onClick={onSubmit}
