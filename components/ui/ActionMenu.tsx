@@ -1,7 +1,6 @@
 "use client";
 
-import { createPortal } from "react-dom";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
@@ -31,17 +30,6 @@ export default function ActionMenu({
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
 
-  // Full-viewport portal root to avoid overflow clipping
-  const [portalRoot] = useState<HTMLDivElement | null>(() => {
-    if (typeof document === "undefined") return null;
-    const root = document.createElement("div");
-    root.style.position = "fixed";
-    root.style.inset = "0";
-    root.style.zIndex = "2147483647";
-    root.style.pointerEvents = "none";
-    return root;
-  });
-
   const close = () => {
     setOpen(false);
     setMenuPosition(null);
@@ -55,16 +43,7 @@ export default function ActionMenu({
     });
   };
 
-  // Mount/unmount portal root
-  useEffect(() => {
-    if (!portalRoot || typeof document === "undefined") return;
-    document.body.appendChild(portalRoot);
-    return () => {
-      document.body.removeChild(portalRoot);
-    };
-  }, [portalRoot]);
-
-  // Compute menu position when opening
+  // Compute menu position when opening.
   useLayoutEffect(() => {
     if (!open) return;
     if (typeof window === "undefined") return;
@@ -75,7 +54,10 @@ export default function ActionMenu({
 
       const rect = trigger.getBoundingClientRect();
       const width = Math.max(240, rect.width);
-      const left = Math.min(Math.max(8, rect.left), Math.max(8, window.innerWidth - width - 8));
+      const left = Math.min(
+        Math.max(8, rect.left),
+        Math.max(8, window.innerWidth - width - 8)
+      );
       const top = Math.min(rect.bottom + 8, Math.max(8, window.innerHeight - 80));
       setMenuPosition({ top, left, width });
     });
@@ -83,7 +65,7 @@ export default function ActionMenu({
     return () => window.cancelAnimationFrame(raf);
   }, [open]);
 
-  // Reposition on scroll/resize while open
+  // Reposition on scroll/resize while open.
   useEffect(() => {
     if (!open) return;
     if (typeof window === "undefined") return;
@@ -94,7 +76,10 @@ export default function ActionMenu({
 
       const rect = trigger.getBoundingClientRect();
       const width = Math.max(240, rect.width);
-      const left = Math.min(Math.max(8, rect.left), Math.max(8, window.innerWidth - width - 8));
+      const left = Math.min(
+        Math.max(8, rect.left),
+        Math.max(8, window.innerWidth - width - 8)
+      );
       const top = Math.min(rect.bottom + 8, Math.max(8, window.innerHeight - 80));
       setMenuPosition({ top, left, width });
     };
@@ -107,7 +92,7 @@ export default function ActionMenu({
     };
   }, [open]);
 
-  // Close on outside click/tap and Escape
+  // Close on outside click/tap and Escape.
   useEffect(() => {
     if (!open) return;
     if (typeof document === "undefined") return;
@@ -135,48 +120,6 @@ export default function ActionMenu({
     };
   }, [open]);
 
-  const menuPortal = useMemo(() => {
-    if (!open || !portalRoot || !menuPosition) return null;
-    return createPortal(
-      <div
-        ref={menuRef}
-        role="menu"
-        aria-label={`${label} menu`}
-        className="pointer-events-auto z-50 overflow-hidden rounded-xl border border-white/10 bg-[color:var(--surface)] shadow-xl"
-        style={{
-          position: "fixed",
-          top: menuPosition.top,
-          left: menuPosition.left,
-          width: menuPosition.width,
-          maxHeight: "calc(100vh - 32px)",
-          overflowY: "auto",
-        }}
-      >
-        <div className="p-2">
-          {items.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              role="menuitem"
-              disabled={item.disabled}
-              className={`block w-full rounded-lg px-3 py-2 text-left text-sm transition hover:bg-white/10 ${
-                item.disabled ? "cursor-not-allowed opacity-50" : "text-slate-100"
-              }`}
-              onClick={() => {
-                if (item.disabled) return;
-                item.onClick();
-                close();
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>,
-      portalRoot
-    );
-  }, [open, portalRoot, menuPosition, items, label]);
-
   return (
     <>
       <div className={className}>
@@ -196,7 +139,52 @@ export default function ActionMenu({
           </span>
         </button>
       </div>
-      {menuPortal}
+
+      {open && menuPosition ? (
+        <div className="fixed inset-0 z-[2147483647] pointer-events-none">
+          <div
+            className="absolute inset-0 pointer-events-auto"
+            aria-hidden
+            onClick={close}
+          />
+
+          <div
+            ref={menuRef}
+            role="menu"
+            aria-label={`${label} menu`}
+            className="pointer-events-auto overflow-hidden rounded-xl border border-white/10 bg-[color:var(--surface)] shadow-xl"
+            style={{
+              position: "fixed",
+              top: menuPosition.top,
+              left: menuPosition.left,
+              width: menuPosition.width,
+              maxHeight: "calc(100vh - 32px)",
+              overflowY: "auto",
+            }}
+          >
+            <div className="p-2">
+              {items.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  role="menuitem"
+                  disabled={item.disabled}
+                  className={`block w-full rounded-lg px-3 py-2 text-left text-sm transition hover:bg-white/10 ${
+                    item.disabled ? "cursor-not-allowed opacity-50" : "text-slate-100"
+                  }`}
+                  onClick={() => {
+                    if (item.disabled) return;
+                    item.onClick();
+                    close();
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

@@ -174,39 +174,15 @@ export default function CompareChart({ series, packageNames }: Props) {
 
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [styleOpen, setStyleOpen] = useState(false);
-
-  // Full-viewport portal root to avoid overflow clipping on mobile/compare
-  const [modalRoot] = useState<HTMLDivElement | null>(() => {
-    if (typeof document === "undefined") return null;
-    const root = document.createElement("div");
-    root.style.position = "fixed";
-    root.style.inset = "0";
-    root.style.zIndex = "2147483647";
-    root.style.pointerEvents = "none";
-    return root;
-  });
-  const [settings, setSettings] = useState<CompareChartSettings>(() => {
-    if (typeof window === "undefined") {
-      return { lineStyles: buildDefaultLineStyles(packageNames), colors: buildDefaultColors(packageNames) };
-    }
-    const saved = safeParseSettings(window.localStorage.getItem(settingsKey));
-    return {
-      lineStyles: { ...buildDefaultLineStyles(packageNames), ...(saved.lineStyles ?? {}) },
-      colors: { ...buildDefaultColors(packageNames), ...(saved.colors ?? {}) },
-    };
-  });
+  const [settings, setSettings] = useState<CompareChartSettings>(() => ({
+    lineStyles: buildDefaultLineStyles(packageNames),
+    colors: buildDefaultColors(packageNames),
+  }));
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(settingsKey, JSON.stringify(settings));
   }, [settingsKey, settings]);
-  useEffect(() => {
-    if (!modalRoot || typeof document === "undefined") return;
-    document.body.appendChild(modalRoot);
-    return () => {
-      document.body.removeChild(modalRoot);
-    };
-  }, [modalRoot]);
 
   useEffect(() => {
     if (!styleOpen) return;
@@ -225,6 +201,22 @@ export default function CompareChart({ series, packageNames }: Props) {
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [styleOpen]);
+
+  const toggleStylePanel = () => {
+    setStyleOpen((v) => {
+      const next = !v;
+      if (next && typeof window !== "undefined") {
+        const saved = safeParseSettings(window.localStorage.getItem(settingsKey));
+        if (saved) {
+          setSettings({
+            lineStyles: { ...buildDefaultLineStyles(packageNames), ...(saved.lineStyles ?? {}) },
+            colors: { ...buildDefaultColors(packageNames), ...(saved.colors ?? {}) },
+          });
+        }
+      }
+      return next;
+    });
+  };
 
   const { maxValue, pointsByPkg } = useMemo(() => {
     const values: number[] = [];
@@ -307,7 +299,7 @@ export default function CompareChart({ series, packageNames }: Props) {
   );
 
   const styleModal = useMemo(() => {
-    if (!styleOpen || !modalRoot) return null;
+    if (!styleOpen || typeof document === "undefined") return null;
 
     return createPortal(
       <div
@@ -391,9 +383,9 @@ export default function CompareChart({ series, packageNames }: Props) {
           </div>
         </div>
       </div>,
-      modalRoot
+      document.body
     );
-  }, [styleOpen, modalRoot, packageNames, settings]);
+  }, [styleOpen, packageNames, settings]);
 
   
   return (
@@ -404,7 +396,7 @@ export default function CompareChart({ series, packageNames }: Props) {
           <p className="mt-1 text-sm text-slate-200">Daily downloads (overlay)</p>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" className={CHART_BUTTON_CLASSES} onClick={() => setStyleOpen((v) => !v)} aria-expanded={styleOpen}>
+          <button type="button" className={CHART_BUTTON_CLASSES} onClick={toggleStylePanel} aria-expanded={styleOpen}>
             Style
           </button>
           <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />

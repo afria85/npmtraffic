@@ -1,7 +1,6 @@
 "use client";
 
-import { createPortal } from "react-dom";
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 export type ExportItem = {
@@ -29,23 +28,8 @@ export default function ExportDropdown({
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
-  const id = useId();
-  const buttonId = `${id}-export-toggle`;
-  const menuId = `${id}-export-menu`;
-
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
-
-  // Full-viewport portal root to avoid overflow clipping
-  const [portalRoot] = useState<HTMLDivElement | null>(() => {
-    if (typeof document === "undefined") return null;
-    const root = document.createElement("div");
-    root.style.position = "fixed";
-    root.style.inset = "0";
-    root.style.zIndex = "2147483647";
-    root.style.pointerEvents = "none";
-    return root;
-  });
 
   const close = () => {
     setOpen(false);
@@ -60,16 +44,7 @@ export default function ExportDropdown({
     });
   };
 
-  // Mount/unmount portal root
-  useEffect(() => {
-    if (!portalRoot || typeof document === "undefined") return;
-    document.body.appendChild(portalRoot);
-    return () => {
-      document.body.removeChild(portalRoot);
-    };
-  }, [portalRoot]);
-
-  // Compute menu position when opening (rAF to avoid "setState in effect" lint)
+  // Compute menu position when opening.
   useLayoutEffect(() => {
     if (!open) return;
     if (typeof window === "undefined") return;
@@ -91,7 +66,7 @@ export default function ExportDropdown({
     return () => window.cancelAnimationFrame(raf);
   }, [open]);
 
-  // Reposition on scroll/resize while open
+  // Reposition on scroll/resize while open.
   useEffect(() => {
     if (!open) return;
     if (typeof window === "undefined") return;
@@ -118,7 +93,7 @@ export default function ExportDropdown({
     };
   }, [open]);
 
-  // Close on outside click/tap and Escape
+  // Close on outside click/tap and Escape.
   useEffect(() => {
     if (!open) return;
     if (typeof document === "undefined") return;
@@ -130,9 +105,7 @@ export default function ExportDropdown({
       const trigger = triggerRef.current;
       const menu = menuRef.current;
 
-      // If click is inside trigger or menu => ignore
       if (trigger?.contains(target) || menu?.contains(target)) return;
-
       close();
     };
 
@@ -150,61 +123,14 @@ export default function ExportDropdown({
     };
   }, [open]);
 
-  const menuPortal = useMemo(() => {
-    if (!open || !portalRoot || !menuPosition) return null;
-
-    return createPortal(
-      <div
-        ref={menuRef}
-        id={menuId}
-        role="menu"
-        aria-label={`${label} menu`}
-        aria-labelledby={buttonId}
-        className="pointer-events-auto z-50 overflow-hidden rounded-xl border border-white/10 bg-[color:var(--surface)] shadow-xl"
-        style={{
-          position: "fixed",
-          top: menuPosition.top,
-          left: menuPosition.left,
-          width: menuPosition.width,
-          maxHeight: "calc(100vh - 32px)",
-          overflowY: "auto",
-        }}
-      >
-        <div className="p-2">
-          {items.map((item) => {
-            const downloadProps = item.downloadName
-              ? { download: item.downloadName }
-              : { download: "" };
-
-            return (
-              <a
-                key={item.key}
-                href={item.href}
-                role="menuitem"
-                className="block rounded-lg px-3 py-2 text-sm text-slate-100 transition hover:bg-white/10"
-                {...downloadProps}
-                onClick={() => close()}
-              >
-                {item.label}
-              </a>
-            );
-          })}
-        </div>
-      </div>,
-      portalRoot
-    );
-  }, [open, portalRoot, menuPosition, items, label, menuId, buttonId]);
-
   return (
     <>
       <div className={className}>
         <button
           ref={triggerRef}
-          id={buttonId}
           type="button"
           aria-haspopup="menu"
           aria-expanded={open}
-          aria-controls={menuId}
           onClick={toggle}
           className={`${ACTION_BUTTON_CLASSES} inline-flex items-center gap-2`}
         >
@@ -216,7 +142,48 @@ export default function ExportDropdown({
           </span>
         </button>
       </div>
-      {menuPortal}
+
+      {open && menuPosition ? (
+        <div className="fixed inset-0 z-[2147483647] pointer-events-none">
+          <div className="absolute inset-0 pointer-events-auto" aria-hidden onClick={close} />
+
+          <div
+            ref={menuRef}
+            role="menu"
+            aria-label={`${label} menu`}
+            className="pointer-events-auto overflow-hidden rounded-xl border border-white/10 bg-[color:var(--surface)] shadow-xl"
+            style={{
+              position: "fixed",
+              top: menuPosition.top,
+              left: menuPosition.left,
+              width: menuPosition.width,
+              maxHeight: "calc(100vh - 32px)",
+              overflowY: "auto",
+            }}
+          >
+            <div className="p-2">
+              {items.map((item) => {
+                const downloadProps = item.downloadName
+                  ? { download: item.downloadName }
+                  : { download: "" };
+
+                return (
+                  <a
+                    key={item.key}
+                    href={item.href}
+                    role="menuitem"
+                    className="block rounded-lg px-3 py-2 text-sm text-slate-100 transition hover:bg-white/10"
+                    {...downloadProps}
+                    onClick={() => close()}
+                  >
+                    {item.label}
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

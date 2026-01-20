@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { createPortal } from "react-dom";
 import {
   useCallback,
   useEffect,
@@ -25,19 +24,6 @@ type MenuPosition = {
 
 export default function RangeDropdown({ currentDays, items }: RangeDropdownProps) {
   const [open, setOpen] = useState(false);
-  const [portalRoot] = useState<HTMLDivElement | null>(() => {
-    if (typeof document === "undefined") return null;
-    const root = document.createElement("div");
-    // Full-viewport portal root:
-    // - avoids overflow clipping
-    // - guarantees the menu renders above all app chrome
-    // - does not steal pointer events except for the menu itself
-    root.style.position = "fixed";
-    root.style.inset = "0";
-    root.style.zIndex = "2147483647";
-    root.style.pointerEvents = "none";
-    return root;
-  });
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -67,13 +53,10 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
     setMenuPosition(null);
   }, []);
 
-  const toggle = useCallback(
-    (event: MouseEvent<HTMLButtonElement>) => {
-      event.preventDefault();
-      setOpen((value) => !value);
-    },
-    []
-  );
+  const toggle = useCallback((event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    setOpen((value) => !value);
+  }, []);
 
   useLayoutEffect(() => {
     if (!open || !buttonRef.current) return;
@@ -81,19 +64,9 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
   }, [open, updatePosition]);
 
   useEffect(() => {
-    if (!portalRoot || typeof document === "undefined") return undefined;
-    document.body.appendChild(portalRoot);
-    return () => {
-      document.body.removeChild(portalRoot);
-    };
-  }, [portalRoot]);
-
-  useEffect(() => {
     if (!open || typeof window === "undefined") return undefined;
     const reposition = () => {
-      if (buttonRef.current) {
-        updatePosition(buttonRef.current);
-      }
+      if (buttonRef.current) updatePosition(buttonRef.current);
     };
     window.addEventListener("resize", reposition);
     window.addEventListener("scroll", reposition, true);
@@ -108,15 +81,11 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
     const handlePointerDown = (event: PointerEvent | MouseEvent | TouchEvent) => {
       const target = event.target as Node | null;
       if (!target) return;
-      if (containerRef.current?.contains(target) || menuRef.current?.contains(target)) {
-        return;
-      }
+      if (containerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
       close();
     };
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        close();
-      }
+      if (event.key === "Escape") close();
     };
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("touchstart", handlePointerDown);
@@ -128,16 +97,39 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
     };
   }, [open, close]);
 
-  const menuPortal =
-    open && portalRoot && menuPosition
-      ? createPortal(
+  return (
+    <>
+      <div ref={containerRef} className="relative" data-dropdown="range-more">
+        <button
+          type="button"
+          ref={buttonRef}
+          id={buttonId}
+          className={MORE_SUMMARY_CLASSES}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-controls={menuId}
+          onClick={toggle}
+        >
+          More
+          <span aria-hidden className="ml-1 inline-flex h-4 w-4 items-center justify-center opacity-80">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+              <path d="M5.25 7.75a.75.75 0 0 1 1.06 0L10 11.44l3.69-3.69a.75.75 0 1 1 1.06 1.06l-4.22 4.22a.75.75 0 0 1-1.06 0L5.25 8.81a.75.75 0 0 1 0-1.06z" />
+            </svg>
+          </span>
+        </button>
+      </div>
+
+      {open && menuPosition ? (
+        <div className="fixed inset-0 z-[2147483647] pointer-events-none">
+          <div className="absolute inset-0 pointer-events-auto" aria-hidden onClick={close} />
+
           <div
             ref={menuRef}
             id={menuId}
             role="menu"
             aria-labelledby={buttonId}
             aria-hidden={!open}
-            className="pointer-events-auto z-50 flex flex-col gap-1 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2 text-xs text-[color:var(--foreground)] shadow-xl backdrop-blur"
+            className="pointer-events-auto z-50 flex flex-col gap-1 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2 text-xs text-[color:var(--foreground)] shadow-lg shadow-black/50"
             style={{
               position: "fixed",
               top: menuPosition.top,
@@ -159,34 +151,9 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
                 {item.days}d
               </Link>
             ))}
-          </div>,
-          portalRoot
-        )
-      : null;
-
-  return (
-    <>
-      <div ref={containerRef} className="relative" data-dropdown="range-more">
-        <button
-          type="button"
-          ref={buttonRef}
-          id={buttonId}
-          className={MORE_SUMMARY_CLASSES}
-          role="button"
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          aria-controls={menuId}
-          onClick={toggle}
-        >
-          More
-          <span aria-hidden className="ml-1 inline-flex h-4 w-4 items-center justify-center opacity-80">
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-              <path d="M5.25 7.75a.75.75 0 0 1 1.06 0L10 11.44l3.69-3.69a.75.75 0 1 1 1.06 1.06l-4.22 4.22a.75.75 0 0 1-1.06 0L5.25 8.81a.75.75 0 0 1 0-1.06z" />
-            </svg>
-          </span>
-        </button>
-      </div>
-      {menuPortal}
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
