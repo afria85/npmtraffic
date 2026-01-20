@@ -356,13 +356,13 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
 
   return (
     <section className="relative rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-nowrap items-center gap-3 overflow-x-auto pb-1">
         <div>
           <p className="text-xs uppercase tracking-widest text-slate-500">Trend</p>
           <p className="mt-1 text-sm text-slate-200">Daily downloads ({days}d)</p>
         </div>
-        <div className="flex flex-1 flex-wrap items-center gap-3 sm:justify-end">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="ml-auto flex flex-nowrap items-center gap-3">
+          <div className="flex flex-nowrap items-center gap-3">
             <label className="inline-flex items-center gap-2 text-xs text-slate-300">
             <input
               type="checkbox"
@@ -385,7 +385,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
             </label>
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-2 flex items-center gap-2">
             <button
               type="button"
               className={CHART_BUTTON_CLASSES}

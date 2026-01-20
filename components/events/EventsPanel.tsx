@@ -223,7 +223,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
             Add contextual markers (releases, posts, docs changes) to explain spikes. Stored locally in your browser.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:items-center sm:justify-end">
+        <div className="ml-auto flex flex-nowrap items-center gap-2">
           <button
             type="button"
             onClick={onPickImportFile}
@@ -375,7 +375,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
           />
         </div>
 
-        <div className="sm:col-span-6 flex w-full flex-wrap justify-end gap-2">
+        <div className="sm:col-span-6 flex w-full flex-nowrap items-center justify-end gap-2 overflow-x-auto pb-1">
           <button
             type="button"
             onClick={onSubmit}

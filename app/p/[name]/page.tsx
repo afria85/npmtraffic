@@ -245,7 +245,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
           </div>
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
         <div className="min-w-[230px] flex-1 sm:flex-none">{rangeSelector}</div>
         <div className="ml-auto flex flex-shrink-0 items-center justify-end gap-2">
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
@@ -275,20 +275,20 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs uppercase tracking-widest text-slate-500">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+          <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">
             Total downloads ({days} days)
           </p>
-          <p className="mt-2 text-xl font-semibold text-white">
+          <p className="mt-1 text-lg font-semibold text-white">
             {formatNumber(traffic.totals.sum)}
           </p>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs uppercase tracking-widest text-slate-500">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+          <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">
             Avg per day
           </p>
-          <p className="mt-2 text-xl font-semibold text-white">
+          <p className="mt-1 text-lg font-semibold text-white">
             {formatNumber(traffic.totals.avgPerDay)}
           </p>
         </div>

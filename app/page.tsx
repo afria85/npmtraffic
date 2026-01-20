@@ -53,10 +53,24 @@ export default async function Home() {
             Daily tables, day-to-day deltas, event markers, and audit-grade exports — the workflows you
             need to explain why downloads changed.
           </p>
-          <div className="pt-4">
+          <div className="pt-4 space-y-3">
             <SearchBox className="mx-auto w-full max-w-xl" />
+            <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-slate-300">
+              <span className="text-[0.7rem] font-semibold uppercase tracking-[0.35em] text-slate-400">
+                Popular
+              </span>
+              {POPULAR_PACKAGES.map((pkg) => (
+                <Link
+                  key={pkg}
+                  href={`/p/${encodeURIComponent(pkg)}?days=30`}
+                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+                >
+                  {pkg}
+                </Link>
+              ))}
+            </div>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs text-slate-400">
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-xs text-slate-400">
             <Link href="/about" className="underline decoration-white/20 underline-offset-4 hover:text-slate-200">
               Why this exists
             </Link>
@@ -99,23 +113,6 @@ export default async function Home() {
             <li>• All ranges end yesterday UTC so downloads line up with npm’s reporting.</li>
             <li>• Counts reflect total downloads, not unique users or installs.</li>
           </ul>
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-            Popular packages
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {POPULAR_PACKAGES.map((pkg) => (
-              <Link
-                key={pkg}
-                href={`/p/${encodeURIComponent(pkg)}?days=30`}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
-              >
-                {pkg}
-              </Link>
-            ))}
-          </div>
         </section>
       </div>
       <script
