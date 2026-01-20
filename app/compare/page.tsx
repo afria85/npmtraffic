@@ -275,9 +275,9 @@ export default async function ComparePage({ searchParams }: Props) {
           </div>
         </div>
       </div>
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="min-w-[230px] flex-1 sm:flex-none">{rangeSelector}</div>
-        <div className={`${COMPARE_ACTION_CONTAINER_CLASSES} ml-auto flex-shrink-0 self-end sm:self-auto`}>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+        <div className="min-w-[230px]">{rangeSelector}</div>
+        <div className={`${COMPARE_ACTION_CONTAINER_CLASSES} flex-shrink-0 self-end`}>
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
           <ShareMenu url={canonical} title={`npmtraffic compare (${days} days)`} iconOnlyOnMobile />
         </div>
@@ -325,6 +325,9 @@ export default async function ComparePage({ searchParams }: Props) {
       <CompareChart series={data.series} packageNames={tablePackageNames} days={days} />
 
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-slate-400">
+          <span>Daily downloads table ({days}d)</span>
+        </div>
         <ScrollHintContainer className={COMPARE_TABLE_WRAPPER_CLASSES}>
           <table className="min-w-[720px] w-full text-sm">
             <CompareTableHeader packageNames={tablePackageNames} />

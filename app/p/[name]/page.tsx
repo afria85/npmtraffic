@@ -202,46 +202,49 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
   const header = (
     <div className="flex w-full flex-col gap-4">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
           <Link href="/" className="text-xs uppercase tracking-[0.3em] text-slate-400">
             npmtraffic
           </Link>
-          <div className="space-y-2">
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
-            {updatedLabel ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-semibold tracking-[0.15em] text-slate-400">
-                  {updatedLabel}
-                </span>
-                {repoUrl ? (
-                  <a
-                    href={repoUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`${ACTION_BUTTON_CLASSES} h-9 px-3 text-xs font-semibold tracking-wide text-black bg-white border-white hover:bg-white focus-visible:outline-white`}
-                  >
-                    Star on GitHub
-                  </a>
-                ) : null}
-                <CompareButton name={name} />
-              </div>
-            ) : null}
-          </div>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
         </div>
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:min-w-[18rem]">
+          <CompareButton name={name} />
+          {repoUrl ? (
+            <a
+              href={repoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={`${ACTION_BUTTON_CLASSES} h-9 px-3 text-xs font-semibold tracking-wide text-black bg-white border-white hover:bg-white focus-visible:outline-white`}
+            >
+              Star on GitHub
+            </a>
+          ) : null}
+        </div>
+      </div>
 
-        <div className="flex flex-col gap-3 sm:min-w-[18rem] sm:items-end">
-          <div className="sm:hidden flex w-full flex-col items-end gap-2">
-            <SearchBox variant="modal" triggerLabel="Search another package" className="w-full max-w-[260px] self-end" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {updatedLabel ? (
+          <span className="inline-flex w-fit items-center rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-semibold tracking-[0.1em] text-slate-300">
+            {updatedLabel}
+          </span>
+        ) : (
+          <span className="text-[11px] text-slate-500">Updated recently</span>
+        )}
+        <div className="flex flex-col gap-2 sm:items-end">
+          <div className="sm:hidden flex w-full justify-end">
+            <SearchBox variant="modal" triggerLabel="Search another package" className="w-full max-w-[260px]" />
           </div>
           <div className="hidden sm:block w-72">
             <SearchBox />
           </div>
         </div>
       </div>
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="min-w-[230px] flex-1 sm:flex-none">{rangeSelector}</div>
-        <div className="ml-auto flex flex-shrink-0 items-center justify-end gap-2">
+
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+        <div className="min-w-[230px]">{rangeSelector}</div>
+        <div className="flex flex-shrink-0 items-center justify-end gap-2">
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
           <ShareMenu url={canonical} title={`${name} npm downloads (${days} days) | npmtraffic`} iconOnlyOnMobile />
         </div>

@@ -224,18 +224,18 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
             Add contextual markers (releases, posts, docs changes) to explain spikes. Stored locally in your browser.
           </p>
         </div>
-        <div className="ml-auto flex flex-nowrap items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           <button
             type="button"
             onClick={onPickImportFile}
-            className="inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1.5 text-xs font-semibold tracking-wide text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]"
+            className={`${ACTION_BUTTON_CLASSES} h-10 px-3 text-xs font-semibold`}
           >
             Import
           </button>
           <button
             type="button"
             onClick={onExportJson}
-            className="inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1.5 text-xs font-semibold tracking-wide text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]"
+            className={`${ACTION_BUTTON_CLASSES} h-10 px-3 text-xs font-semibold`}
           >
             Export
           </button>
