@@ -21,6 +21,11 @@ export default function Header() {
           <span>npmtraffic</span>
         </Link>
         <div className="flex items-center gap-2">
+          <Link href="/" aria-label="Home" className={`${HEADER_PILL_CLASSES} sm:hidden`} title="Home">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+              <path d="M9.293 2.5a1 1 0 0 1 1.414 0l7.25 7.25a1 1 0 1 1-1.414 1.414L16 10.571V16a2 2 0 0 1-2 2h-3v-4H9v4H6a2 2 0 0 1-2-2v-5.429l-.543.543a1 1 0 0 1-1.414-1.414l7.25-7.25z" />
+            </svg>
+          </Link>
           <Link href="/about" className={HEADER_PILL_CLASSES}>
             About
           </Link>

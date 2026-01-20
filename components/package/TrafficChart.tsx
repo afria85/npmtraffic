@@ -91,6 +91,28 @@ function readCssVar(name: string) {
   return v || "#0b0f14";
 }
 
+
+function resolveCssVarsInSvg(xml: string) {
+  if (typeof window === "undefined") return xml;
+  const style = getComputedStyle(document.documentElement);
+  const varRegex = /var\(--([a-zA-Z0-9-_]+)\)/g;
+  const seen = new Set<string>();
+  for (const m of xml.matchAll(varRegex)) {
+    const name = m[1];
+    if (name) seen.add(name);
+  }
+  if (seen.size === 0) return xml;
+  let out = xml;
+  for (const name of seen) {
+    const value = style.getPropertyValue(`--${name}`).trim();
+    if (!value) continue;
+    out = out.split(`var(--${name})`).join(value);
+  }
+  return out;
+}
+
+
+
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -111,7 +133,8 @@ function svgToBlob(svgEl: SVGSVGElement) {
     cloned.setAttribute("width", String(w));
     cloned.setAttribute("height", String(h));
   }
-  const xml = new XMLSerializer().serializeToString(cloned);
+  const xmlRaw = new XMLSerializer().serializeToString(cloned);
+  const xml = resolveCssVarsInSvg(xmlRaw);
   return new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
 }
 

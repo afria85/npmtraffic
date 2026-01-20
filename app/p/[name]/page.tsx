@@ -5,7 +5,6 @@ import { getBaseUrl } from "@/lib/base-url";
 import { clampDays } from "@/lib/query";
 import SearchBox from "@/components/SearchBox";
 import CompareButton from "@/components/compare/CompareButton";
-import ShareMenu from "@/components/ShareMenu";
 import AlertBanner from "@/components/AlertBanner";
 import { buildPackageCanonical } from "@/lib/canonical";
 import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
@@ -13,6 +12,7 @@ import { getPackageGithubRepo } from "@/lib/npm-repo";
 import DerivedSeriesTable from "@/components/package/DerivedSeriesTable";
 import RangeSelector from "@/components/RangeSelector";
 import ExportDropdown from "@/components/ExportDropdown";
+import ShareMenu from "@/components/ShareMenu";
 import { buildExportFilename } from "@/lib/export-filename";
 import EventsPanel from "@/components/events/EventsPanel";
 import TrafficChart from "@/components/package/TrafficChartClient";
@@ -226,28 +226,28 @@ export default async function PackagePage({ params, searchParams }: Props) {
           <div className="hidden sm:block w-72">
             <SearchBox />
           </div>
-          <div className="flex flex-wrap gap-2 overflow-x-auto pb-1 sm:pb-0">
-            <CompareButton name={name} />
-            {repoUrl ? (
-              <a
-                href={repoUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold tracking-wide text-slate-200 transition hover:border-white/30 hover:bg-white/10"
-              >
-                Star on GitHub
-              </a>
-            ) : null}
-            {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <CompareButton name={name} />
+              {repoUrl ? (
+                <a
+                  href={repoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold tracking-wide text-slate-200 transition hover:border-white/30 hover:bg-white/10"
+                >
+                  Star on GitHub
+                </a>
+              ) : null}
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
+              <ShareMenu url={canonical} title={`${name} npm downloads (${days} days) | npmtraffic`} iconOnlyOnMobile />
+            </div>
           </div>
         </div>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {rangeSelector}
-        <div className="flex justify-end">
-          <ShareMenu url={canonical} />
-        </div>
-      </div>
+      {rangeSelector}
     </div>
   );
 
@@ -282,7 +282,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
           <p className="text-xs uppercase tracking-widest text-slate-500">
-            Avg per day (last {days} days)
+            Avg per day
           </p>
           <p className="mt-2 text-xl font-semibold text-white">
             {formatNumber(traffic.totals.avgPerDay)}

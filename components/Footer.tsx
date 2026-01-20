@@ -8,6 +8,7 @@ export default function Footer() {
     <footer className="border-t border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-6 text-sm text-[color:var(--foreground)]/80">
       <div className="mx-auto flex max-w-5xl flex-col gap-4">
         <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[color:var(--muted)]">
+          <Link href="/" className="hover:text-[color:var(--foreground)]">Home</Link>
           <Link href="/about" className="hover:text-[color:var(--foreground)]">
             About
           </Link>

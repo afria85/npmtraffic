@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+
+import AboutActions from "@/components/about/AboutActions";
 
 export const metadata: Metadata = {
   title: "About | npmtraffic",
   description:
-    "What npmtraffic focuses on: daily tables, deterministic exports, and local-first events.",
+    "Why npmtraffic exists: GitHub-style daily tables, compare, event markers, and deterministic exports for audit-friendly analysis.",
 };
 
 export default function AboutPage() {
@@ -14,69 +15,63 @@ export default function AboutPage() {
         <p className="text-xs uppercase tracking-[0.3em] text-slate-400">npmtraffic</p>
         <h1 className="text-3xl font-semibold tracking-tight text-white">Why npmtraffic exists</h1>
         <p className="text-sm text-slate-300">
-          npm’s download stats are useful, but they are hard to use for attribution and operational
-          analysis. npmtraffic focuses on the workflows maintainers actually do: identify when a change
-          happened, correlate it with an event, and export an audit-friendly dataset.
+          npm download counts are useful, but charts alone rarely answer operational questions: <span className="text-slate-100">when</span> did something change, <span className="text-slate-100">how big</span> was the shift, and <span className="text-slate-100">what event</span> likely caused it. npmtraffic is built around that workflow, with a daily table you can read like GitHub traffic.
         </p>
       </header>
 
       <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-5">
-        <h2 className="text-sm font-semibold text-white">What you get</h2>
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-[color:var(--accent)]" aria-hidden />
+          <h2 className="text-sm font-semibold text-white">What you get</h2>
+        </div>
         <ul className="list-disc space-y-2 pl-5 text-sm text-slate-300">
           <li>
-            <span className="font-semibold text-slate-100">Daily breakdown table</span> so you can read
-            spikes like GitHub traffic (date-by-date, not just a curve).
+            <span className="font-semibold text-slate-100">Daily breakdown table</span> so you can read spikes date-by-date (not just a curve).
           </li>
           <li>
-            <span className="font-semibold text-slate-100">Day-to-day deltas</span> to quickly see when
-            changes start.
+            <span className="font-semibold text-slate-100">Day-to-day deltas</span> to spot the start of a change window quickly.
           </li>
           <li>
-            <span className="font-semibold text-slate-100">Audit-grade exports</span> (CSV/JSON) with
-            metadata so the dataset is traceable.
+            <span className="font-semibold text-slate-100">Compare</span> up to 5 packages side-by-side with consistent labeling.
           </li>
           <li>
-            <span className="font-semibold text-slate-100">Event markers</span> (local-first) to correlate
-            releases, posts, announcements, or incidents with download changes.
+            <span className="font-semibold text-slate-100">Event markers</span> (local-first) to correlate releases, posts, announcements, or incidents with download changes.
           </li>
           <li>
-            <span className="font-semibold text-slate-100">Compare</span> up to 5 packages side-by-side.
+            <span className="font-semibold text-slate-100">Deterministic exports</span> (CSV/JSON) with traceable metadata for analysis and audit trails.
           </li>
         </ul>
       </section>
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-white">Scope and design goals</h2>
+
+      <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-5">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-[color:var(--accent)]" aria-hidden />
+          <h2 className="text-sm font-semibold text-white">Design principles</h2>
+        </div>
         <ul className="list-disc space-y-2 pl-5 text-sm text-slate-300">
-          <li><span className="font-semibold text-slate-100">Operational readability</span>: default to a daily table and deltas so you can pinpoint when a change started.</li>
-          <li><span className="font-semibold text-slate-100">Deterministic exports</span>: CSV/JSON downloads include metadata so datasets are traceable and repeatable.</li>
-          <li><span className="font-semibold text-slate-100">Local-first events</span>: event markers are stored in your browser, not on a server.</li>
-          <li><span className="font-semibold text-slate-100">Cache transparency</span>: the UI surfaces stale/cached status when upstream is unavailable.</li>
+          <li>
+            <span className="font-semibold text-slate-100">Local-first</span>: event annotations live in your browser storage by default.
+          </li>
+          <li>
+            <span className="font-semibold text-slate-100">Predictable URLs</span>: shareable compare and event payloads are compact and explicit.
+          </li>
+          <li>
+            <span className="font-semibold text-slate-100">No gimmicks</span>: restrained UI, stable export formats, and minimal moving parts.
+          </li>
         </ul>
-        <p className="text-sm text-slate-400">npmtraffic does not try to replace every charting site. It is opinionated toward maintainer workflows: attribution, incident timelines, and exports you can audit.</p>
       </section>
 
       <section className="space-y-2 text-sm text-slate-300">
-        <h2 className="text-sm font-semibold text-white">Disclaimer</h2>
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-[color:var(--accent)]" aria-hidden />
+          <h2 className="text-sm font-semibold text-white">Disclaimer</h2>
+        </div>
         <p>
-          npmtraffic is not affiliated with npm, Inc. Download numbers come from <code>api.npmjs.org</code>
-          and represent total downloads, not unique users.
+          npmtraffic is not affiliated with npm, Inc. Download numbers come from <code>api.npmjs.org</code> and represent total downloads, not unique users.
         </p>
       </section>
 
-      <div className="flex flex-wrap gap-2">
-        <Link
-          href="/"
-          className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-white/20 hover:bg-white/10"
-        >
-          Search packages
-        </Link>
-        <Link
-          href="/compare"
-          className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-white/20 hover:bg-white/10"
-        >
-          Compare packages
-        </Link>
-      </div>
+      <AboutActions />
     </main>
   );
 }

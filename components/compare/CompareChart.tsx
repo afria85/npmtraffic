@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import ActionMenu from "@/components/ui/ActionMenu";
 
 const CHART_BUTTON_CLASSES =
@@ -90,6 +89,23 @@ function readCssVar(name: string) {
   return v || "#0b0f14";
 }
 
+function resolveCssVarsInSvg(xml: string) {
+  if (typeof window === "undefined") return xml;
+  const style = getComputedStyle(document.documentElement);
+  const seen = new Set<string>();
+  const matches = xml.match(/var\(--[a-zA-Z0-9-_]+\)/g) ?? [];
+  for (const token of matches) {
+    if (seen.has(token)) continue;
+    seen.add(token);
+    const name = token.slice(4, -1); // --var-name
+    const v = style.getPropertyValue(name).trim();
+    if (!v) continue;
+    xml = xml.split(token).join(v);
+  }
+  return xml;
+}
+
+
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -110,7 +126,8 @@ function svgToBlob(svgEl: SVGSVGElement) {
     cloned.setAttribute("width", String(w));
     cloned.setAttribute("height", String(h));
   }
-  const xml = new XMLSerializer().serializeToString(cloned);
+  const xmlRaw = new XMLSerializer().serializeToString(cloned);
+  const xml = resolveCssVarsInSvg(xmlRaw);
   return new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
 }
 
@@ -146,7 +163,9 @@ async function svgToPngBlob(svgEl: SVGSVGElement, background: string) {
   ctx.fillRect(0, 0, width, height);
   ctx.drawImage(img, 0, 0, width, height);
 
-  const pngBlob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b as Blob), "image/png"));
+  const pngBlob = await new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG export failed"))), "image/png")
+  );
   return pngBlob;
 }
 
@@ -169,15 +188,22 @@ function buildDefaultLineStyles(packageNames: string[]) {
 
 export default function CompareChart({ series, packageNames }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const stylePanelRef = useRef<HTMLDivElement | null>(null);
 
   const settingsKey = `npmtraffic_chart_settings:compare:${packageNames.join("|")}`;
 
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [styleOpen, setStyleOpen] = useState(false);
-  const [settings, setSettings] = useState<CompareChartSettings>(() => ({
-    lineStyles: buildDefaultLineStyles(packageNames),
-    colors: buildDefaultColors(packageNames),
-  }));
+  const [settings, setSettings] = useState<CompareChartSettings>(() => {
+    if (typeof window === "undefined") {
+      return { lineStyles: buildDefaultLineStyles(packageNames), colors: buildDefaultColors(packageNames) };
+    }
+    const saved = safeParseSettings(window.localStorage.getItem(settingsKey));
+    return {
+      lineStyles: { ...buildDefaultLineStyles(packageNames), ...(saved.lineStyles ?? {}) },
+      colors: { ...buildDefaultColors(packageNames), ...(saved.colors ?? {}) },
+    };
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -186,37 +212,15 @@ export default function CompareChart({ series, packageNames }: Props) {
 
   useEffect(() => {
     if (!styleOpen) return;
-    if (typeof document === "undefined") return;
-
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setStyleOpen(false);
     };
-
     document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.body.style.overflow = prevOverflow;
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [styleOpen]);
 
-  const toggleStylePanel = () => {
-    setStyleOpen((v) => {
-      const next = !v;
-      if (next && typeof window !== "undefined") {
-        const saved = safeParseSettings(window.localStorage.getItem(settingsKey));
-        if (saved) {
-          setSettings({
-            lineStyles: { ...buildDefaultLineStyles(packageNames), ...(saved.lineStyles ?? {}) },
-            colors: { ...buildDefaultColors(packageNames), ...(saved.colors ?? {}) },
-          });
-        }
-      }
-      return next;
-    });
-  };
 
   const { maxValue, pointsByPkg } = useMemo(() => {
     const values: number[] = [];
@@ -298,96 +302,6 @@ export default function CompareChart({ series, packageNames }: Props) {
     [packageNames.length]
   );
 
-  const styleModal = useMemo(() => {
-    if (!styleOpen || typeof document === "undefined") return null;
-
-    return createPortal(
-      <div
-        className="pointer-events-auto fixed inset-0"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Chart style"
-      >
-        <div
-          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-          onClick={() => setStyleOpen(false)}
-        />
-
-        <div
-          className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-lg rounded-t-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-4 text-[color:var(--foreground)] shadow-2xl sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-[min(32rem,92vw)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Chart style</div>
-              <div className="mt-1 text-sm text-[color:var(--foreground)]">Series formatting (local only)</div>
-            </div>
-            <button
-              type="button"
-              className={CHART_BUTTON_CLASSES + " px-2 py-1"}
-              onClick={() => setStyleOpen(false)}
-            >
-              Close
-            </button>
-          </div>
-
-          <div className="mt-4 space-y-3">
-            {packageNames.map((pkg) => (
-              <div
-                key={pkg}
-                className="rounded-xl border border-white/10 bg-white/5 p-3"
-              >
-                <div className="truncate text-sm font-semibold text-[color:var(--foreground)]">{pkg}</div>
-
-                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="space-y-1">
-                    <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Color</div>
-                    <select
-                      value={settings.colors[pkg] ?? "slate"}
-                      onChange={(e) =>
-                        setSettings((prev) => ({
-                          ...prev,
-                          colors: { ...prev.colors, [pkg]: e.target.value as PaletteKey },
-                        }))
-                      }
-                      className="w-full rounded-xl border border-white/10 bg-[color:var(--surface)] px-3 py-2 text-sm text-[color:var(--foreground)]"
-                    >
-                      {PALETTE.map((p) => (
-                        <option key={p.key} value={p.key}>
-                          {p.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="space-y-1">
-                    <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Line</div>
-                    <select
-                      value={settings.lineStyles[pkg] ?? "solid"}
-                      onChange={(e) =>
-                        setSettings((prev) => ({
-                          ...prev,
-                          lineStyles: { ...prev.lineStyles, [pkg]: e.target.value as LineStyleKey },
-                        }))
-                      }
-                      className="w-full rounded-xl border border-white/10 bg-[color:var(--surface)] px-3 py-2 text-sm text-[color:var(--foreground)]"
-                    >
-                      <option value="solid">Solid</option>
-                      <option value="dashed">Dashed</option>
-                      <option value="dotted">Dotted</option>
-                    </select>
-                  </label>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>,
-      document.body
-    );
-  }, [styleOpen, packageNames, settings]);
-
-  
   return (
     <section className="relative rounded-2xl border border-white/10 bg-white/5 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -396,7 +310,7 @@ export default function CompareChart({ series, packageNames }: Props) {
           <p className="mt-1 text-sm text-slate-200">Daily downloads (overlay)</p>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" className={CHART_BUTTON_CLASSES} onClick={toggleStylePanel} aria-expanded={styleOpen}>
+          <button type="button" className={CHART_BUTTON_CLASSES} onClick={() => setStyleOpen((v) => !v)} aria-expanded={styleOpen}>
             Style
           </button>
           <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
@@ -455,7 +369,85 @@ export default function CompareChart({ series, packageNames }: Props) {
             />
           ) : null}
         </svg>
-        {styleModal}
+
+        {styleOpen ? (
+          <div
+            className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Chart style"
+          >
+            <button
+              type="button"
+              aria-label="Close style panel"
+              className="absolute inset-0 bg-black/60"
+              onClick={() => setStyleOpen(false)}
+            />
+            <div
+              ref={stylePanelRef}
+              className="relative pointer-events-auto w-full rounded-t-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-4 text-xs text-[color:var(--foreground)] shadow-xl sm:w-[min(28rem,92vw)] sm:rounded-2xl"
+              style={{ maxHeight: "min(70vh, 560px)" }}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Chart style</div>
+                <button type="button" className={CHART_BUTTON_CLASSES + " px-2 py-1"} onClick={() => setStyleOpen(false)}>
+                  Close
+                </button>
+              </div>
+
+              <div className="mt-3 space-y-2">
+                <p className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Series</p>
+                <div className="space-y-2">
+                  {packageNames.map((pkg) => (
+                    <div key={pkg} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="min-w-0 text-sm font-semibold text-[color:var(--foreground)]">
+                        <div className="truncate">{pkg}</div>
+                      </div>
+                      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <label className="block">
+                          <span className="mb-1 block text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Color</span>
+                          <select
+                            value={settings.colors[pkg] ?? "slate"}
+                            onChange={(e) =>
+                              setSettings((prev) => ({
+                                ...prev,
+                                colors: { ...prev.colors, [pkg]: e.target.value as PaletteKey },
+                              }))
+                            }
+                            className="w-full rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-2 text-sm text-[color:var(--foreground)]"
+                          >
+                            {PALETTE.map((p) => (
+                              <option key={p.key} value={p.key}>
+                                {p.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="block">
+                          <span className="mb-1 block text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Line</span>
+                          <select
+                            value={settings.lineStyles[pkg] ?? "solid"}
+                            onChange={(e) =>
+                              setSettings((prev) => ({
+                                ...prev,
+                                lineStyles: { ...prev.lineStyles, [pkg]: e.target.value as LineStyleKey },
+                              }))
+                            }
+                            className="w-full rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-2 text-sm text-[color:var(--foreground)]"
+                          >
+                            <option value="solid">Solid</option>
+                            <option value="dashed">Dashed</option>
+                            <option value="dotted">Dotted</option>
+                          </select>
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {hovered ? (
           <div className={tooltipDockClass}>

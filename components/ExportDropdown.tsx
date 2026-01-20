@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 export type ExportItem = {
@@ -31,6 +32,17 @@ export default function ExportDropdown({
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
 
+  // Full-viewport portal root to avoid overflow clipping
+  const [portalRoot] = useState<HTMLDivElement | null>(() => {
+    if (typeof document === "undefined") return null;
+    const root = document.createElement("div");
+    root.style.position = "fixed";
+    root.style.inset = "0";
+    root.style.zIndex = "2147483647";
+    root.style.pointerEvents = "none";
+    return root;
+  });
+
   const close = () => {
     setOpen(false);
     setMenuPosition(null);
@@ -44,7 +56,17 @@ export default function ExportDropdown({
     });
   };
 
-  // Compute menu position when opening.
+  // Mount/unmount portal root
+  useEffect(() => {
+    if (!portalRoot || typeof document === "undefined") return;
+    if (!portalRoot.isConnected) document.body.appendChild(portalRoot);
+    return () => {
+      // Idempotent cleanup (avoid parentNode null errors when extensions move nodes)
+      portalRoot.remove();
+    };
+  }, [portalRoot]);
+
+  // Compute menu position when opening (rAF to avoid "setState in effect" lint)
   useLayoutEffect(() => {
     if (!open) return;
     if (typeof window === "undefined") return;
@@ -66,7 +88,7 @@ export default function ExportDropdown({
     return () => window.cancelAnimationFrame(raf);
   }, [open]);
 
-  // Reposition on scroll/resize while open.
+  // Reposition on scroll/resize while open
   useEffect(() => {
     if (!open) return;
     if (typeof window === "undefined") return;
@@ -93,7 +115,7 @@ export default function ExportDropdown({
     };
   }, [open]);
 
-  // Close on outside click/tap and Escape.
+  // Close on outside click/tap and Escape
   useEffect(() => {
     if (!open) return;
     if (typeof document === "undefined") return;
@@ -105,7 +127,9 @@ export default function ExportDropdown({
       const trigger = triggerRef.current;
       const menu = menuRef.current;
 
+      // If click is inside trigger or menu => ignore
       if (trigger?.contains(target) || menu?.contains(target)) return;
+
       close();
     };
 
@@ -122,6 +146,47 @@ export default function ExportDropdown({
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [open]);
+
+  const menuPortal = useMemo(() => {
+    if (!open || !portalRoot || !menuPosition) return null;
+
+    return createPortal(
+      <div
+        ref={menuRef}
+        role="menu"
+        aria-label={`${label} menu`}
+        className="pointer-events-auto z-50 overflow-hidden rounded-xl border border-white/10 bg-[color:var(--surface)] shadow-xl"
+        style={{
+          position: "fixed",
+          top: menuPosition.top,
+          left: menuPosition.left,
+          width: menuPosition.width,
+          maxHeight: "calc(100vh - 32px)",
+          overflowY: "auto",
+        }}
+      >
+        <div className="p-2">
+          {items.map((item) => {
+            const downloadProps = item.downloadName ? { download: item.downloadName } : undefined;
+
+            return (
+              <a
+                key={item.key}
+                href={item.href}
+                role="menuitem"
+                className="block rounded-lg px-3 py-2 text-sm text-slate-100 transition hover:bg-white/10"
+                {...(downloadProps ?? {})}
+                onClick={() => close()}
+              >
+                {item.label}
+              </a>
+            );
+          })}
+        </div>
+      </div>,
+      portalRoot
+    );
+  }, [open, portalRoot, menuPosition, items, label]);
 
   return (
     <>
@@ -142,48 +207,7 @@ export default function ExportDropdown({
           </span>
         </button>
       </div>
-
-      {open && menuPosition ? (
-        <div className="fixed inset-0 z-[2147483647] pointer-events-none">
-          <div className="absolute inset-0 pointer-events-auto" aria-hidden onClick={close} />
-
-          <div
-            ref={menuRef}
-            role="menu"
-            aria-label={`${label} menu`}
-            className="pointer-events-auto overflow-hidden rounded-xl border border-white/10 bg-[color:var(--surface)] shadow-xl"
-            style={{
-              position: "fixed",
-              top: menuPosition.top,
-              left: menuPosition.left,
-              width: menuPosition.width,
-              maxHeight: "calc(100vh - 32px)",
-              overflowY: "auto",
-            }}
-          >
-            <div className="p-2">
-              {items.map((item) => {
-                const downloadProps = item.downloadName
-                  ? { download: item.downloadName }
-                  : { download: "" };
-
-                return (
-                  <a
-                    key={item.key}
-                    href={item.href}
-                    role="menuitem"
-                    className="block rounded-lg px-3 py-2 text-sm text-slate-100 transition hover:bg-white/10"
-                    {...downloadProps}
-                    onClick={() => close()}
-                  >
-                    {item.label}
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {menuPortal}
     </>
   );
 }

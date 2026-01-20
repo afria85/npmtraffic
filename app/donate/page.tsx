@@ -38,7 +38,12 @@ export default function DonatePage() {
                   <span aria-hidden>{link.icon}</span>
                   <span>{link.label}</span>
                 </span>
-                <span className="text-xs uppercase tracking-[0.3em] text-slate-400">Open</span>
+                <span aria-hidden className="text-slate-300">
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                    <path d="M11 3a1 1 0 0 0 0 2h2.586L8.293 10.293a1 1 0 1 0 1.414 1.414L15 6.414V9a1 1 0 1 0 2 0V3h-6z" />
+                    <path d="M5 5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-3a1 1 0 1 0-2 0v3H5V7h3a1 1 0 1 0 0-2H5z" />
+                  </svg>
+                </span>
               </Link>
             ))}
           </div>

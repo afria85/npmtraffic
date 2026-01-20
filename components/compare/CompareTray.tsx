@@ -56,18 +56,20 @@ export default function CompareTray() {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {compareUrl ? (
-            <Link href={compareUrl} className={ACTION_BUTTON_CLASSES}>
-              {label}
-            </Link>
-          ) : (
-            <button type="button" className={`${ACTION_BUTTON_CLASSES} opacity-50`} disabled>
-              {label}
-            </button>
-          )}
           <span className="text-xs text-slate-400">
             {ready ? "Open the comparison table" : "Need at least two packages"}
           </span>
+          <div className="ml-auto">
+            {compareUrl ? (
+              <Link href={compareUrl} className={ACTION_BUTTON_CLASSES}>
+                {label}
+              </Link>
+            ) : (
+              <button type="button" className={`${ACTION_BUTTON_CLASSES} opacity-50`} disabled>
+                {label}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
