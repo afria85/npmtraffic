@@ -362,7 +362,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                 >
                   Export JSON
                 </button>
-                <label className="flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-200 hover:border-white/30 hover:bg-white/10">
+                <label className={`${ACTION_BUTTON_CLASSES} cursor-pointer bg-white/5 text-slate-200 hover:bg-white/10`}>
                   <span>Import JSON</span>
                   <input
                     type="file"

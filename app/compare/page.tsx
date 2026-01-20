@@ -275,7 +275,7 @@ export default async function ComparePage({ searchParams }: Props) {
           </div>
         </div>
       </div>
-      <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-[230px] flex-1 sm:flex-none">{rangeSelector}</div>
         <div className={`${COMPARE_ACTION_CONTAINER_CLASSES} ml-auto flex-shrink-0 self-end sm:self-auto`}>
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}

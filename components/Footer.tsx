@@ -49,7 +49,7 @@ export default function Footer() {
                   href={link.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.3em] text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold tracking-[0.15em] text-slate-100 transition hover:border-white/20 hover:bg-white/10"
                 >
                   <span aria-hidden>{link.icon}</span>
                   <span>{link.label}</span>

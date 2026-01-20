@@ -13,6 +13,7 @@ import {
   type EventEntry,
   type EventType,
 } from "@/lib/events";
+import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 type Props = {
   pkgName: string;
@@ -375,11 +376,11 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
           />
         </div>
 
-        <div className="sm:col-span-6 flex w-full flex-nowrap items-center justify-end gap-2 overflow-x-auto pb-1">
+        <div className="sm:col-span-6 flex w-full flex-wrap items-center justify-end gap-2">
           <button
             type="button"
             onClick={onSubmit}
-            className="inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-3)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-2)]"
+            className={`${ACTION_BUTTON_CLASSES} bg-[color:var(--surface-3)] text-[color:var(--foreground)] hover:bg-[color:var(--surface-2)]`}
           >
             {editingKey ? "Save" : "Add"}
           </button>
@@ -387,7 +388,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
             <button
               type="button"
               onClick={clearDraft}
-              className="inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]"
+              className={`${ACTION_BUTTON_CLASSES} bg-[color:var(--surface-2)] text-[color:var(--foreground)] hover:bg-[color:var(--surface-3)]`}
             >
               Cancel
             </button>

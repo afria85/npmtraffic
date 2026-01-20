@@ -10,7 +10,7 @@ export function primaryButtonClasses(isActive: boolean) {
 }
 
 export const MORE_SUMMARY_CLASSES =
-  `${ACTION_BUTTON_CLASSES} list-none text-[0.65rem] font-semibold uppercase tracking-[0.35em]`;
+  `${ACTION_BUTTON_CLASSES} list-none text-[0.65rem] font-semibold tracking-[0.25em]`;
 
 export function moreItemClasses(isActive: boolean) {
   return `rounded-full px-3 py-1.5 text-xs font-semibold tracking-wide transition ${

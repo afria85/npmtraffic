@@ -203,49 +203,43 @@ export default async function PackagePage({ params, searchParams }: Props) {
   const header = (
     <div className="flex w-full flex-col gap-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
+        <div className="space-y-3">
           <Link href="/" className="text-xs uppercase tracking-[0.3em] text-slate-400">
             npmtraffic
           </Link>
-          <div>
+          <div className="space-y-2">
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
-            <p className="text-sm text-slate-400">
-              npm downloads, GitHub-style traffic view
-            </p>
+            {updatedLabel ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-semibold tracking-[0.15em] text-slate-400">
+                  {updatedLabel}
+                </span>
+                {repoUrl ? (
+                  <a
+                    href={repoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`${ACTION_BUTTON_CLASSES} h-9 px-3 text-xs font-semibold tracking-wide text-black bg-white border-white hover:bg-white focus-visible:outline-white`}
+                  >
+                    Star on GitHub
+                  </a>
+                ) : null}
+                <CompareButton name={name} />
+              </div>
+            ) : null}
           </div>
-          {updatedLabel ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
-                {updatedLabel}
-              </span>
-              {repoUrl ? (
-                <a
-                  href={repoUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`${ACTION_BUTTON_CLASSES} h-9 px-3 text-[11px] font-semibold uppercase tracking-[0.3em] text-black bg-white border-white hover:bg-white focus-visible:outline-white`}
-                >
-                  Star on GitHub
-                </a>
-              ) : null}
-            </div>
-          ) : null}
         </div>
 
         <div className="flex flex-col gap-3 sm:min-w-[18rem] sm:items-end">
           <div className="sm:hidden flex w-full flex-col items-end gap-2">
-            <SearchBox variant="modal" triggerLabel="Search another package" className="w-full max-w-[260px]" />
-            <CompareButton name={name} />
+            <SearchBox variant="modal" triggerLabel="Search another package" className="w-full max-w-[260px] self-end" />
           </div>
           <div className="hidden sm:block w-72">
             <SearchBox />
           </div>
-          <div className="hidden sm:flex w-full justify-end">
-            <CompareButton name={name} />
-          </div>
         </div>
       </div>
-      <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-[230px] flex-1 sm:flex-none">{rangeSelector}</div>
         <div className="ml-auto flex flex-shrink-0 items-center justify-end gap-2">
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
