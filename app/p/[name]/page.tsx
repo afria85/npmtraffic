@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
 import { clampDays } from "@/lib/query";
@@ -31,15 +32,15 @@ function formatNumber(value: number) {
 
 function formatUpdatedAt(iso: string) {
   const ts = Date.parse(iso);
-  if (!Number.isFinite(ts)) return { label: "Updated", title: "Updated recently" };
+  if (!Number.isFinite(ts)) return "Updated recently";
   const diffMs = Date.now() - ts;
   const minutes = Math.max(0, Math.round(diffMs / 60000));
-  if (minutes < 1) return { label: "Updated now", title: "Updated just now" };
-  if (minutes < 60) return { label: `Updated ${minutes}m`, title: `Updated ${minutes} min ago` };
+  if (minutes < 1) return "Updated just now";
+  if (minutes < 60) return `Updated ${minutes} min ago`;
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return { label: `Updated ${hours}h`, title: `Updated ${hours} hr ago` };
+  if (hours < 24) return `Updated ${hours} hr ago`;
   const days = Math.round(hours / 24);
-  return { label: `Updated ${days}d`, title: `Updated ${days} days ago` };
+  return `Updated ${days} d ago`;
 }
 
 export async function generateMetadata({
@@ -141,7 +142,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
     }
   }
 
-  const updated = data ? formatUpdatedAt(data.meta.fetchedAt) : null;
+  const updatedLabel = data ? formatUpdatedAt(data.meta.fetchedAt) : null;
   const repoUrl = data ? await getPackageGithubRepo(name) : null;
 
   const rangeSelector = (
@@ -201,23 +202,14 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
   const header = (
     <div className="flex w-full flex-col gap-4">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
-      </div>
-
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {updated ? (
-          <span
-            className="inline-flex w-fit items-center rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-slate-300"
-            title={updated.title}
-          >
-            {updated.label}
-          </span>
-        ) : (
-          <span className="text-[11px] text-slate-500">Updated</span>
-        )}
-
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="space-y-2">
+          <Link href="/" className="text-xs uppercase tracking-[0.3em] text-slate-400">
+            npmtraffic
+          </Link>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:min-w-[18rem]">
           <CompareButton name={name} />
           {repoUrl ? (
             <a
@@ -232,16 +224,21 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 sm:items-end">
-        <div className="sm:hidden flex w-full justify-end">
-          <SearchBox
-            variant="modal"
-            triggerLabel="Search another package"
-            className="w-[min(100%,260px)]"
-          />
-        </div>
-        <div className="hidden sm:block w-72">
-          <SearchBox />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {updatedLabel ? (
+          <span className="inline-flex w-fit items-center rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-semibold tracking-[0.1em] text-slate-300">
+            {updatedLabel}
+          </span>
+        ) : (
+          <span className="text-[11px] text-slate-500">Updated recently</span>
+        )}
+        <div className="flex flex-col gap-2 sm:items-end">
+          <div className="sm:hidden flex w-full justify-end">
+            <SearchBox variant="modal" triggerLabel="Search another package" className="ml-auto w-fit max-w-[80vw]" />
+          </div>
+          <div className="hidden sm:block w-72">
+            <SearchBox />
+          </div>
         </div>
       </div>
 
@@ -275,19 +272,15 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-2">
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">
-            Total downloads ({days} days)
-          </p>
+          <p className="text-xs font-medium text-slate-400">Total downloads ({days}d)</p>
           <p className="mt-1 text-lg font-semibold text-white">
             {formatNumber(traffic.totals.sum)}
           </p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">
-            Avg per day
-          </p>
+          <p className="text-xs font-medium text-slate-400">Avg per day ({days}d)</p>
           <p className="mt-1 text-lg font-semibold text-white">
             {formatNumber(traffic.totals.avgPerDay)}
           </p>
