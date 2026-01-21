@@ -25,6 +25,44 @@ type ImportBanner =
   | { kind: "ready"; encoded: string; count: number; events: EventEntry[] }
   | { kind: "error"; message: string };
 
+function UploadIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+      aria-hidden
+    >
+      <path d="M12 16V4" />
+      <path d="M8 8l4-4 4 4" />
+      <path d="M4 20h16" />
+    </svg>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+      aria-hidden
+    >
+      <path d="M12 4v12" />
+      <path d="M8 12l4 4 4-4" />
+      <path d="M4 20h16" />
+    </svg>
+  );
+}
+
 function todayUtc() {
   const d = new Date();
   const yyyy = d.getUTCFullYear();
@@ -224,20 +262,24 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
             Add contextual markers (releases, posts, docs changes) to explain spikes. Stored locally in your browser.
           </p>
         </div>
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+        <div className="ml-auto flex flex-nowrap items-center justify-end gap-2">
           <button
             type="button"
             onClick={onPickImportFile}
-            className={`${ACTION_BUTTON_CLASSES} h-10 px-3 text-xs font-semibold`}
+            className={`${ACTION_BUTTON_CLASSES} gap-2 w-10 px-0 bg-white/0 text-slate-200 hover:bg-white/10 sm:w-auto sm:px-4`}
+            aria-label="Import"
           >
-            Import
+            <UploadIcon />
+            <span className="hidden sm:inline">Import</span>
           </button>
           <button
             type="button"
             onClick={onExportJson}
-            className={`${ACTION_BUTTON_CLASSES} h-10 px-3 text-xs font-semibold`}
+            className={`${ACTION_BUTTON_CLASSES} gap-2 w-10 px-0 bg-white/0 text-slate-200 hover:bg-white/10 sm:w-auto sm:px-4`}
+            aria-label="Export"
           >
-            Export
+            <DownloadIcon />
+            <span className="hidden sm:inline">Export</span>
           </button>
           <input
             ref={fileInputRef}

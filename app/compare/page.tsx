@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Fragment } from "react";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
@@ -191,6 +190,7 @@ export default async function ComparePage({ searchParams }: Props) {
     <RangeSelector
       currentDays={days}
       getHref={(value) => `/compare?packages=${canonicalPkgs}&days=${value}`}
+      label="RANGE"
     />
   );
 
@@ -260,23 +260,17 @@ export default async function ComparePage({ searchParams }: Props) {
 
   const header = (
     <div className="flex w-full flex-col gap-3">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-2">
-          <Link href="/" className="text-xs uppercase tracking-[0.3em] text-slate-400">
-            npmtraffic
-          </Link>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Compare packages
-            </h1>
-            <p className="text-sm text-slate-400">
-              {pkgs.join(", ")} · {days} days
-            </p>
-          </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Compare packages</h1>
+          <p className="mt-1 truncate text-sm text-slate-400">
+            {pkgs.join(", ")} · {days} days
+          </p>
         </div>
       </div>
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-        <div className="min-w-[230px]">{rangeSelector}</div>
+
+      <div className="flex items-end justify-between gap-2">
+        <div className="min-w-0 flex-1">{rangeSelector}</div>
         <div className={`${COMPARE_ACTION_CONTAINER_CLASSES} flex-shrink-0 self-end`}>
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
           <ShareMenu url={canonical} title={`npmtraffic compare (${days} days)`} iconOnlyOnMobile />

@@ -7,9 +7,9 @@
   --muted: #9aa4b2;
   --surface: #0f1621;
   --border: #1f2a37;
-  --accent: #5eead4;
-  --accent-foreground: #001014;
-  --ring: rgba(94, 234, 212, 0.35);
+  --accent: #60a5fa;
+  --accent-foreground: #06121f;
+  --ring: rgba(96, 165, 250, 0.32);
   --surface-2: rgba(255,255,255,0.06);
   --surface-3: rgba(255,255,255,0.09);
 
@@ -19,7 +19,7 @@
   --chart-tooltip-bg: rgba(0, 0, 0, 0.82);
   --chart-tooltip-border: rgba(255, 255, 255, 0.10);
 
-  --chart-palette-accent: rgba(94, 234, 212, 0.95);
+  --chart-palette-accent: rgba(96, 165, 250, 0.95);
   --chart-palette-slate: rgba(230, 237, 243, 0.70);
   --chart-palette-blue: rgba(96, 165, 250, 0.90);
   --chart-palette-emerald: rgba(52, 211, 153, 0.90);

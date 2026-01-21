@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
 import { clampDays } from "@/lib/query";
@@ -149,6 +148,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
     <RangeSelector
       currentDays={days}
       getHref={(value) => `/p/${encodedName}?days=${value}`}
+      label="RANGE"
     />
   );
 
@@ -203,20 +203,26 @@ export default async function PackagePage({ params, searchParams }: Props) {
   const header = (
     <div className="flex w-full flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-2">
-          <Link href="/" className="text-xs uppercase tracking-[0.3em] text-slate-400">
-            npmtraffic
-          </Link>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
+            {updatedLabel ? (
+              <span className="inline-flex items-center rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-semibold tracking-[0.1em] text-slate-300">
+                {updatedLabel}
+              </span>
+            ) : (
+              <span className="text-[11px] text-slate-500">Updated recently</span>
+            )}
+          </div>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2 sm:min-w-[18rem]">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <CompareButton name={name} />
           {repoUrl ? (
             <a
               href={repoUrl}
               target="_blank"
               rel="noreferrer"
-              className={`${ACTION_BUTTON_CLASSES} h-9 px-3 text-xs font-semibold tracking-wide text-black bg-white border-white hover:bg-white focus-visible:outline-white`}
+              className={`${ACTION_BUTTON_CLASSES} border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)] hover:opacity-90`}
             >
               Star on GitHub
             </a>
@@ -224,26 +230,21 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {updatedLabel ? (
-          <span className="inline-flex w-fit items-center rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-semibold tracking-[0.1em] text-slate-300">
-            {updatedLabel}
-          </span>
-        ) : (
-          <span className="text-[11px] text-slate-500">Updated recently</span>
-        )}
-        <div className="flex flex-col gap-2 sm:items-end">
-          <div className="sm:hidden flex w-full justify-end">
-            <SearchBox variant="modal" triggerLabel="Search another package" className="w-full max-w-[260px]" />
-          </div>
-          <div className="hidden sm:block w-72">
-            <SearchBox />
-          </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="sm:hidden flex w-full justify-end">
+          <SearchBox
+            variant="modal"
+            triggerLabel="Search another package"
+            className="w-full max-w-[220px]"
+          />
+        </div>
+        <div className="hidden sm:block w-72 ml-auto">
+          <SearchBox />
         </div>
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-        <div className="min-w-[230px]">{rangeSelector}</div>
+      <div className="flex items-end justify-between gap-2">
+        <div className="min-w-0 flex-1">{rangeSelector}</div>
         <div className="flex flex-shrink-0 items-center justify-end gap-2">
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
           <ShareMenu url={canonical} title={`${name} npm downloads (${days} days) | npmtraffic`} iconOnlyOnMobile />
@@ -272,12 +273,12 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
       ) : null}
 
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
           <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">
             Total downloads ({days} days)
           </p>
-          <p className="mt-1 text-lg font-semibold text-white">
+          <p className="mt-1 text-base font-semibold text-white sm:text-lg">
             {formatNumber(traffic.totals.sum)}
           </p>
         </div>
@@ -285,7 +286,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
           <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">
             Avg per day
           </p>
-          <p className="mt-1 text-lg font-semibold text-white">
+          <p className="mt-1 text-base font-semibold text-white sm:text-lg">
             {formatNumber(traffic.totals.avgPerDay)}
           </p>
         </div>
@@ -293,7 +294,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
       <TrafficChart series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
 
-      <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
+      <DerivedSeriesTable series={traffic.series} derived={traffic.derived} days={days} />
 
       <EventsPanel key={`${name}:${sp.events ?? ""}`} pkgName={name} encoded={sp.events} />
 

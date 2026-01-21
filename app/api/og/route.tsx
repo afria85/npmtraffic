@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   const mode = (searchParams.get("mode") ?? "pkg").toLowerCase();
   const days = parseDays(searchParams.get("days"));
 
-  const accent = "#5eead4";
+  const accent = "#60a5fa";
   const bg = "#0b0f14";
   const fg = "#e6edf3";
   const muted = "#94a3b8";
