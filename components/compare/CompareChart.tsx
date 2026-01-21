@@ -367,6 +367,22 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           ) : null}
         </svg>
 
+        {/* Legend immediately below the plot for better mobile scanning */}
+        <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-300">
+          {packageNames.map((pkg) => (
+            <span
+              key={pkg}
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1"
+            >
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ background: paletteValue(settings.colors[pkg] ?? "slate") }}
+              />
+              {pkg}
+            </span>
+          ))}
+        </div>
+
         <div className="mt-3 flex items-center justify-end gap-2">
           <button type="button" className={CHART_BUTTON_CLASSES} onClick={() => setStyleOpen((v) => !v)} aria-expanded={styleOpen}>
             Style
@@ -471,17 +487,6 @@ export default function CompareChart({ series, packageNames, days }: Props) {
         ) : null}
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-300">
-        {packageNames.map((pkg) => (
-          <span key={pkg} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1">
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ background: paletteValue(settings.colors[pkg] ?? "slate") }}
-            />
-            {pkg}
-          </span>
-        ))}
-      </div>
     </section>
   );
 }

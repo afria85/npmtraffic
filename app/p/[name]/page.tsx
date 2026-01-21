@@ -31,15 +31,15 @@ function formatNumber(value: number) {
 
 function formatUpdatedAt(iso: string) {
   const ts = Date.parse(iso);
-  if (!Number.isFinite(ts)) return "Updated recently";
+  if (!Number.isFinite(ts)) return { label: "Updated", title: "Updated recently" };
   const diffMs = Date.now() - ts;
   const minutes = Math.max(0, Math.round(diffMs / 60000));
-  if (minutes < 1) return "Updated just now";
-  if (minutes < 60) return `Updated ${minutes} min ago`;
+  if (minutes < 1) return { label: "Updated now", title: "Updated just now" };
+  if (minutes < 60) return { label: `Updated ${minutes}m`, title: `Updated ${minutes} min ago` };
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `Updated ${hours} hr ago`;
+  if (hours < 24) return { label: `Updated ${hours}h`, title: `Updated ${hours} hr ago` };
   const days = Math.round(hours / 24);
-  return `Updated ${days} d ago`;
+  return { label: `Updated ${days}d`, title: `Updated ${days} days ago` };
 }
 
 export async function generateMetadata({
@@ -141,14 +141,13 @@ export default async function PackagePage({ params, searchParams }: Props) {
     }
   }
 
-  const updatedLabel = data ? formatUpdatedAt(data.meta.fetchedAt) : null;
+  const updated = data ? formatUpdatedAt(data.meta.fetchedAt) : null;
   const repoUrl = data ? await getPackageGithubRepo(name) : null;
 
   const rangeSelector = (
     <RangeSelector
       currentDays={days}
       getHref={(value) => `/p/${encodedName}?days=${value}`}
-      label="RANGE"
     />
   );
 
@@ -202,19 +201,22 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
   const header = (
     <div className="flex w-full flex-col gap-4">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
+      </div>
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
-            {updatedLabel ? (
-              <span className="inline-flex items-center rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-semibold tracking-[0.1em] text-slate-300">
-                {updatedLabel}
-              </span>
-            ) : (
-              <span className="text-[11px] text-slate-500">Updated recently</span>
-            )}
-          </div>
-        </div>
+        {updated ? (
+          <span
+            className="inline-flex w-fit items-center rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-slate-300"
+            title={updated.title}
+          >
+            {updated.label}
+          </span>
+        ) : (
+          <span className="text-[11px] text-slate-500">Updated</span>
+        )}
+
         <div className="flex flex-wrap items-center justify-end gap-2">
           <CompareButton name={name} />
           {repoUrl ? (
@@ -222,7 +224,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
               href={repoUrl}
               target="_blank"
               rel="noreferrer"
-              className={`${ACTION_BUTTON_CLASSES} border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)] hover:opacity-90`}
+              className={`${ACTION_BUTTON_CLASSES} h-9 px-3 text-xs font-semibold tracking-wide text-black bg-white border-white hover:bg-white focus-visible:outline-white`}
             >
               Star on GitHub
             </a>
@@ -230,21 +232,21 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:items-end">
         <div className="sm:hidden flex w-full justify-end">
           <SearchBox
             variant="modal"
             triggerLabel="Search another package"
-            className="w-full max-w-[220px]"
+            className="w-[min(100%,260px)]"
           />
         </div>
-        <div className="hidden sm:block w-72 ml-auto">
+        <div className="hidden sm:block w-72">
           <SearchBox />
         </div>
       </div>
 
-      <div className="flex items-end justify-between gap-2">
-        <div className="min-w-0 flex-1">{rangeSelector}</div>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+        <div className="min-w-[230px]">{rangeSelector}</div>
         <div className="flex flex-shrink-0 items-center justify-end gap-2">
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
           <ShareMenu url={canonical} title={`${name} npm downloads (${days} days) | npmtraffic`} iconOnlyOnMobile />
@@ -273,12 +275,12 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
           <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">
             Total downloads ({days} days)
           </p>
-          <p className="mt-1 text-base font-semibold text-white sm:text-lg">
+          <p className="mt-1 text-lg font-semibold text-white">
             {formatNumber(traffic.totals.sum)}
           </p>
         </div>
@@ -286,7 +288,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
           <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">
             Avg per day
           </p>
-          <p className="mt-1 text-base font-semibold text-white sm:text-lg">
+          <p className="mt-1 text-lg font-semibold text-white">
             {formatNumber(traffic.totals.avgPerDay)}
           </p>
         </div>
@@ -294,7 +296,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
       <TrafficChart series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
 
-      <DerivedSeriesTable series={traffic.series} derived={traffic.derived} days={days} />
+      <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
 
       <EventsPanel key={`${name}:${sp.events ?? ""}`} pkgName={name} encoded={sp.events} />
 
