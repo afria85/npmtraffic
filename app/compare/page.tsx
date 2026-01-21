@@ -7,13 +7,13 @@ import { validatePackageName } from "@/lib/package-name";
 import { buildCompareData } from "@/lib/compare";
 import { TrafficError, type TrafficResponse } from "@/lib/traffic";
 import { buildCompareCanonical } from "@/lib/canonical";
-import AlertBanner from "@/components/AlertBanner";
 import RangeSelector from "@/components/RangeSelector";
 import ExportDropdown from "@/components/ExportDropdown";
 import ShareMenu from "@/components/ShareMenu";
 import SearchBox from "@/components/SearchBox";
 import CompareChart from "@/components/compare/CompareChartClient";
 import { buildExportFilename } from "@/lib/export-filename";
+import RetryButton from "@/components/ui/RetryButton";
 import {
   COMPARE_ACTION_CONTAINER_CLASSES,
   COMPARE_TABLE_WRAPPER_CLASSES,
@@ -204,9 +204,9 @@ export default async function ComparePage({ searchParams }: Props) {
       notFound();
     }
     if (error instanceof TrafficError && error.code === "UPSTREAM_UNAVAILABLE") {
-      errorText = "npm API temporarily unavailable.";
+      errorText = "npm API is temporarily unavailable. Try again in a few minutes.";
     } else {
-      errorText = "Failed to load.";
+      errorText = "We couldn't load the comparison right now. Try again in a few minutes.";
     }
   }
 
@@ -283,7 +283,12 @@ export default async function ComparePage({ searchParams }: Props) {
     return (
       <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-6">
         {header}
-        <AlertBanner message={errorText ?? "Failed to load."} />
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+          <p className="text-sm text-slate-200">{errorText ?? "We couldn't load the comparison right now."}</p>
+          <div className="mt-3 flex items-center gap-2">
+            <RetryButton />
+          </div>
+        </div>
       </main>
     );
   }
@@ -293,6 +298,12 @@ export default async function ComparePage({ searchParams }: Props) {
   return (
     <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-6">
       {header}
+      {data.meta.isStale ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+          <span>Showing cached data (upstream error).</span>
+          <RetryButton className="h-8 px-3 text-xs" label="Retry" />
+        </div>
+      ) : null}
       {data?.warnings?.length ? (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
           {data.warnings.join(" ")}

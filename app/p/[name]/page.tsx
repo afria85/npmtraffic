@@ -4,7 +4,6 @@ import { getBaseUrl } from "@/lib/base-url";
 import { clampDays } from "@/lib/query";
 import SearchBox from "@/components/SearchBox";
 import CompareButton from "@/components/compare/CompareButton";
-import AlertBanner from "@/components/AlertBanner";
 import { buildPackageCanonical } from "@/lib/canonical";
 import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
 import { getPackageGithubRepo } from "@/lib/npm-repo";
@@ -16,6 +15,7 @@ import { buildExportFilename } from "@/lib/export-filename";
 import EventsPanel from "@/components/events/EventsPanel";
 import TrafficChart from "@/components/package/TrafficChartClient";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
+import RetryButton from "@/components/ui/RetryButton";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -145,12 +145,12 @@ export default async function PackagePage({ params, searchParams }: Props) {
         notFound();
       }
       if (error.code === "UPSTREAM_UNAVAILABLE") {
-        errorText = "npm API temporarily unavailable.";
+        errorText = "npm API is temporarily unavailable. Try again in a few minutes.";
       } else {
-        errorText = "Failed to load data.";
+        errorText = "We couldn't load this package right now. Try again in a few minutes.";
       }
     } else {
-      errorText = "Failed to load data.";
+      errorText = "We couldn't load this package right now. Try again in a few minutes.";
     }
   }
 
@@ -286,7 +286,12 @@ export default async function PackagePage({ params, searchParams }: Props) {
     return (
       <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 px-4 py-6">
         {header}
-        <AlertBanner message={`${errorText ?? "Failed to load data."} Please try again.`} />
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+          <p className="text-sm text-slate-200">{errorText ?? "We couldn't load this package right now."}</p>
+          <div className="mt-3 flex items-center gap-2">
+            <RetryButton />
+          </div>
+        </div>
       </main>
     );
   }
@@ -297,8 +302,9 @@ export default async function PackagePage({ params, searchParams }: Props) {
     <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 px-4 py-6">
       {header}
       {traffic.meta.isStale ? (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
-          {traffic.warning ?? "Showing cached data (upstream error)."}
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+          <span>{traffic.warning ?? "Showing cached data (upstream error)."}</span>
+          <RetryButton className="h-8 px-3 text-xs" label="Retry" />
         </div>
       ) : null}
 
