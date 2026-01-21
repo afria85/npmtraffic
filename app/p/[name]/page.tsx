@@ -15,7 +15,6 @@ import ShareMenu from "@/components/ShareMenu";
 import { buildExportFilename } from "@/lib/export-filename";
 import EventsPanel from "@/components/events/EventsPanel";
 import TrafficChart from "@/components/package/TrafficChartClient";
-import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -31,15 +30,15 @@ function formatNumber(value: number) {
 
 function formatUpdatedAt(iso: string) {
   const ts = Date.parse(iso);
-  if (!Number.isFinite(ts)) return { label: "Updated", title: "Updated recently" };
+  if (!Number.isFinite(ts)) return "Updated recently";
   const diffMs = Date.now() - ts;
   const minutes = Math.max(0, Math.round(diffMs / 60000));
-  if (minutes < 1) return { label: "Updated now", title: "Updated just now" };
-  if (minutes < 60) return { label: `Updated ${minutes}m`, title: `Updated ${minutes} min ago` };
+  if (minutes < 1) return "Updated just now";
+  if (minutes < 60) return `Updated ${minutes} min ago`;
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return { label: `Updated ${hours}h`, title: `Updated ${hours} hr ago` };
+  if (hours < 24) return `Updated ${hours} hr ago`;
   const days = Math.round(hours / 24);
-  return { label: `Updated ${days}d`, title: `Updated ${days} days ago` };
+  return `Updated ${days} d ago`;
 }
 
 export async function generateMetadata({
@@ -141,7 +140,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
     }
   }
 
-  const updated = data ? formatUpdatedAt(data.meta.fetchedAt) : null;
+  const updatedLabel = data ? formatUpdatedAt(data.meta.fetchedAt) : null;
   const repoUrl = data ? await getPackageGithubRepo(name) : null;
 
   const rangeSelector = (
@@ -201,55 +200,69 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
   const header = (
     <div className="flex w-full flex-col gap-4">
-      <div className="space-y-2">
+      {/* Mobile: 2-row grid
+          Row 1: title (left) + Add/Star (right)
+          Row 2: Updated (left) + Search (right)
+      */}
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2">
+        {/* Row 1, Col 1 */}
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
-      </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {updated ? (
-          <span
-            className="inline-flex w-fit items-center rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-slate-300"
-            title={updated.title}
-          >
-            {updated.label}
-          </span>
-        ) : (
-          <span className="text-[11px] text-slate-500">Updated</span>
-        )}
-
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        {/* Row 1, Col 2 */}
+        <div className="flex flex-nowrap items-center justify-end gap-2">
           <CompareButton name={name} />
           {repoUrl ? (
             <a
               href={repoUrl}
               target="_blank"
               rel="noreferrer"
-              className={`${ACTION_BUTTON_CLASSES} h-9 px-3 text-xs font-semibold tracking-wide text-black bg-white border-white hover:bg-white focus-visible:outline-white`}
+              className="inline-flex h-9 items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 text-xs font-semibold text-slate-200 transition hover:border-white/30 hover:bg-white/10"
+              aria-label="Star on GitHub"
+              title="Star on GitHub"
             >
-              Star on GitHub
+              <span className="hidden sm:inline">Star on GitHub</span>
+              <span className="sm:hidden">GitHub</span>
             </a>
           ) : null}
         </div>
+
+        {/* Row 2, Col 1 */}
+        {updatedLabel ? (
+          <span
+            className="inline-flex w-fit items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-slate-300"
+            title={updatedLabel}
+          >
+            {updatedLabel}
+          </span>
+        ) : (
+          <span className="text-[11px] text-slate-500">Updated</span>
+        )}
+
+        {/* Row 2, Col 2 */}
+        <div className="justify-self-end">
+          {/* Mobile: modal trigger (right aligned, not full width) */}
+          <div className="sm:hidden">
+            <div className="ml-auto w-fit max-w-[70vw]">
+              <SearchBox variant="modal" triggerLabel="Search another package" />
+            </div>
+          </div>
+          {/* Desktop: inline search */}
+          <div className="hidden sm:block w-72">
+            <SearchBox />
+          </div>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-2 sm:items-end">
-        <div className="sm:hidden flex w-full justify-end">
-          <SearchBox
-            variant="modal"
-            triggerLabel="Search another package"
-            className="w-[min(100%,260px)]"
-          />
-        </div>
-        <div className="hidden sm:block w-72">
-          <SearchBox />
-        </div>
-      </div>
-
+      {/* Command bar: range left, export/share right */}
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
         <div className="min-w-[230px]">{rangeSelector}</div>
         <div className="flex flex-shrink-0 items-center justify-end gap-2">
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
-          <ShareMenu url={canonical} title={`${name} npm downloads (${days} days) | npmtraffic`} iconOnlyOnMobile />
+          <ShareMenu
+            url={canonical}
+            title={`${name} npm downloads (${days} days) | npmtraffic`}
+            iconOnlyOnMobile
+          />
         </div>
       </div>
     </div>
@@ -275,26 +288,26 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+          <p className="text-xs font-medium text-slate-400">
             Total downloads ({days} days)
           </p>
-          <p className="mt-1 text-lg font-semibold text-white">
+          <p className="mt-1 text-lg font-semibold tabular-nums text-white sm:text-xl">
             {formatNumber(traffic.totals.sum)}
           </p>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <p className="text-[11px] uppercase tracking-[0.35em] text-slate-500">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+          <p className="text-xs font-medium text-slate-400">
             Avg per day
           </p>
-          <p className="mt-1 text-lg font-semibold text-white">
+          <p className="mt-1 text-lg font-semibold tabular-nums text-white sm:text-xl">
             {formatNumber(traffic.totals.avgPerDay)}
           </p>
         </div>
       </div>
 
-      <TrafficChart series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
+      <TrafficChart series={traffic.series} derived={traffic.derived} pkgName={name} />
 
       <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
 

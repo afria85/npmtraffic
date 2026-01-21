@@ -15,7 +15,6 @@ type Props = {
   series: TrafficSeriesRow[];
   derived: DerivedMetrics;
   pkgName: string;
-  days: number;
 };
 
 type PaletteKey = "accent" | "slate" | "blue" | "emerald" | "violet" | "amber" | "orange" | "pink" | "cyan";
@@ -175,7 +174,7 @@ async function svgToPngBlob(svgEl: SVGSVGElement, background: string) {
   return pngBlob;
 }
 
-export default function TrafficChart({ series, derived, pkgName, days }: Props) {
+export default function TrafficChart({ series, derived, pkgName }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const stylePanelRef = useRef<HTMLDivElement | null>(null);
 
@@ -183,6 +182,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
 
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [styleOpen, setStyleOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [settings, setSettings] = useState<ChartSettings>(() => {
     if (typeof window === "undefined") {
       return {
@@ -216,6 +216,29 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
     if (typeof window === "undefined") return;
     window.localStorage.setItem(settingsKey, JSON.stringify(settings));
   }, [settingsKey, settings]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mql = window.matchMedia("(max-width: 640px)");
+    const update = () => setIsMobile(mql.matches);
+    update();
+
+    if (typeof mql.addEventListener === "function") {
+      mql.addEventListener("change", update);
+      return () => mql.removeEventListener("change", update);
+    }
+
+    // Legacy Safari fallback (avoid eslint deprecation plugin dependency).
+    const legacy = mql as unknown as {
+      addListener?: (cb: () => void) => void;
+      removeListener?: (cb: () => void) => void;
+    };
+    if (typeof legacy.addListener === "function") {
+      legacy.addListener(update);
+      return () => legacy.removeListener?.(update);
+    }
+    return;
+  }, []);
 
   useEffect(() => {
     if (!styleOpen) return;
@@ -327,6 +350,20 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
   const canShowMA7 = Boolean(ma7Path);
   const canShowMA3 = Boolean(ma3Path);
 
+  const dashForStyle = (style: LineStyleKey) => {
+    if (!isMobile) return dashFor(style);
+    if (style === "dashed") return "10 6";
+    if (style === "dotted") return "2 6";
+    return undefined;
+  };
+
+  const downloadsStrokeWidth = isMobile ? 3.0 : 2.25;
+  const ma7StrokeWidth = isMobile ? 2.4 : 1.8;
+  const ma3StrokeWidth = isMobile ? 2.2 : 1.6;
+  const outlierRadius = isMobile ? 5.2 : 4.6;
+  const outlierStrokeWidth = isMobile ? 2.4 : 2;
+  const hoverRadius = isMobile ? 6 : 4.5;
+
   const exports = useMemo(
     () => [
       {
@@ -357,19 +394,13 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
   return (
     <section className="relative rounded-2xl border border-white/10 bg-white/5 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-200">Daily downloads ({days}d)</p>
-        <div className="ml-auto flex flex-nowrap items-center gap-3">
-          <label className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-wide text-slate-300">
-            <input
-              type="checkbox"
-              checked={settings.showMA3}
-              disabled={!canShowMA3}
-              onChange={(event) => setSettings((prev) => ({ ...prev, showMA3: event.target.checked }))}
-              className="h-4 w-4 accent-[color:var(--accent)]"
-            />
-            MA 3
-          </label>
-          <label className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-wide text-slate-300">
+        <div>
+          <p className="text-xs font-semibold text-slate-400">Trend</p>
+          <p className="mt-1 text-sm font-semibold text-slate-200">Daily downloads</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="inline-flex items-center gap-2 text-xs text-slate-300">
             <input
               type="checkbox"
               checked={settings.showMA7}
@@ -378,7 +409,30 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               className="h-4 w-4 accent-[color:var(--accent)]"
             />
             MA 7
-          </label>
+            </label>
+            <label className="inline-flex items-center gap-2 text-xs text-slate-300">
+            <input
+              type="checkbox"
+              checked={settings.showMA3}
+              disabled={!canShowMA3}
+              onChange={(event) => setSettings((prev) => ({ ...prev, showMA3: event.target.checked }))}
+              className="h-4 w-4 accent-[color:var(--accent)]"
+            />
+            MA 3
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className={CHART_BUTTON_CLASSES}
+              onClick={() => setStyleOpen((v) => !v)}
+              aria-expanded={styleOpen}
+            >
+              Style
+            </button>
+            <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
+          </div>
         </div>
       </div>
 
@@ -388,7 +442,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
           viewBox={`0 0 ${width} ${height}`}
           className="h-64 w-full"
           role="img"
-          aria-label={`Daily downloads line chart (${days} days)`}
+          aria-label="Daily downloads line chart"
           onMouseLeave={() => setHoverIndex(null)}
           onMouseMove={(event) => {
             const svg = event.currentTarget;
@@ -429,11 +483,11 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
                   key={`out-${p.index}`}
                   cx={p.x}
                   cy={p.y}
-                  r={4.6}
+                  r={outlierRadius}
                   fill={paletteValue(settings.outlierColor)}
                   opacity={0.82}
                   stroke="var(--background)"
-                  strokeWidth={2}
+                  strokeWidth={outlierStrokeWidth}
                 />
               ))}
             </g>
@@ -444,8 +498,8 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
             d={downloadsPath}
             fill="none"
             stroke={paletteValue(settings.downloadsColor)}
-            strokeWidth={2.25}
-            strokeDasharray={dashFor(settings.downloadsStyle)}
+            strokeWidth={downloadsStrokeWidth}
+            strokeDasharray={dashForStyle(settings.downloadsStyle)}
           />
 
           {/* MA lines */}
@@ -454,8 +508,8 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               d={ma7Path}
               fill="none"
               stroke={paletteValue(settings.ma7Color)}
-              strokeWidth={1.8}
-              strokeDasharray={dashFor(settings.maStyle) ?? "6 4"}
+              strokeWidth={ma7StrokeWidth}
+              strokeDasharray={dashForStyle(settings.maStyle) ?? (isMobile ? "10 6" : "6 4")}
               opacity={0.92}
             />
           ) : null}
@@ -465,8 +519,8 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               d={ma3Path}
               fill="none"
               stroke={paletteValue(settings.ma3Color)}
-              strokeWidth={1.6}
-              strokeDasharray={dashFor(settings.maStyle) ?? "2 4"}
+              strokeWidth={ma3StrokeWidth}
+              strokeDasharray={dashForStyle(settings.maStyle) ?? (isMobile ? "2 6" : "2 4")}
               opacity={0.88}
             />
           ) : null}
@@ -484,7 +538,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               <circle
                 cx={downloadsPoints[hoverIndex].x}
                 cy={downloadsPoints[hoverIndex].y}
-                r={4.5}
+                r={hoverRadius}
                 fill={paletteValue(settings.downloadsColor)}
               />
             </g>
@@ -657,17 +711,6 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
             ) : null}
           </div>
         ) : null}
-        <div className="mt-3 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            className={CHART_BUTTON_CLASSES}
-            onClick={() => setStyleOpen((v) => !v)}
-            aria-expanded={styleOpen}
-          >
-            Style
-          </button>
-          <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
-        </div>
       </div>
     </section>
   );
