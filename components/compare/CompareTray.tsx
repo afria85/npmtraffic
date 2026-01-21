@@ -30,6 +30,9 @@ export default function CompareTray() {
   const ready = isCompareReady(packages.length);
   const compareUrl = ready ? buildCompareUrl(packages, 30) : null;
   const label = getCompareButtonLabel(packages.length);
+  const selectionLabel = packages.length
+    ? `${packages.length} selected`
+    : "Select packages to compare";
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-3">
@@ -51,14 +54,10 @@ export default function CompareTray() {
                 </button>
               ))}
             </div>
-          ) : (
-            <p className="text-xs text-slate-500">Add packages to compare using the button on each package page.</p>
-          )}
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-400">
-            {ready ? "Open the comparison table" : "Need at least two packages"}
-          </span>
+          <span className="text-xs text-slate-400">{selectionLabel}</span>
           <div className="ml-auto">
             {compareUrl ? (
               <Link href={compareUrl} className={ACTION_BUTTON_CLASSES}>
