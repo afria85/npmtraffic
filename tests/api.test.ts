@@ -261,7 +261,9 @@ test("daily JSON export returns audit metadata", async (t) => {
   const req = new Request("http://localhost/api/v1/package/react/daily.json?days=14");
   const res = await getDailyJson(req, { params: Promise.resolve({ name: "react" }) });
   assert.equal(res.status, 200);
-  const body = await res.json();
+  const text = await res.text();
+  assert.ok(text.endsWith("\n"));
+  const body = JSON.parse(text);
   assert.equal(body.package, "react");
   assert.equal(body.range.days, 14);
   assert.equal(typeof body.meta?.timezone, "string");
@@ -322,7 +324,9 @@ test("compare JSON export includes metadata block", async (t) => {
   const req = new Request("http://localhost/api/v1/compare?packages=react,vue&days=30");
   const res = await getCompare(req);
   assert.equal(res.status, 200);
-  const body = await res.json();
+  const text = await res.text();
+  assert.ok(text.endsWith("\n"));
+  const body = JSON.parse(text);
   assert.ok(body.export);
   assert.equal(body.export.timezone, "UTC");
   assert.ok(typeof body.export.generatedAt === "string");

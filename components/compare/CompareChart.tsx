@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import ActionMenu from "@/components/ui/ActionMenu";
+import { computeLeftPad } from "@/components/charts/axis-padding";
 
 const CHART_BUTTON_CLASSES =
   "inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold leading-none text-slate-100 transition hover:border-white/20 hover:bg-white/10";
@@ -43,7 +44,6 @@ const PALETTE: { key: PaletteKey; label: string; cssVar: string }[] = [
 
 const WIDTH = 1000;
 const HEIGHT = 260;
-const PAD = { l: 46, r: 16, t: 16, b: 30 } as const;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -62,9 +62,9 @@ function pickClosestIndex(x: number, count: number) {
   return clamp(Math.round(x * (count - 1)), 0, count - 1);
 }
 
-function dashFor(style: LineStyleKey) {
-  if (style === "dashed") return "6 4";
-  if (style === "dotted") return "2 4";
+function dashFor(style: LineStyleKey, isMobile: boolean) {
+  if (style === "dashed") return isMobile ? "12 8" : "8 5";
+  if (style === "dotted") return isMobile ? "0 12" : "0 8";
   return undefined;
 }
 
@@ -118,9 +118,23 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function svgToBlob(svgEl: SVGSVGElement) {
+function svgToBlob(svgEl: SVGSVGElement, background?: string) {
   const cloned = svgEl.cloneNode(true) as SVGSVGElement;
   cloned.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  if (background) {
+    const rect = svgEl.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", "0");
+    rect.setAttribute("y", "0");
+    rect.setAttribute("width", "100%");
+    rect.setAttribute("height", "100%");
+    rect.setAttribute("fill", background);
+    const first = cloned.firstChild;
+    if (first) {
+      cloned.insertBefore(rect, first);
+    } else {
+      cloned.appendChild(rect);
+    }
+  }
   const viewBox = cloned.getAttribute("viewBox") ?? "0 0 1000 260";
   const [, , w, h] = viewBox.split(" ").map((v) => Number(v));
   if (Number.isFinite(w) && Number.isFinite(h)) {
@@ -195,6 +209,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
 
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [styleOpen, setStyleOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [settings, setSettings] = useState<CompareChartSettings>(() => {
     if (typeof window === "undefined") {
       return { lineStyles: buildDefaultLineStyles(packageNames), colors: buildDefaultColors(packageNames) };
@@ -212,6 +227,28 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   }, [settingsKey, settings]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mql = window.matchMedia("(max-width: 640px)");
+    const update = () => setIsMobile(mql.matches);
+    update();
+
+    if (typeof mql.addEventListener === "function") {
+      mql.addEventListener("change", update);
+      return () => mql.removeEventListener("change", update);
+    }
+
+    const legacy = mql as unknown as {
+      addListener?: (cb: () => void) => void;
+      removeListener?: (cb: () => void) => void;
+    };
+    if (typeof legacy.addListener === "function") {
+      legacy.addListener(update);
+      return () => legacy.removeListener?.(update);
+    }
+    return;
+  }, []);
+
+  useEffect(() => {
     if (!styleOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setStyleOpen(false);
@@ -223,7 +260,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   }, [styleOpen]);
 
 
-  const { maxValue, pointsByPkg } = useMemo(() => {
+  const maxValue = useMemo(() => {
     const values: number[] = [];
     for (const row of series) {
       for (const pkg of packageNames) {
@@ -231,12 +268,21 @@ export default function CompareChart({ series, packageNames, days }: Props) {
         if (typeof v === "number" && Number.isFinite(v)) values.push(v);
       }
     }
-    const maxValue = Math.max(1, ...values);
+    return Math.max(1, ...values);
+  }, [series, packageNames]);
 
-    const innerW = WIDTH - PAD.l - PAD.r;
-    const innerH = HEIGHT - PAD.t - PAD.b;
-    const xFor = (i: number) => PAD.l + innerW * (series.length <= 1 ? 0 : i / (series.length - 1));
-    const yFor = (v: number) => PAD.t + innerH * (1 - v / maxValue);
+  const axisFontSize = isMobile ? 12 : 11;
+  const leftPad = useMemo(
+    () => computeLeftPad(numberFormatter.format(maxValue), axisFontSize),
+    [maxValue, axisFontSize]
+  );
+  const pad = { l: leftPad, r: 16, t: 16, b: 30 };
+  const innerW = WIDTH - pad.l - pad.r;
+  const innerH = HEIGHT - pad.t - pad.b;
+
+  const pointsByPkg = useMemo(() => {
+    const xFor = (i: number) => pad.l + innerW * (series.length <= 1 ? 0 : i / (series.length - 1));
+    const yFor = (v: number) => pad.t + innerH * (1 - v / maxValue);
 
     const pointsByPkg = new Map<string, Point[]>();
     for (const pkg of packageNames) {
@@ -245,11 +291,8 @@ export default function CompareChart({ series, packageNames, days }: Props) {
         series.map((row, i) => ({ x: xFor(i), y: yFor(row.values[pkg]?.downloads ?? 0) }))
       );
     }
-    return { maxValue, pointsByPkg };
-  }, [series, packageNames]);
-
-  const innerW = WIDTH - PAD.l - PAD.r;
-  const innerH = HEIGHT - PAD.t - PAD.b;
+    return pointsByPkg;
+  }, [innerH, innerW, maxValue, packageNames, pad.l, pad.t, series]);
 
   const yTicks = useMemo(() => {
     const ticks = 4;
@@ -257,19 +300,19 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     for (let i = 0; i <= ticks; i += 1) {
       const ratio = i / ticks;
       const value = Math.round(maxValue * (1 - ratio));
-      const y = PAD.t + innerH * ratio;
+      const y = pad.t + innerH * ratio;
       values.push({ y, label: numberFormatter.format(value) });
     }
     return values;
-  }, [maxValue, innerH]);
+  }, [maxValue, innerH, pad.t]);
 
   const hovered = hoverIndex == null ? null : series[hoverIndex];
 
   const primaryPoints = pointsByPkg.get(packageNames[0] ?? "") ?? [];
   const hoverPoint = hoverIndex == null ? null : primaryPoints[hoverIndex] ?? null;
 
-  const tooltipSide = hoverPoint && hoverPoint.x > PAD.l + innerW * 0.6 ? "left" : "right";
-  const tooltipV = hoverPoint && hoverPoint.y < PAD.t + innerH * 0.35 ? "bottom" : "top";
+  const tooltipSide = hoverPoint && hoverPoint.x > pad.l + innerW * 0.6 ? "left" : "right";
+  const tooltipV = hoverPoint && hoverPoint.y < pad.t + innerH * 0.35 ? "bottom" : "top";
   const tooltipDockClass =
     "pointer-events-none absolute w-[min(18rem,90%)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur " +
     (tooltipSide === "left" ? "left-3" : "right-3") +
@@ -284,7 +327,8 @@ export default function CompareChart({ series, packageNames, days }: Props) {
         onClick: () => {
           const svg = svgRef.current;
           if (!svg) return;
-          const blob = svgToBlob(svg);
+          const bg = readCssVar("--surface");
+          const blob = svgToBlob(svg, bg);
           downloadBlob(blob, `compare-${packageNames.length}-packages.svg`);
         },
       },
@@ -343,8 +387,8 @@ export default function CompareChart({ series, packageNames, days }: Props) {
         >
           {yTicks.map((tick) => (
             <g key={tick.y}>
-              <line x1={PAD.l} x2={PAD.l + innerW} y1={tick.y} y2={tick.y} stroke="var(--chart-grid)" />
-              <text x={PAD.l - 8} y={tick.y + 4} textAnchor="end" fontSize="11" fill="var(--chart-axis)">
+              <line x1={pad.l} x2={pad.l + innerW} y1={tick.y} y2={tick.y} stroke="var(--chart-grid)" />
+              <text x={pad.l - 8} y={tick.y + 4} textAnchor="end" fontSize={axisFontSize} fill="var(--chart-axis)">
                 {tick.label}
               </text>
             </g>
@@ -362,19 +406,21 @@ export default function CompareChart({ series, packageNames, days }: Props) {
                 d={path}
                 fill="none"
                 stroke={color}
-                strokeWidth={2}
-                strokeDasharray={dashFor(style)}
+                strokeWidth={isMobile ? 2.6 : 2}
+                strokeDasharray={dashFor(style, isMobile)}
+                strokeLinecap="round"
               />
             );
           })}
 
           {hoverIndex != null ? (
             <line
-              x1={(pointsByPkg.get(packageNames[0]) ?? [])[hoverIndex]?.x ?? PAD.l}
-              x2={(pointsByPkg.get(packageNames[0]) ?? [])[hoverIndex]?.x ?? PAD.l}
-              y1={PAD.t}
-              y2={PAD.t + innerH}
+              x1={(pointsByPkg.get(packageNames[0]) ?? [])[hoverIndex]?.x ?? pad.l}
+              x2={(pointsByPkg.get(packageNames[0]) ?? [])[hoverIndex]?.x ?? pad.l}
+              y1={pad.t}
+              y2={pad.t + innerH}
               stroke="var(--chart-grid)"
+              strokeWidth={isMobile ? 2.5 : 1.5}
             />
           ) : null}
         </svg>

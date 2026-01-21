@@ -5,6 +5,7 @@ import type { DerivedMetrics } from "@/lib/derived";
 import type { TrafficSeriesRow } from "@/lib/traffic";
 import { groupEventsByDate, loadEvents } from "@/lib/events";
 import ActionMenu from "@/components/ui/ActionMenu";
+import { computeLeftPad } from "@/components/charts/axis-padding";
 
 const CHART_BUTTON_CLASSES =
   "inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold leading-none text-slate-100 transition hover:border-white/20 hover:bg-white/10";
@@ -64,9 +65,9 @@ function pickClosestIndex(x: number, count: number) {
   return clamp(Math.round(x * (count - 1)), 0, count - 1);
 }
 
-function dashFor(style: LineStyleKey) {
-  if (style === "dashed") return "6 4";
-  if (style === "dotted") return "2 4";
+function dashFor(style: LineStyleKey, isMobile: boolean) {
+  if (style === "dashed") return isMobile ? "12 8" : "8 5";
+  if (style === "dotted") return isMobile ? "0 12" : "0 8";
   return undefined;
 }
 
@@ -125,9 +126,23 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function svgToBlob(svgEl: SVGSVGElement) {
+function svgToBlob(svgEl: SVGSVGElement, background?: string) {
   const cloned = svgEl.cloneNode(true) as SVGSVGElement;
   cloned.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  if (background) {
+    const rect = svgEl.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", "0");
+    rect.setAttribute("y", "0");
+    rect.setAttribute("width", "100%");
+    rect.setAttribute("height", "100%");
+    rect.setAttribute("fill", background);
+    const first = cloned.firstChild;
+    if (first) {
+      cloned.insertBefore(rect, first);
+    } else {
+      cloned.appendChild(rect);
+    }
+  }
   const viewBox = cloned.getAttribute("viewBox") ?? "0 0 1000 260";
   const [, , w, h] = viewBox.split(" ").map((v) => Number(v));
   if (Number.isFinite(w) && Number.isFinite(h)) {
@@ -263,7 +278,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
 
   const eventsByDate = useMemo(() => groupEventsByDate(loadEvents(pkgName)), [pkgName]);
 
-  const { maxValue, downloadsPoints, ma7Points, ma3Points } = useMemo(() => {
+  const maxValue = useMemo(() => {
     const downloads = series.map((row) => row.downloads);
     const ma7 = derived?.ma7?.map((v) => v?.value ?? null) ?? [];
     const ma3 = derived?.ma3?.map((v) => v?.value ?? null) ?? [];
@@ -272,13 +287,23 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
     for (const v of ma7) if (typeof v === "number" && Number.isFinite(v)) candidateValues.push(v);
     for (const v of ma3) if (typeof v === "number" && Number.isFinite(v)) candidateValues.push(v);
 
-    const maxValue = Math.max(1, ...candidateValues);
+    return Math.max(1, ...candidateValues);
+  }, [series, derived]);
 
-    const width = 1000;
-    const height = 260;
-    const pad = { l: 46, r: 16, t: 16, b: 30 };
-    const innerW = width - pad.l - pad.r;
-    const innerH = height - pad.t - pad.b;
+  const width = 1000;
+  const height = 260;
+  const axisFontSize = isMobile ? 12 : 11;
+  const leftPad = useMemo(
+    () => computeLeftPad(numberFormatter.format(maxValue), axisFontSize),
+    [maxValue, axisFontSize]
+  );
+  const pad = { l: leftPad, r: 16, t: 16, b: 30 };
+  const innerW = width - pad.l - pad.r;
+  const innerH = height - pad.t - pad.b;
+
+  const { downloadsPoints, ma7Points, ma3Points } = useMemo(() => {
+    const ma7 = derived?.ma7?.map((v) => v?.value ?? null) ?? [];
+    const ma3 = derived?.ma3?.map((v) => v?.value ?? null) ?? [];
 
     const xFor = (i: number) => pad.l + innerW * (series.length <= 1 ? 0 : i / (series.length - 1));
     const yFor = (v: number) => pad.t + innerH * (1 - v / maxValue);
@@ -295,14 +320,8 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
       return { x: xFor(i), y: yFor(value) };
     });
 
-    return { maxValue, downloadsPoints, ma7Points, ma3Points };
-  }, [series, derived]);
-
-  const width = 1000;
-  const height = 260;
-  const pad = { l: 46, r: 16, t: 16, b: 30 };
-  const innerW = width - pad.l - pad.r;
-  const innerH = height - pad.t - pad.b;
+    return { downloadsPoints, ma7Points, ma3Points };
+  }, [series, derived, innerH, innerW, maxValue, pad.l, pad.t]);
 
   const downloadsPath = useMemo(() => toPath(downloadsPoints), [downloadsPoints]);
   const ma7Path = useMemo(() => toPath(ma7Points.filter(Boolean) as Point[]), [ma7Points]);
@@ -351,12 +370,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
   const canShowMA7 = Boolean(ma7Path);
   const canShowMA3 = Boolean(ma3Path);
 
-  const dashForStyle = (style: LineStyleKey) => {
-    if (!isMobile) return dashFor(style);
-    if (style === "dashed") return "10 6";
-    if (style === "dotted") return "2 6";
-    return undefined;
-  };
+  const dashForStyle = (style: LineStyleKey) => dashFor(style, isMobile);
 
   const downloadsStrokeWidth = isMobile ? 3.0 : 2.25;
   const ma7StrokeWidth = isMobile ? 2.4 : 1.8;
@@ -364,6 +378,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
   const outlierRadius = isMobile ? 5.2 : 4.6;
   const outlierStrokeWidth = isMobile ? 2.4 : 2;
   const hoverRadius = isMobile ? 6 : 4.5;
+  const crosshairStrokeWidth = isMobile ? 2.5 : 1.5;
 
   const updateHoverIndexFromClientX = (clientX: number, svg: SVGSVGElement) => {
     const rect = svg.getBoundingClientRect();
@@ -371,7 +386,6 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
     setHoverIndex(pickClosestIndex(x, series.length));
   };
 
-  const axisFontSize = isMobile ? 12 : 11;
   const eventMarkerRadius = isMobile ? 5 : 4;
 
   const exports = useMemo(
@@ -382,7 +396,8 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
         onClick: () => {
           const svg = svgRef.current;
           if (!svg) return;
-          const blob = svgToBlob(svg);
+          const bg = readCssVar("--surface");
+          const blob = svgToBlob(svg, bg);
           downloadBlob(blob, `${pkgName}-traffic.svg`);
         },
       },
@@ -502,6 +517,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
             stroke={paletteValue(settings.downloadsColor)}
             strokeWidth={downloadsStrokeWidth}
             strokeDasharray={dashForStyle(settings.downloadsStyle)}
+            strokeLinecap="round"
           />
 
           {/* MA lines */}
@@ -511,7 +527,8 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               fill="none"
               stroke={paletteValue(settings.ma7Color)}
               strokeWidth={ma7StrokeWidth}
-              strokeDasharray={dashForStyle(settings.maStyle) ?? (isMobile ? "10 6" : "6 4")}
+              strokeDasharray={dashForStyle(settings.maStyle)}
+              strokeLinecap="round"
               opacity={0.92}
             />
           ) : null}
@@ -522,7 +539,8 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               fill="none"
               stroke={paletteValue(settings.ma3Color)}
               strokeWidth={ma3StrokeWidth}
-              strokeDasharray={dashForStyle(settings.maStyle) ?? (isMobile ? "2 6" : "2 4")}
+              strokeDasharray={dashForStyle(settings.maStyle)}
+              strokeLinecap="round"
               opacity={0.88}
             />
           ) : null}
@@ -536,6 +554,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
                 y1={pad.t}
                 y2={pad.t + innerH}
                 stroke="var(--chart-grid)"
+                strokeWidth={crosshairStrokeWidth}
               />
               <circle
                 cx={downloadsPoints[hoverIndex].x}

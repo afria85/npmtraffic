@@ -86,17 +86,16 @@ export async function GET(req: Request) {
       format: "json",
     });
 
-    const response = NextResponse.json(
-      payload,
-      {
-        status: 200,
-        headers: {
-          "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
-          "x-request-id": requestId,
-          "Content-Disposition": `attachment; filename="${filename}"`,
-        },
-      }
-    );
+    const body = JSON.stringify(payload, null, 2) + "\n";
+    const response = new Response(body, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
+        "x-request-id": requestId,
+        "Content-Disposition": `attachment; filename="${filename}"`,
+      },
+    });
 
     logApiEvent({
       requestId,

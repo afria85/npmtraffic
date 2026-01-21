@@ -58,9 +58,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
           isStale,
           staleReason,
         });
-        return NextResponse.json(payload, {
+        const body = JSON.stringify(payload, null, 2) + "\n";
+        return new Response(body, {
           status: 200,
           headers: {
+            "Content-Type": "application/json; charset=utf-8",
             "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
             "Retry-After": String(limit.retryAfter),
             "x-request-id": requestId,
@@ -116,9 +118,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
       range: data.range,
       format: "json",
     });
-    const response = NextResponse.json(payload, {
+    const body = JSON.stringify(payload, null, 2) + "\n";
+    const response = new Response(body, {
       status: 200,
       headers: {
+        "Content-Type": "application/json; charset=utf-8",
         "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
         "x-request-id": requestId,
         "Content-Disposition": `attachment; filename="${filename}"`,
