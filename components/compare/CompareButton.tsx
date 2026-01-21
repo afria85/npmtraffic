@@ -22,8 +22,29 @@ export default function CompareButton({ name }: CompareButtonProps) {
       type="button"
       onClick={handleClick}
       className={ACTION_BUTTON_CLASSES}
+      aria-pressed={isActive}
     >
-      {isActive ? "Added to compare" : "Add to compare"}
+      {isActive ? (
+        <>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 16 16"
+            className="h-3.5 w-3.5"
+            fill="none"
+          >
+            <path
+              d="M3.5 8.25l2.75 2.75 6.25-6.25"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          In compare
+        </>
+      ) : (
+        "Add to compare"
+      )}
     </button>
   );
 }

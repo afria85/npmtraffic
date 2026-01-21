@@ -215,54 +215,43 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
   const header = (
     <div className="flex w-full flex-col gap-4">
-      {/* Mobile: 2-row grid
-          Row 1: title (left) + Add/Star (right)
-          Row 2: Updated (left) + Search (right)
-      */}
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2">
-        {/* Row 1, Col 1 */}
-        <h1
-          className="min-w-0 break-all text-2xl font-semibold tracking-tight sm:text-3xl"
-          title={name}
-        >
-          {name}
-        </h1>
-
-        {/* Row 1, Col 2 */}
-        <div className="flex flex-nowrap items-center justify-end gap-2">
-          <CompareButton name={name} />
-          {repoUrl ? (
-            <a
-              href={repoUrl}
-              target="_blank"
-              rel="noreferrer"
-              className={ACTION_BUTTON_CLASSES}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1
+              className="min-w-0 break-all text-2xl font-semibold tracking-tight sm:text-3xl"
+              title={name}
             >
-              Star on GitHub
-            </a>
-          ) : null}
-        </div>
-
-        {/* Row 2, Col 1 */}
-        <span
-          className="inline-flex w-fit items-center whitespace-nowrap rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-medium text-slate-300"
-          title={updatedLabel ?? "Updated recently"}
-        >
-          <span className="sm:hidden">{updatedLabelCompact ?? "Updated recently"}</span>
-          <span className="hidden sm:inline">{updatedLabel ?? "Updated recently"}</span>
-        </span>
-
-        {/* Row 2, Col 2 */}
-        <div className="justify-self-end">
-          {/* Mobile: modal trigger (right aligned, not full width) */}
-          <div className="sm:hidden">
-            <div className="ml-auto w-fit max-w-[70vw]">
-              <SearchBox variant="modal" triggerLabel="Search another package" />
-            </div>
+              {name}
+            </h1>
+            <span
+              className="inline-flex w-fit items-center whitespace-nowrap rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-medium text-slate-300"
+              title={updatedLabel ?? "Updated recently"}
+            >
+              <span className="sm:hidden">{updatedLabelCompact ?? "Updated recently"}</span>
+              <span className="hidden sm:inline">{updatedLabel ?? "Updated recently"}</span>
+            </span>
           </div>
-          {/* Desktop: inline search */}
+        </div>
+        <div className="w-full sm:ml-auto sm:w-auto">
+          <div className="sm:hidden">
+            <SearchBox variant="modal" triggerLabel="Search another package" />
+          </div>
           <div className="hidden sm:block w-72">
             <SearchBox />
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2 sm:justify-end">
+            <CompareButton name={name} />
+            {repoUrl ? (
+              <a
+                href={repoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={ACTION_BUTTON_CLASSES}
+              >
+                Star on GitHub
+              </a>
+            ) : null}
           </div>
         </div>
       </div>
