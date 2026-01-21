@@ -494,9 +494,52 @@ test("search API returns normalized results", async (t) => {
 });
 
 test("compare API requires packages", async () => {
-  const req = new Request("http://localhost/api/v1/compare");
-  const res = await getCompare(req);
-  assert.equal(res.status, 400);
-  const payload = (await res.json()) as { error?: { code?: string } };
-  assert.equal(payload.error?.code, "INVALID_REQUEST");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    throw new Error("upstream fetch should not be called");
+  };
+
+  try {
+    const req = new Request("http://localhost/api/v1/compare");
+    const res = await getCompare(req);
+    assert.equal(res.status, 400);
+    const payload = (await res.json()) as { error?: { code?: string } };
+    assert.equal(payload.error?.code, "INVALID_REQUEST");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("compare CSV export requires packages", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    throw new Error("upstream fetch should not be called");
+  };
+
+  try {
+    const req = new Request("http://localhost/api/v1/compare.csv");
+    const res = await getCompareCsv(req);
+    assert.equal(res.status, 400);
+    const payload = (await res.json()) as { error?: { code?: string } };
+    assert.equal(payload.error?.code, "INVALID_REQUEST");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("compare Excel CSV export requires packages", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    throw new Error("upstream fetch should not be called");
+  };
+
+  try {
+    const req = new Request("http://localhost/api/v1/compare.excel.csv");
+    const res = await getCompareExcelCsv(req);
+    assert.equal(res.status, 400);
+    const payload = (await res.json()) as { error?: { code?: string } };
+    assert.equal(payload.error?.code, "INVALID_REQUEST");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

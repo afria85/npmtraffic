@@ -6,3 +6,4 @@ export { GET } from "../compare/route";
 // Keep this value identical to the canonical route's revalidate (do not re-export).
 // If you change caching policy in /compare/route.ts, update this too.
 export const revalidate = 60;
+export const dynamic = "force-dynamic";

@@ -9,6 +9,7 @@ import { parsePackageList } from "@/lib/query";
 import { TrafficError } from "@/lib/traffic";
 
 export const revalidate = 900;
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const requestId = crypto.randomUUID();
