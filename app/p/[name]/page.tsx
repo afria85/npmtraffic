@@ -221,7 +221,12 @@ export default async function PackagePage({ params, searchParams }: Props) {
       */}
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2">
         {/* Row 1, Col 1 */}
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
+        <h1
+          className="min-w-0 break-all text-2xl font-semibold tracking-tight sm:text-3xl"
+          title={name}
+        >
+          {name}
+        </h1>
 
         {/* Row 1, Col 2 */}
         <div className="flex flex-nowrap items-center justify-end gap-2">

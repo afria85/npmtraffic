@@ -15,9 +15,28 @@ function hashKey(value: string) {
 }
 
 export function getClientIp(req: Request) {
-  const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0]?.trim();
-  return req.headers.get("x-real-ip") ?? undefined;
+  const normalize = (value: string | null) => {
+    if (!value) return undefined;
+    const first = value.split(",")[0]?.trim();
+    if (!first) return undefined;
+    const cleaned = first.replace(/^for=/i, "").replace(/^"|"$/g, "");
+    if (!cleaned || cleaned.toLowerCase() === "unknown") return undefined;
+    return cleaned;
+  };
+
+  const forwarded = normalize(req.headers.get("x-forwarded-for"));
+  if (forwarded) return forwarded;
+
+  const candidates = [
+    req.headers.get("cf-connecting-ip"),
+    req.headers.get("x-real-ip"),
+    req.headers.get("x-vercel-forwarded-for"),
+  ];
+  for (const candidate of candidates) {
+    const ip = normalize(candidate);
+    if (ip) return ip;
+  }
+  return undefined;
 }
 
 async function memoryRateLimit(
@@ -105,10 +124,10 @@ async function upstashRateLimit(
 }
 
 export async function rateLimit(req: Request, route: string, limit = 60, windowMs = 60_000) {
-  const ip = getClientIp(req) ?? "unknown";
+  const ip = getClientIp(req);
   const ua = req.headers.get("user-agent") ?? "";
   const lang = req.headers.get("accept-language") ?? "";
-  const fingerprint = `${ip}:${ua}:${lang}`;
+  const fingerprint = ip ? `ip:${ip}` : `fallback:${ua}:${lang}`;
   const key = `ratelimit:${route}:${hashKey(fingerprint)}`;
   if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
     return upstashRateLimit(key, limit, windowMs);

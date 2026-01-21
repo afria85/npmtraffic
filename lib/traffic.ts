@@ -37,6 +37,8 @@ type TrafficCacheValue = {
   fetchedAt: string;
 };
 
+const inflightRequests = new Map<string, Promise<TrafficResponse>>();
+
 export class TrafficError extends Error {
   code: "PACKAGE_NOT_FOUND" | "INVALID_REQUEST" | "UPSTREAM_UNAVAILABLE";
   status: number;
@@ -160,52 +162,67 @@ export async function fetchTraffic(pkgInput: string, daysInput?: string | number
     return buildResponse(cached.value, "HIT", null);
   }
 
+  const existingRequest = inflightRequests.get(key);
+  if (existingRequest) {
+    return existingRequest;
+  }
+
+  const request = (async () => {
+    try {
+      const failMode = process.env.NPMTRAFFIC_TEST_UPSTREAM_FAIL;
+      if (failMode) {
+        const code = Number(failMode);
+        throw new UpstreamError(code, "Test upstream failure");
+      }
+
+      const upstream = await fetchDailyDownloadsRange(pkg, {
+        start: range.startDate,
+        end: range.endDate,
+      });
+      const series = normalizeSeries(upstream.downloads, range);
+      const totals = computeTotals(series);
+      const fetchedAt = new Date().toISOString();
+      const nextValue: TrafficCacheValue = {
+        package: pkg,
+        range,
+        series,
+        totals,
+        fetchedAt,
+      };
+      const ttl = getCacheTtl(range.days);
+      cacheSetWithStale(key, nextValue, ttl.fresh, ttl.stale);
+      recordSuccess("MISS", false);
+      return buildResponse(nextValue, "MISS", null);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error ?? "");
+      if (msg.startsWith("NPM_NOT_FOUND")) {
+        recordError("PACKAGE_NOT_FOUND", msg);
+        throw new TrafficError("PACKAGE_NOT_FOUND", 404, "Package not found");
+      }
+
+      if (cached.hit && cached.value) {
+        const staleReason = getStaleReason(error);
+        recordError(staleReason);
+        recordSuccess("STALE", true);
+        return buildResponse(cached.value, "STALE", staleReason);
+      }
+
+      const upstreamStatus = error instanceof UpstreamError ? error.status : undefined;
+      recordError("UPSTREAM_UNAVAILABLE", String(error ?? "upstream"));
+      throw new TrafficError(
+        "UPSTREAM_UNAVAILABLE",
+        502,
+        "npm API temporarily unavailable",
+        upstreamStatus
+      );
+    }
+  })();
+
+  inflightRequests.set(key, request);
+
   try {
-    const failMode = process.env.NPMTRAFFIC_TEST_UPSTREAM_FAIL;
-    if (failMode) {
-      const code = Number(failMode);
-      throw new UpstreamError(code, "Test upstream failure");
-    }
-
-    const upstream = await fetchDailyDownloadsRange(pkg, {
-      start: range.startDate,
-      end: range.endDate,
-    });
-    const series = normalizeSeries(upstream.downloads, range);
-    const totals = computeTotals(series);
-    const fetchedAt = new Date().toISOString();
-    const nextValue: TrafficCacheValue = {
-      package: pkg,
-      range,
-      series,
-      totals,
-      fetchedAt,
-    };
-    const ttl = getCacheTtl(range.days);
-    cacheSetWithStale(key, nextValue, ttl.fresh, ttl.stale);
-    recordSuccess("MISS", false);
-    return buildResponse(nextValue, "MISS", null);
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error ?? "");
-    if (msg.startsWith("NPM_NOT_FOUND")) {
-      recordError("PACKAGE_NOT_FOUND", msg);
-      throw new TrafficError("PACKAGE_NOT_FOUND", 404, "Package not found");
-    }
-
-    if (cached.hit && cached.value) {
-      const staleReason = getStaleReason(error);
-      recordError(staleReason);
-      recordSuccess("STALE", true);
-      return buildResponse(cached.value, "STALE", staleReason);
-    }
-
-    const upstreamStatus = error instanceof UpstreamError ? error.status : undefined;
-    recordError("UPSTREAM_UNAVAILABLE", String(error ?? "upstream"));
-    throw new TrafficError(
-      "UPSTREAM_UNAVAILABLE",
-      502,
-      "npm API temporarily unavailable",
-      upstreamStatus
-    );
+    return await request;
+  } finally {
+    inflightRequests.delete(key);
   }
 }

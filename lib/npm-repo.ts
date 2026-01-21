@@ -39,7 +39,7 @@ export async function getPackageGithubRepo(pkgInput: string) {
     const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkg)}`, {
       headers: {
         accept: "application/json",
-        "user-agent": "npmtraffic/0.2.0 (https://npmtraffic.com)",
+        "user-agent": "npmtraffic/0.2.1 (https://npmtraffic.com)",
       },
     });
     if (!res.ok) return cached.value?.url ?? null;

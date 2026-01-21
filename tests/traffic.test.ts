@@ -168,3 +168,71 @@ test("fetchTraffic only calls npm downloads endpoint and returns totals", async 
     cacheClear();
   }
 });
+
+test("deduplicates concurrent traffic requests", async (t) => {
+  const originalFetch = globalThis.fetch;
+  const expectedRange = rangeForDays(7);
+  let fetchCount = 0;
+  const resolvers: Array<(response: Response) => void> = [];
+
+  const buildResponse = () =>
+    new Response(
+      JSON.stringify({
+        start: expectedRange.startDate,
+        end: expectedRange.endDate,
+        package: "react",
+        downloads: Array.from({ length: 7 }, (_, index) => ({
+          day: new Date(
+            Date.parse(`${expectedRange.startDate}T00:00:00Z`) + index * 86_400_000
+          )
+            .toISOString()
+            .slice(0, 10),
+          downloads: index + 1,
+        })),
+      }),
+      { status: 200, headers: { "content-type": "application/json" } }
+    );
+
+  globalThis.fetch = async (input) => {
+    const url = typeof input === "string" ? input : input.url;
+    if (
+      url.startsWith(
+        `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
+      )
+    ) {
+      fetchCount += 1;
+      return new Promise<Response>((resolve) => {
+        resolvers.push(resolve);
+      });
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+    cacheClear();
+  });
+
+  const pending = Promise.all([fetchTraffic("react", 7), fetchTraffic("react", 7)]);
+
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  let assertionError: unknown;
+  try {
+    assert.equal(fetchCount, 1);
+  } catch (error) {
+    assertionError = error;
+  }
+
+  for (const resolve of resolvers) {
+    resolve(buildResponse());
+  }
+
+  await pending;
+
+  if (assertionError) {
+    throw assertionError;
+  }
+
+  assert.equal(fetchCount, 1);
+});
