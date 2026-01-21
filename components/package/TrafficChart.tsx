@@ -15,6 +15,7 @@ type Props = {
   series: TrafficSeriesRow[];
   derived: DerivedMetrics;
   pkgName: string;
+  days: number;
 };
 
 type PaletteKey = "accent" | "slate" | "blue" | "emerald" | "violet" | "amber" | "orange" | "pink" | "cyan";
@@ -174,7 +175,7 @@ async function svgToPngBlob(svgEl: SVGSVGElement, background: string) {
   return pngBlob;
 }
 
-export default function TrafficChart({ series, derived, pkgName }: Props) {
+export default function TrafficChart({ series, derived, pkgName, days }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const stylePanelRef = useRef<HTMLDivElement | null>(null);
 
@@ -364,6 +365,15 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
   const outlierStrokeWidth = isMobile ? 2.4 : 2;
   const hoverRadius = isMobile ? 6 : 4.5;
 
+  const updateHoverIndexFromClientX = (clientX: number, svg: SVGSVGElement) => {
+    const rect = svg.getBoundingClientRect();
+    const x = clamp((clientX - rect.left) / rect.width, 0, 1);
+    setHoverIndex(pickClosestIndex(x, series.length));
+  };
+
+  const axisFontSize = isMobile ? 12 : 11;
+  const eventMarkerRadius = isMobile ? 5 : 4;
+
   const exports = useMemo(
     () => [
       {
@@ -392,25 +402,11 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
   );
 
   return (
-    <section className="relative rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold text-slate-400">Trend</p>
-          <p className="mt-1 text-sm font-semibold text-slate-200">Daily downloads</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="inline-flex items-center gap-2 text-xs text-slate-300">
-            <input
-              type="checkbox"
-              checked={settings.showMA7}
-              disabled={!canShowMA7}
-              onChange={(event) => setSettings((prev) => ({ ...prev, showMA7: event.target.checked }))}
-              className="h-4 w-4 accent-[color:var(--accent)]"
-            />
-            MA 7
-            </label>
-            <label className="inline-flex items-center gap-2 text-xs text-slate-300">
+    <section className="relative rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-sm font-semibold text-slate-200">Daily downloads ({days}d)</p>
+        <div className="ml-auto flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
+          <label className="inline-flex items-center gap-2 text-xs text-slate-300">
             <input
               type="checkbox"
               checked={settings.showMA3}
@@ -419,43 +415,49 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
               className="h-4 w-4 accent-[color:var(--accent)]"
             />
             MA 3
-            </label>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className={CHART_BUTTON_CLASSES}
-              onClick={() => setStyleOpen((v) => !v)}
-              aria-expanded={styleOpen}
-            >
-              Style
-            </button>
-            <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
-          </div>
+          </label>
+          <label className="inline-flex items-center gap-2 text-xs text-slate-300">
+            <input
+              type="checkbox"
+              checked={settings.showMA7}
+              disabled={!canShowMA7}
+              onChange={(event) => setSettings((prev) => ({ ...prev, showMA7: event.target.checked }))}
+              className="h-4 w-4 accent-[color:var(--accent)]"
+            />
+            MA 7
+          </label>
         </div>
       </div>
 
-      <div className="relative mt-4">
+      <div className="relative mt-3">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${width} ${height}`}
-          className="h-64 w-full"
+          className="h-60 w-full touch-pan-y sm:h-64"
           role="img"
-          aria-label="Daily downloads line chart"
+          aria-label={`Daily downloads line chart (${days} days)`}
           onMouseLeave={() => setHoverIndex(null)}
           onMouseMove={(event) => {
-            const svg = event.currentTarget;
-            const rect = svg.getBoundingClientRect();
-            const x = clamp((event.clientX - rect.left) / rect.width, 0, 1);
-            setHoverIndex(pickClosestIndex(x, series.length));
+            updateHoverIndexFromClientX(event.clientX, event.currentTarget);
           }}
+          onTouchStart={(event) => {
+            const touch = event.touches[0];
+            if (!touch) return;
+            updateHoverIndexFromClientX(touch.clientX, event.currentTarget);
+          }}
+          onTouchMove={(event) => {
+            const touch = event.touches[0];
+            if (!touch) return;
+            updateHoverIndexFromClientX(touch.clientX, event.currentTarget);
+          }}
+          onTouchEnd={() => setHoverIndex(null)}
+          onTouchCancel={() => setHoverIndex(null)}
         >
           {/* grid */}
           {yTicks.map((tick) => (
             <g key={tick.y}>
               <line x1={pad.l} x2={pad.l + innerW} y1={tick.y} y2={tick.y} stroke="var(--chart-grid)" />
-              <text x={pad.l - 8} y={tick.y + 4} textAnchor="end" fontSize="11" fill="var(--chart-axis)">
+              <text x={pad.l - 8} y={tick.y + 4} textAnchor="end" fontSize={axisFontSize} fill="var(--chart-axis)">
                 {tick.label}
               </text>
             </g>
@@ -470,7 +472,7 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
             return (
               <g key={`evt-${row.date}`}>
                 <line x1={x} x2={x} y1={pad.t} y2={pad.t + innerH} stroke="var(--chart-palette-accent)" opacity={0.14} />
-                <circle cx={x} cy={pad.t + 6} r={4} fill="var(--chart-palette-accent)" opacity={0.45} />
+                <circle cx={x} cy={pad.t + 6} r={eventMarkerRadius} fill="var(--chart-palette-accent)" opacity={0.45} />
               </g>
             );
           })}
@@ -711,6 +713,17 @@ export default function TrafficChart({ series, derived, pkgName }: Props) {
             ) : null}
           </div>
         ) : null}
+        <div className="mt-3 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            className={CHART_BUTTON_CLASSES}
+            onClick={() => setStyleOpen((v) => !v)}
+            aria-expanded={styleOpen}
+          >
+            Style
+          </button>
+          <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
+        </div>
       </div>
     </section>
   );

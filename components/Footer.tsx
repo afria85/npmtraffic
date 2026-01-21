@@ -37,7 +37,7 @@ export default function Footer() {
         </nav>
         {donateLinks.length ? (
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">Support npmtraffic</p>
+            <p className="text-sm font-semibold text-[color:var(--foreground)]">Support npmtraffic</p>
             <p className="mt-1 max-w-2xl text-xs text-[color:var(--muted)]">
               If npmtraffic is useful, consider supporting ongoing maintenance. Funding helps keep caching reliable,
               improve UX, and ship analysis-grade features over time.

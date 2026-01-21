@@ -35,7 +35,7 @@ export default function CompareTray() {
     <div className="mx-auto max-w-5xl px-4 py-3">
       <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/60 px-4 py-3 shadow-sm shadow-black/40 backdrop-blur">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">Compare</div>
+          <div className="text-sm font-semibold text-slate-200">Compare</div>
           {packages.length ? (
             <div className="flex flex-wrap items-center gap-2">
               {packages.map((pkg) => (

@@ -15,6 +15,7 @@ import ShareMenu from "@/components/ShareMenu";
 import { buildExportFilename } from "@/lib/export-filename";
 import EventsPanel from "@/components/events/EventsPanel";
 import TrafficChart from "@/components/package/TrafficChartClient";
+import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -216,27 +217,20 @@ export default async function PackagePage({ params, searchParams }: Props) {
               href={repoUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-9 items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 text-xs font-semibold text-slate-200 transition hover:border-white/30 hover:bg-white/10"
-              aria-label="Star on GitHub"
-              title="Star on GitHub"
+              className={ACTION_BUTTON_CLASSES}
             >
-              <span className="hidden sm:inline">Star on GitHub</span>
-              <span className="sm:hidden">GitHub</span>
+              Star on GitHub
             </a>
           ) : null}
         </div>
 
         {/* Row 2, Col 1 */}
-        {updatedLabel ? (
-          <span
-            className="inline-flex w-fit items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-slate-300"
-            title={updatedLabel}
-          >
-            {updatedLabel}
-          </span>
-        ) : (
-          <span className="text-[11px] text-slate-500">Updated</span>
-        )}
+        <span
+          className="inline-flex w-fit items-center rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-medium text-slate-300"
+          title={updatedLabel ?? "Updated recently"}
+        >
+          {updatedLabel ?? "Updated recently"}
+        </span>
 
         {/* Row 2, Col 2 */}
         <div className="justify-self-end">
@@ -288,26 +282,24 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs font-medium text-slate-400">
-            Total downloads ({days} days)
+      <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-2 sm:grid-cols-2">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+          <p className="whitespace-nowrap text-xs font-medium text-slate-300">
+            Total downloads ({days}d)
           </p>
           <p className="mt-1 text-lg font-semibold tabular-nums text-white sm:text-xl">
             {formatNumber(traffic.totals.sum)}
           </p>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs font-medium text-slate-400">
-            Avg per day
-          </p>
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+          <p className="whitespace-nowrap text-xs font-medium text-slate-300">Avg per day</p>
           <p className="mt-1 text-lg font-semibold tabular-nums text-white sm:text-xl">
             {formatNumber(traffic.totals.avgPerDay)}
           </p>
         </div>
       </div>
 
-      <TrafficChart series={traffic.series} derived={traffic.derived} pkgName={name} />
+      <TrafficChart series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
 
       <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
 

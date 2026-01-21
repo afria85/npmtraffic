@@ -305,13 +305,10 @@ export default function CompareChart({ series, packageNames, days }: Props) {
 
   return (
     <section className="relative rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-widest text-slate-500">Trend</p>
-          <p className="mt-1 text-sm text-slate-200">
-            Daily downloads ({days ? `${days}d overlay` : "overlay"})
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-slate-200">
+          Daily downloads ({days ? `${days}d` : "range"})
+        </p>
       </div>
 
       <div className="relative mt-4">

@@ -179,9 +179,9 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
   return (
     <>
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
-        <div className="flex flex-nowrap items-center gap-2 overflow-x-auto border-b border-white/10 px-4 pb-2 pt-3 text-sm text-slate-300">
-          <span className="truncate text-sm font-medium text-slate-200">Daily downloads ({days} days)</span>
-          <div className="ml-auto flex flex-nowrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-3 text-sm text-slate-200">
+          <span className="text-sm font-semibold">Daily downloads ({days}d)</span>
+          <div className="flex flex-wrap gap-2">
             {totalEvents ? (
               <button
                 type="button"
@@ -202,7 +202,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
             ) : null}
           </div>
         </div>
-        <ScrollHintContainer className="max-h-[65vh] overflow-y-auto">
+        <ScrollHintContainer className="max-h-[65vh] overflow-auto">
           <table className="min-w-[420px] w-full text-sm">
             <thead className="sticky top-0 bg-black/80 text-left text-xs uppercase tracking-wider text-slate-300 backdrop-blur">
               <tr>
@@ -363,7 +363,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                 >
                   Export JSON
                 </button>
-                <label className={`${ACTION_BUTTON_CLASSES} cursor-pointer bg-white/5 text-slate-200 hover:bg-white/10`}>
+                <label className="flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-200 hover:border-white/30 hover:bg-white/10">
                   <span>Import JSON</span>
                   <input
                     type="file"
