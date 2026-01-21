@@ -21,7 +21,7 @@ export default function CompareButton({ name }: CompareButtonProps) {
     <button
       type="button"
       onClick={handleClick}
-      className={`${ACTION_BUTTON_CLASSES} bg-white text-black border-white hover:bg-white/90 focus-visible:outline-white`}
+      className={ACTION_BUTTON_CLASSES}
     >
       {isActive ? "Added to compare" : "Add to compare"}
     </button>

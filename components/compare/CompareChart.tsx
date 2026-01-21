@@ -303,6 +303,12 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     [packageNames.length]
   );
 
+  const updateHoverIndexFromClientX = (clientX: number, svg: SVGSVGElement) => {
+    const rect = svg.getBoundingClientRect();
+    const x = clamp((clientX - rect.left) / rect.width, 0, 1);
+    setHoverIndex(pickClosestIndex(x, series.length));
+  };
+
   return (
     <section className="relative rounded-2xl border border-white/10 bg-white/5 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -320,11 +326,20 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           aria-label={`Compare daily downloads line chart${days ? ` (${days} days)` : ""}`}
           onMouseLeave={() => setHoverIndex(null)}
           onMouseMove={(event) => {
-            const svg = event.currentTarget;
-            const rect = svg.getBoundingClientRect();
-            const x = clamp((event.clientX - rect.left) / rect.width, 0, 1);
-            setHoverIndex(pickClosestIndex(x, series.length));
+            updateHoverIndexFromClientX(event.clientX, event.currentTarget);
           }}
+          onTouchStart={(event) => {
+            const touch = event.touches[0];
+            if (!touch) return;
+            updateHoverIndexFromClientX(touch.clientX, event.currentTarget);
+          }}
+          onTouchMove={(event) => {
+            const touch = event.touches[0];
+            if (!touch) return;
+            updateHoverIndexFromClientX(touch.clientX, event.currentTarget);
+          }}
+          onTouchEnd={() => setHoverIndex(null)}
+          onTouchCancel={() => setHoverIndex(null)}
         >
           {yTicks.map((tick) => (
             <g key={tick.y}>

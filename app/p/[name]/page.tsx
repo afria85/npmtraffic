@@ -42,6 +42,19 @@ function formatUpdatedAt(iso: string) {
   return `Updated ${days} d ago`;
 }
 
+function formatUpdatedAtCompact(iso: string) {
+  const ts = Date.parse(iso);
+  if (!Number.isFinite(ts)) return "Updated recently";
+  const diffMs = Date.now() - ts;
+  const minutes = Math.max(0, Math.round(diffMs / 60000));
+  if (minutes < 1) return "Updated now";
+  if (minutes < 60) return `Updated ${minutes}m`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `Updated ${hours}h`;
+  const days = Math.round(hours / 24);
+  return `Updated ${days}d`;
+}
+
 export async function generateMetadata({
   params,
   searchParams,
@@ -142,6 +155,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
   }
 
   const updatedLabel = data ? formatUpdatedAt(data.meta.fetchedAt) : null;
+  const updatedLabelCompact = data ? formatUpdatedAtCompact(data.meta.fetchedAt) : null;
   const repoUrl = data ? await getPackageGithubRepo(name) : null;
 
   const rangeSelector = (
@@ -226,10 +240,11 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
         {/* Row 2, Col 1 */}
         <span
-          className="inline-flex w-fit items-center rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-medium text-slate-300"
+          className="inline-flex w-fit items-center whitespace-nowrap rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-medium text-slate-300"
           title={updatedLabel ?? "Updated recently"}
         >
-          {updatedLabel ?? "Updated recently"}
+          <span className="sm:hidden">{updatedLabelCompact ?? "Updated recently"}</span>
+          <span className="hidden sm:inline">{updatedLabel ?? "Updated recently"}</span>
         </span>
 
         {/* Row 2, Col 2 */}
