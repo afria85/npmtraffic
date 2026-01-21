@@ -8,11 +8,11 @@ import {
   loadCompareList,
   removeFromCompare,
 } from "@/lib/compare-store";
-import { getCompareButtonLabel, isCompareReady } from "@/lib/compare-ui";
+import { getCompareButtonLabel, getCompareStatusLabel, isCompareReady } from "@/lib/compare-ui";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 const LIST_REMOVAL_CLASS =
-  "inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/5 px-3 py-1.5 text-xs text-slate-100 transition hover:border-white/60";
+  "inline-flex shrink-0 items-center gap-2 rounded-full border border-white/30 bg-white/5 px-3 py-1.5 text-xs text-slate-100 transition hover:border-white/60";
 
 export default function CompareTray() {
   const [packages, setPackages] = useState<string[]>(() => loadCompareList());
@@ -30,17 +30,15 @@ export default function CompareTray() {
   const ready = isCompareReady(packages.length);
   const compareUrl = ready ? buildCompareUrl(packages, 30) : null;
   const label = getCompareButtonLabel(packages.length);
-  const selectionLabel = packages.length
-    ? `${packages.length} selected`
-    : "Select packages to compare";
+  const selectionLabel = getCompareStatusLabel(packages.length);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-3">
-      <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/60 px-4 py-3 shadow-sm shadow-black/40 backdrop-blur">
-        <div className="flex flex-wrap items-center gap-3">
+    <div className="mx-auto w-full max-w-5xl px-4 py-3">
+      <div className="flex w-full flex-col gap-3 rounded-2xl border border-white/10 bg-black/60 px-4 py-3 shadow-sm shadow-black/40 backdrop-blur">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="text-sm font-semibold text-slate-200">Compare</div>
           {packages.length ? (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto pb-1">
               {packages.map((pkg) => (
                 <button
                   key={pkg}
@@ -54,7 +52,9 @@ export default function CompareTray() {
                 </button>
               ))}
             </div>
-          ) : null}
+          ) : (
+            <div className="min-w-0 flex-1" />
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-slate-400">{selectionLabel}</span>
@@ -64,7 +64,12 @@ export default function CompareTray() {
                 {label}
               </Link>
             ) : (
-              <button type="button" className={`${ACTION_BUTTON_CLASSES} opacity-50`} disabled>
+              <button
+                type="button"
+                className={`${ACTION_BUTTON_CLASSES} opacity-50`}
+                aria-disabled
+                disabled
+              >
                 {label}
               </button>
             )}
