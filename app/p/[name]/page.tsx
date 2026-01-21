@@ -2,19 +2,16 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
 import { clampDays } from "@/lib/query";
-import SearchBox from "@/components/SearchBox";
-import CompareButton from "@/components/compare/CompareButton";
 import { buildPackageCanonical } from "@/lib/canonical";
 import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
-import { getPackageGithubRepo } from "@/lib/npm-repo";
 import DerivedSeriesTable from "@/components/package/DerivedSeriesTable";
+import PackageHeader from "@/components/package/PackageHeader";
 import RangeSelector from "@/components/RangeSelector";
 import ExportDropdown from "@/components/ExportDropdown";
 import ShareMenu from "@/components/ShareMenu";
 import { buildExportFilename } from "@/lib/export-filename";
 import EventsPanel from "@/components/events/EventsPanel";
 import TrafficChart from "@/components/package/TrafficChartClient";
-import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 import RetryButton from "@/components/ui/RetryButton";
 
 type Props = {
@@ -156,8 +153,6 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
   const updatedLabel = data ? formatUpdatedAt(data.meta.fetchedAt) : null;
   const updatedLabelCompact = data ? formatUpdatedAtCompact(data.meta.fetchedAt) : null;
-  const repoUrl = data ? await getPackageGithubRepo(name) : null;
-
   const rangeSelector = (
     <RangeSelector
       currentDays={days}
@@ -215,46 +210,11 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
   const header = (
     <div className="flex w-full flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1
-              className="min-w-0 break-all text-2xl font-semibold tracking-tight sm:text-3xl"
-              title={name}
-            >
-              {name}
-            </h1>
-            <span
-              className="inline-flex w-fit items-center whitespace-nowrap rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-medium text-slate-300"
-              title={updatedLabel ?? "Updated recently"}
-            >
-              <span className="sm:hidden">{updatedLabelCompact ?? "Updated recently"}</span>
-              <span className="hidden sm:inline">{updatedLabel ?? "Updated recently"}</span>
-            </span>
-          </div>
-        </div>
-        <div className="w-full sm:ml-auto sm:w-auto">
-          <div className="sm:hidden">
-            <SearchBox variant="modal" triggerLabel="Search another package" />
-          </div>
-          <div className="hidden sm:block w-72">
-            <SearchBox />
-          </div>
-          <div className="mt-2 flex flex-wrap items-center gap-2 sm:justify-end">
-            <CompareButton name={name} />
-            {repoUrl ? (
-              <a
-                href={repoUrl}
-                target="_blank"
-                rel="noreferrer"
-                className={ACTION_BUTTON_CLASSES}
-              >
-                Star on GitHub
-              </a>
-            ) : null}
-          </div>
-        </div>
-      </div>
+      <PackageHeader
+        name={name}
+        updatedLabel={updatedLabel}
+        updatedLabelCompact={updatedLabelCompact}
+      />
 
       {/* Command bar: range left, export/share right */}
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
