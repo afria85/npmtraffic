@@ -417,23 +417,24 @@ export default function CompareChart({ series, packageNames, days }: Props) {
             />
             <div
               ref={stylePanelRef}
-              className="relative pointer-events-auto w-full rounded-t-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-4 text-xs text-[color:var(--foreground)] shadow-xl sm:w-[min(28rem,92vw)] sm:rounded-2xl"
-              style={{ maxHeight: "min(70vh, 560px)" }}
+              className="relative flex max-h-[min(85dvh,640px)] w-full flex-col overflow-hidden rounded-t-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-4 text-sm text-[color:var(--foreground)] shadow-xl sm:max-h-[min(70vh,560px)] sm:w-[min(28rem,92vw)] sm:rounded-2xl"
             >
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex shrink-0 items-center justify-between gap-2">
                 <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Chart style</div>
                 <button type="button" className={CHART_BUTTON_CLASSES + " px-2 py-1"} onClick={() => setStyleOpen(false)}>
                   Close
                 </button>
               </div>
 
-              <div className="mt-3 space-y-2">
+              <div className="mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 pb-4">
                 <p className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Series</p>
-                <div className="space-y-2">
+                <div className="mt-2 space-y-2">
                   {packageNames.map((pkg) => (
                     <div key={pkg} className="rounded-xl border border-white/10 bg-white/5 p-3">
                       <div className="min-w-0 text-sm font-semibold text-[color:var(--foreground)]">
-                        <div className="truncate">{pkg}</div>
+                        <div className="truncate" title={pkg}>
+                          {pkg}
+                        </div>
                       </div>
                       <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                         <label className="block">

@@ -17,7 +17,7 @@ async function fetchPackageExists(name: string) {
       method: "GET",
       headers: {
         accept: "application/json",
-        "user-agent": "npmtraffic/0.2.2 (https://npmtraffic.com)",
+        "user-agent": "npmtraffic/0.2.3 (https://npmtraffic.com)",
       },
       signal: controller.signal,
     });
