@@ -356,13 +356,10 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
 
   return (
     <section className="relative rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-widest text-slate-500">Trend</p>
-          <p className="mt-1 text-sm text-slate-200">Daily downloads ({days}d)</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="inline-flex items-center gap-2 text-xs text-slate-300">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-slate-200">Daily downloads ({days}d)</p>
+        <div className="ml-auto flex flex-nowrap items-center gap-3">
+          <label className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-wide text-slate-300">
             <input
               type="checkbox"
               checked={settings.showMA3}
@@ -372,7 +369,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
             />
             MA 3
           </label>
-          <label className="inline-flex items-center gap-2 text-xs text-slate-300">
+          <label className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-wide text-slate-300">
             <input
               type="checkbox"
               checked={settings.showMA7}
@@ -447,7 +444,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
             d={downloadsPath}
             fill="none"
             stroke={paletteValue(settings.downloadsColor)}
-            strokeWidth={3}
+            strokeWidth={2.25}
             strokeDasharray={dashFor(settings.downloadsStyle)}
           />
 
@@ -457,7 +454,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               d={ma7Path}
               fill="none"
               stroke={paletteValue(settings.ma7Color)}
-              strokeWidth={2.2}
+              strokeWidth={1.8}
               strokeDasharray={dashFor(settings.maStyle) ?? "6 4"}
               opacity={0.92}
             />
@@ -468,7 +465,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               d={ma3Path}
               fill="none"
               stroke={paletteValue(settings.ma3Color)}
-              strokeWidth={2.0}
+              strokeWidth={1.6}
               strokeDasharray={dashFor(settings.maStyle) ?? "2 4"}
               opacity={0.88}
             />

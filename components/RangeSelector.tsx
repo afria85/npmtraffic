@@ -10,7 +10,7 @@ export default function RangeSelector({ currentDays, getHref, label = "Range" }:
       role="group"
       aria-label={`${label} selector`}
     >
-      <span className="text-xs font-medium text-slate-400">
+      <span className="text-[0.65rem] font-semibold tracking-[0.3em] text-slate-400 sm:text-xs">
         {label}
       </span>
       <div className="flex flex-wrap items-center gap-2">
