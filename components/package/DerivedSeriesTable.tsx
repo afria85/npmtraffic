@@ -228,7 +228,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
           </div>
         </div>
         <ScrollHintContainer className="max-h-[65vh]">
-          <div className="overflow-x-auto overflow-y-auto">
+          <div className="max-h-[60vh] overflow-y-auto overflow-x-auto">
             <table className="min-w-[640px] table-fixed w-full text-sm">
               <colgroup>
                 <col className="w-[150px]" />
@@ -245,20 +245,23 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
               </colgroup>
               <thead className="sticky top-0 bg-black/80 text-left text-xs uppercase tracking-[0.3em] text-slate-200 backdrop-blur">
                 <tr>
-                  <th className="px-1.5 py-2 text-left font-semibold whitespace-nowrap">Date</th>
-                  <th className="px-1.5 py-2 text-left font-semibold whitespace-nowrap">Downloads</th>
-                  <th className="px-1.5 py-2 text-left font-semibold whitespace-nowrap">Delta vs prev day</th>
+                  <th className="px-1.5 sm:px-3 py-2 text-left font-semibold whitespace-nowrap">Date</th>
+                  <th className="px-1.5 sm:px-3 py-2 text-right font-semibold whitespace-nowrap">Downloads</th>
+                  <th className="px-1.5 sm:px-3 py-2 text-right font-semibold whitespace-nowrap">
+                    <span className="hidden sm:inline">Delta vs prev day</span>
+                    <span className="sm:hidden">Δ vs prev</span>
+                  </th>
                   {showDerived ? (
-                    <th className="px-1.5 py-2 text-left font-semibold whitespace-nowrap">MA 3</th>
+                    <th className="px-1.5 sm:px-3 py-2 text-left font-semibold whitespace-nowrap">MA 3</th>
                   ) : null}
                   {showDerived ? (
-                    <th className="px-1.5 py-2 text-left font-semibold whitespace-nowrap">MA 7</th>
+                    <th className="px-1.5 sm:px-3 py-2 text-left font-semibold whitespace-nowrap">MA 7</th>
                   ) : null}
                   {showDerived ? (
-                    <th className="px-1.5 py-2 text-left font-semibold whitespace-nowrap">Outlier</th>
+                    <th className="px-1.5 sm:px-3 py-2 text-left font-semibold whitespace-nowrap">Outlier</th>
                   ) : null}
                   {showDerived ? (
-                    <th className="px-1.5 py-2 text-left font-semibold whitespace-nowrap">Score</th>
+                    <th className="px-1.5 sm:px-3 py-2 text-left font-semibold whitespace-nowrap">Score</th>
                   ) : null}
                 </tr>
               </thead>
@@ -268,7 +271,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   const isOutlier = Boolean(outlier?.is_outlier);
                   return (
                     <tr key={row.date} className="text-slate-100">
-                      <td className="px-1.5 py-2 text-xs uppercase tracking-wide text-slate-400 whitespace-nowrap">
+                      <td className="px-1.5 sm:px-3 py-2 text-xs uppercase tracking-wide text-slate-400 whitespace-nowrap">
                         <div className="flex items-center gap-2 whitespace-nowrap">
                           <span>{row.date}</span>
                           {dayEvents?.length ? (
@@ -283,25 +286,25 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                           ) : null}
                         </div>
                       </td>
-                      <td className="px-1.5 py-2 text-right font-mono tabular-nums whitespace-nowrap">
-                        {row.downloads.toLocaleString("en-US")}
-                      </td>
-                      <td className="px-1.5 py-2 text-right whitespace-nowrap">
+                      <td className="px-1.5 sm:px-3 py-2 text-right font-mono tabular-nums whitespace-nowrap">
+                      {row.downloads.toLocaleString("en-US")}
+                    </td>
+                      <td className="px-1.5 sm:px-3 py-2 text-right whitespace-nowrap">
                         <SignedValue value={delta} showArrow emphasis="primary" />
                       </td>
                       {showDerived ? (
-                        <td className="px-1.5 py-2 text-right font-mono tabular-nums whitespace-nowrap">{formatDerived(ma3)}</td>
+                        <td className="px-1.5 sm:px-3 py-2 text-right font-mono tabular-nums whitespace-nowrap">{formatDerived(ma3)}</td>
                       ) : null}
                       {showDerived ? (
-                        <td className="px-1.5 py-2 text-right font-mono tabular-nums whitespace-nowrap">{formatDerived(ma7)}</td>
+                        <td className="px-1.5 sm:px-3 py-2 text-right font-mono tabular-nums whitespace-nowrap">{formatDerived(ma7)}</td>
                       ) : null}
                       {showDerived ? (
-                        <td className="px-1.5 py-2 whitespace-nowrap">
+                        <td className="px-1.5 sm:px-3 py-2 whitespace-nowrap">
                           <StatusPill status={isOutlier ? "YES" : "NO"} />
                         </td>
                       ) : null}
                       {showDerived ? (
-                        <td className="px-1.5 py-2 text-right whitespace-nowrap">
+                        <td className="px-1.5 sm:px-3 py-2 text-right whitespace-nowrap">
                           <SignedValue value={outlier?.score ?? null} emphasis="secondary" precision={2} />
                         </td>
                       ) : null}

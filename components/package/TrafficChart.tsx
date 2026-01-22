@@ -695,118 +695,108 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               </button>
             </div>
 
-            <div className="mt-3 grid grid-cols-1 gap-3">
-              <div className="grid grid-cols-2 gap-2">
-                <label className="flex flex-col gap-1">
-                  <span className="text-[color:var(--muted)]">Downloads color</span>
-                  <select
-                    value={settings.downloadsColor}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, downloadsColor: e.target.value as PaletteKey }))}
-                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                  >
-                    {PALETTE.map((p) => (
-                      <option key={p.key} value={p.key}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span className="text-[color:var(--muted)]">Downloads line</span>
-                  <select
-                    value={settings.downloadsStyle}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, downloadsStyle: e.target.value as LineStyleKey }))}
-                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                  >
-                    <option value="solid">Solid</option>
-                    <option value="dashed">Dashed</option>
-                    <option value="dotted">Dotted</option>
-                  </select>
-                </label>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <label className="flex flex-col gap-1">
-                  <span className="text-[color:var(--muted)]">MA 3 color</span>
-                  <select
-                    value={settings.ma3Color}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, ma3Color: e.target.value as PaletteKey }))}
-                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                  >
-                    {PALETTE.map((p) => (
-                      <option key={p.key} value={p.key}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span className="text-[color:var(--muted)]">MA 7 color</span>
-                  <select
-                    value={settings.ma7Color}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, ma7Color: e.target.value as PaletteKey }))}
-                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                  >
-                    {PALETTE.map((p) => (
-                      <option key={p.key} value={p.key}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <label className="flex flex-col gap-1">
-                  <span className="text-[color:var(--muted)]">MA 3 line style</span>
-                  <select
-                    value={settings.ma3Style}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, ma3Style: e.target.value as LineStyleKey }))}
-                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                  >
-                    <option value="solid">Solid</option>
-                    <option value="dashed">Dashed</option>
-                    <option value="dotted">Dotted</option>
-                  </select>
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span className="text-[color:var(--muted)]">MA 7 line style</span>
-                  <select
-                    value={settings.ma7Style}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, ma7Style: e.target.value as LineStyleKey }))}
-                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                  >
-                    <option value="solid">Solid</option>
-                    <option value="dashed">Dashed</option>
-                    <option value="dotted">Dotted</option>
-                  </select>
-                </label>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <label className="inline-flex items-center gap-2 text-xs text-[color:var(--muted)]">
-                  <input
-                    type="checkbox"
-                    checked={settings.showOutliers}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, showOutliers: e.target.checked }))}
-                    className="h-4 w-4 accent-[color:var(--accent)]"
-                  />
-                  Outliers
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span className="text-[color:var(--muted)]">Outlier color</span>
-                  <select
-                    value={settings.outlierColor}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, outlierColor: e.target.value as PaletteKey }))}
-                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                  >
-                    {PALETTE.map((p) => (
-                      <option key={p.key} value={p.key}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1">
+                <span className="text-[color:var(--muted)]">Downloads color</span>
+                <select
+                  value={settings.downloadsColor}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, downloadsColor: e.target.value as PaletteKey }))}
+                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                >
+                  {PALETTE.map((p) => (
+                    <option key={p.key} value={p.key}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-[color:var(--muted)]">Downloads line</span>
+                <select
+                  value={settings.downloadsStyle}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, downloadsStyle: e.target.value as LineStyleKey }))}
+                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                >
+                  <option value="solid">Solid</option>
+                  <option value="dashed">Dashed</option>
+                  <option value="dotted">Dotted</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-[color:var(--muted)]">MA 3 color</span>
+                <select
+                  value={settings.ma3Color}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, ma3Color: e.target.value as PaletteKey }))}
+                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                >
+                  {PALETTE.map((p) => (
+                    <option key={p.key} value={p.key}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-[color:var(--muted)]">MA 3 line style</span>
+                <select
+                  value={settings.ma3Style}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, ma3Style: e.target.value as LineStyleKey }))}
+                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                >
+                  <option value="solid">Solid</option>
+                  <option value="dashed">Dashed</option>
+                  <option value="dotted">Dotted</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-[color:var(--muted)]">MA 7 color</span>
+                <select
+                  value={settings.ma7Color}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, ma7Color: e.target.value as PaletteKey }))}
+                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                >
+                  {PALETTE.map((p) => (
+                    <option key={p.key} value={p.key}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-[color:var(--muted)]">MA 7 line style</span>
+                <select
+                  value={settings.ma7Style}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, ma7Style: e.target.value as LineStyleKey }))}
+                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                >
+                  <option value="solid">Solid</option>
+                  <option value="dashed">Dashed</option>
+                  <option value="dotted">Dotted</option>
+                </select>
+              </label>
+              <label className="inline-flex items-center gap-2 text-xs text-[color:var(--muted)]">
+                <input
+                  type="checkbox"
+                  checked={settings.showOutliers}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, showOutliers: e.target.checked }))}
+                  className="h-4 w-4 accent-[color:var(--accent)]"
+                />
+                Outliers
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-[color:var(--muted)]">Outlier color</span>
+                <select
+                  value={settings.outlierColor}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, outlierColor: e.target.value as PaletteKey }))}
+                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                >
+                  {PALETTE.map((p) => (
+                    <option key={p.key} value={p.key}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
           </div>
         ) : null}
