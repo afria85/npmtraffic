@@ -14,8 +14,8 @@
   --surface-3: rgba(255,255,255,0.09);
 
   /* Chart tokens (theme-aware defaults) */
-  --chart-grid: rgba(255, 255, 255, 0.08);
-  --chart-axis: rgba(230, 237, 243, 0.60);
+  --chart-grid: rgba(255, 255, 255, 0.12);
+  --chart-axis: rgba(230, 237, 243, 0.72);
   --chart-tooltip-bg: rgba(0, 0, 0, 0.82);
   --chart-tooltip-border: rgba(255, 255, 255, 0.10);
 
@@ -44,8 +44,8 @@
   --surface-3: rgba(15, 23, 42, 0.09);
 
   /* Chart tokens tuned for light backgrounds */
-  --chart-grid: rgba(11, 18, 32, 0.10);
-  --chart-axis: rgba(11, 18, 32, 0.65);
+  --chart-grid: rgba(11, 18, 32, 0.14);
+  --chart-axis: rgba(11, 18, 32, 0.72);
   --chart-tooltip-bg: rgba(255, 255, 255, 0.94);
   --chart-tooltip-border: rgba(11, 18, 32, 0.12);
 
