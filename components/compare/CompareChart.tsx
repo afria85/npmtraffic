@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import ActionMenu from "@/components/ui/ActionMenu";
 import { computeLeftPad } from "@/components/charts/axis-padding";
 import { buildMonthTicks } from "@/components/charts/time-ticks";
@@ -206,6 +207,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const stylePanelRef = useRef<HTMLDivElement | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
 
   const settingsKey = `npmtraffic_chart_settings:compare:${packageNames.join("|")}`;
 
@@ -333,13 +335,69 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   const primaryPoints = pointsByPkg.get(packageNames[0] ?? "") ?? [];
   const hoverPoint = hoverIndex == null ? null : primaryPoints[hoverIndex] ?? null;
 
-  const tooltipSide = hoverPoint && hoverPoint.x > pad.l + innerW * 0.6 ? "left" : "right";
-  const tooltipV = hoverPoint && hoverPoint.y < pad.t + innerH * 0.35 ? "bottom" : "top";
-  const tooltipDockClass =
-      "absolute pointer-events-auto relative w-[min(18rem,90%)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur " +
-    (tooltipSide === "left" ? "left-3" : "right-3") +
-    " " +
-    (tooltipV === "bottom" ? "bottom-3" : "top-3");
+  useLayoutEffect(() => {
+    if (!hoverPoint || !svgRef.current || !chartContainerRef.current || !tooltipRef.current) {
+      return;
+    }
+    const svgRect = svgRef.current.getBoundingClientRect();
+    const containerRect = chartContainerRef.current.getBoundingClientRect();
+    const tooltipRect = tooltipRef.current.getBoundingClientRect();
+    const scaleX = svgRect.width / WIDTH;
+    const scaleY = svgRect.height / HEIGHT;
+    const pointX = svgRect.left - containerRect.left + hoverPoint.x * scaleX;
+    const pointY = svgRect.top - containerRect.top + hoverPoint.y * scaleY;
+    const containerWidth = containerRect.width;
+    const containerHeight = containerRect.height;
+    const tooltipWidth = tooltipRect.width;
+    const tooltipHeight = tooltipRect.height;
+    const gap = 8;
+    const crosshairBuffer = 6;
+    const pointerLeft = pointX - crosshairBuffer;
+    const pointerRight = pointX + crosshairBuffer;
+    const candidates = [
+      { left: pointX + gap, top: pointY - tooltipHeight - gap },
+      { left: pointX + gap, top: pointY + gap },
+      { left: pointX - tooltipWidth - gap, top: pointY - tooltipHeight - gap },
+      { left: pointX - tooltipWidth - gap, top: pointY + gap },
+    ];
+
+    const fitsCandidate = candidates.find((candidate) => {
+      if (candidate.left < 0 || candidate.top < 0) return false;
+      if (candidate.left + tooltipWidth > containerWidth) return false;
+      if (candidate.top + tooltipHeight > containerHeight) return false;
+      return candidate.left >= pointerRight || candidate.left + tooltipWidth <= pointerLeft;
+    });
+
+    let finalLeft: number;
+    let finalTop: number;
+    if (fitsCandidate) {
+      finalLeft = fitsCandidate.left;
+      finalTop = fitsCandidate.top;
+    } else {
+      const preferRight = pointX > containerWidth / 2;
+      let fallbackLeft = preferRight ? pointX + gap : pointX - tooltipWidth - gap;
+      fallbackLeft = Math.min(Math.max(fallbackLeft, 0), containerWidth - tooltipWidth);
+      const oppositeLeft = preferRight ? pointX - tooltipWidth - gap : pointX + gap;
+      if (
+        !(fallbackLeft >= pointerRight || fallbackLeft + tooltipWidth <= pointerLeft) &&
+        oppositeLeft >= 0 &&
+        oppositeLeft + tooltipWidth <= containerWidth
+      ) {
+        fallbackLeft = oppositeLeft;
+      }
+      let fallbackTop = pointY - tooltipHeight - gap;
+      if (fallbackTop < 0 || fallbackTop + tooltipHeight > containerHeight) {
+        fallbackTop = Math.min(Math.max(pointY + gap, 0), containerHeight - tooltipHeight);
+      }
+      finalLeft = fallbackLeft;
+      finalTop = fallbackTop;
+    }
+    tooltipRef.current.style.left = `${finalLeft}px`;
+    tooltipRef.current.style.top = `${finalTop}px`;
+  }, [hoverPoint, isMobile]);
+
+  const tooltipClassName =
+    "absolute pointer-events-none rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
 
   const exports = useMemo(
     () => [
@@ -377,6 +435,11 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     setHoverIndex(pickClosestIndex(normalized, series.length));
   };
 
+  const handlePointerEvent = (event: ReactPointerEvent<SVGSVGElement>) => {
+    const svg = event.currentTarget as SVGSVGElement;
+    updateHoverIndexFromClientX(event.clientX, svg);
+  };
+
   return (
     <section className="relative rounded-2xl border border-white/10 bg-white/5 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -393,19 +456,8 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           role="img"
           aria-label={`Compare daily downloads line chart${days ? ` (${days} days)` : ""}`}
           onMouseLeave={() => setHoverIndex(null)}
-          onMouseMove={(event) => {
-            updateHoverIndexFromClientX(event.clientX, event.currentTarget);
-          }}
-          onTouchStart={(event) => {
-            const touch = event.touches[0];
-            if (!touch) return;
-            updateHoverIndexFromClientX(touch.clientX, event.currentTarget);
-          }}
-          onTouchMove={(event) => {
-            const touch = event.touches[0];
-            if (!touch) return;
-            updateHoverIndexFromClientX(touch.clientX, event.currentTarget);
-          }}
+          onPointerDown={handlePointerEvent}
+          onPointerMove={handlePointerEvent}
         >
           {yTicks.map((tick) => (
             <g key={tick.y}>
@@ -574,7 +626,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
         ) : null}
 
         {hovered ? (
-          <div className={tooltipDockClass}>
+          <div ref={tooltipRef} className={tooltipClassName}>
             <div className="flex items-center justify-between gap-2">
               <span className="font-mono text-[color:var(--foreground)]">{hovered.date}</span>
               <span className="text-[color:var(--muted)]">UTC</span>
@@ -583,7 +635,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
               <button
                 type="button"
                 onClick={() => setHoverIndex(null)}
-                className="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/40 text-xs text-[color:var(--foreground)] transition hover:border-white/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                className="pointer-events-auto absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/40 text-xs text-[color:var(--foreground)] transition hover:border-white/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                 aria-label="Close tooltip"
               >
                 ×

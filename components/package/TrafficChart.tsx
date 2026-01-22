@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import type { DerivedMetrics } from "@/lib/derived";
 import type { TrafficSeriesRow } from "@/lib/traffic";
 import { groupEventsByDate, loadEvents } from "@/lib/events";
@@ -195,6 +196,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const stylePanelRef = useRef<HTMLDivElement | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
 
   const settingsKey = `npmtraffic_chart_settings:${pkgName}`;
 
@@ -377,13 +379,69 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
   const hovered = hoverIndex == null ? null : series[hoverIndex];
   const hoverPoint = hoverIndex == null ? null : downloadsPoints[hoverIndex] ?? null;
 
-  const tooltipSide = hoverPoint && hoverPoint.x > pad.l + innerW * 0.6 ? "left" : "right";
-  const tooltipV = hoverPoint && hoverPoint.y < pad.t + innerH * 0.35 ? "bottom" : "top";
-  const tooltipDockClass =
-    "absolute pointer-events-auto relative w-[min(18rem,90%)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur " +
-    (tooltipSide === "left" ? "left-3" : "right-3") +
-    " " +
-    (tooltipV === "bottom" ? "bottom-3" : "top-3");
+  useLayoutEffect(() => {
+    if (!hoverPoint || !svgRef.current || !chartContainerRef.current || !tooltipRef.current) {
+      return;
+    }
+    const svgRect = svgRef.current.getBoundingClientRect();
+    const containerRect = chartContainerRef.current.getBoundingClientRect();
+    const tooltipRect = tooltipRef.current.getBoundingClientRect();
+    const scaleX = svgRect.width / width;
+    const scaleY = svgRect.height / height;
+    const pointX = svgRect.left - containerRect.left + hoverPoint.x * scaleX;
+    const pointY = svgRect.top - containerRect.top + hoverPoint.y * scaleY;
+    const containerWidth = containerRect.width;
+    const containerHeight = containerRect.height;
+    const tooltipWidth = tooltipRect.width;
+    const tooltipHeight = tooltipRect.height;
+    const gap = 8;
+    const crosshairBuffer = 6;
+    const pointerLeft = pointX - crosshairBuffer;
+    const pointerRight = pointX + crosshairBuffer;
+    const candidates = [
+      { left: pointX + gap, top: pointY - tooltipHeight - gap },
+      { left: pointX + gap, top: pointY + gap },
+      { left: pointX - tooltipWidth - gap, top: pointY - tooltipHeight - gap },
+      { left: pointX - tooltipWidth - gap, top: pointY + gap },
+    ];
+
+    const fitsCandidate = candidates.find((candidate) => {
+      if (candidate.left < 0 || candidate.top < 0) return false;
+      if (candidate.left + tooltipWidth > containerWidth) return false;
+      if (candidate.top + tooltipHeight > containerHeight) return false;
+      return candidate.left >= pointerRight || candidate.left + tooltipWidth <= pointerLeft;
+    });
+
+    let finalLeft: number;
+    let finalTop: number;
+    if (fitsCandidate) {
+      finalLeft = fitsCandidate.left;
+      finalTop = fitsCandidate.top;
+    } else {
+      const preferRight = pointX > containerWidth / 2;
+      let fallbackLeft = preferRight ? pointX + gap : pointX - tooltipWidth - gap;
+      fallbackLeft = Math.min(Math.max(fallbackLeft, 0), containerWidth - tooltipWidth);
+      const oppositeLeft = preferRight ? pointX - tooltipWidth - gap : pointX + gap;
+      if (
+        !(fallbackLeft >= pointerRight || fallbackLeft + tooltipWidth <= pointerLeft) &&
+        oppositeLeft >= 0 &&
+        oppositeLeft + tooltipWidth <= containerWidth
+      ) {
+        fallbackLeft = oppositeLeft;
+      }
+      let fallbackTop = pointY - tooltipHeight - gap;
+      if (fallbackTop < 0 || fallbackTop + tooltipHeight > containerHeight) {
+        fallbackTop = Math.min(Math.max(pointY + gap, 0), containerHeight - tooltipHeight);
+      }
+      finalLeft = fallbackLeft;
+      finalTop = fallbackTop;
+    }
+    tooltipRef.current.style.left = `${finalLeft}px`;
+    tooltipRef.current.style.top = `${finalTop}px`;
+  }, [hoverPoint, width, height, isMobile]);
+
+  const tooltipClassName =
+    "absolute pointer-events-none rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
   const hoveredMA7 = hoverIndex == null ? null : derived?.ma7?.[hoverIndex]?.value ?? null;
   const hoveredMA3 = hoverIndex == null ? null : derived?.ma3?.[hoverIndex]?.value ?? null;
   const hoveredOutlier = hoverIndex == null ? null : derived?.outliers?.[hoverIndex] ?? null;
@@ -408,6 +466,11 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
     const normalized = clamp((viewX - pad.l) / innerW, 0, 1);
     // Dev note: this mirrors downloadsPoints' pad/innerW math so the vertical line stays under the cursor.
     setHoverIndex(pickClosestIndex(normalized, series.length));
+  };
+
+  const handlePointerEvent = (event: ReactPointerEvent<SVGSVGElement>) => {
+    const svg = event.currentTarget as SVGSVGElement;
+    updateHoverIndexFromClientX(event.clientX, svg);
   };
 
   const eventMarkerRadius = isMobile ? 5 : 4;
@@ -445,7 +508,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
       <div className="flex flex-wrap items-center gap-3">
         <p className="text-sm font-semibold text-slate-200">Daily downloads ({days}d)</p>
         <div className="ml-auto flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
-          <label className="inline-flex items-center gap-2 text-xs text-slate-300">
+          <label className="inline-flex min-h-[38px] items-center gap-2 px-2 py-1.5 text-xs text-slate-300">
             <input
               type="checkbox"
               checked={settings.showMA3}
@@ -455,7 +518,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
             />
             MA 3
           </label>
-          <label className="inline-flex items-center gap-2 text-xs text-slate-300">
+          <label className="inline-flex min-h-[38px] items-center gap-2 px-2 py-1.5 text-xs text-slate-300">
             <input
               type="checkbox"
               checked={settings.showMA7}
@@ -476,19 +539,9 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
           role="img"
           aria-label={`Daily downloads line chart (${days} days)`}
           onMouseLeave={() => setHoverIndex(null)}
-          onMouseMove={(event) => {
-            updateHoverIndexFromClientX(event.clientX, event.currentTarget);
-          }}
-          onTouchStart={(event) => {
-            const touch = event.touches[0];
-            if (!touch) return;
-            updateHoverIndexFromClientX(touch.clientX, event.currentTarget);
-          }}
-          onTouchMove={(event) => {
-            const touch = event.touches[0];
-            if (!touch) return;
-            updateHoverIndexFromClientX(touch.clientX, event.currentTarget);
-          }}
+          onPointerDown={handlePointerEvent}
+          onPointerMove={handlePointerEvent}
+          onPointerLeave={() => setHoverIndex(null)}
         >
           {/* grid */}
           {yTicks.map((tick) => (
@@ -731,7 +784,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
         ) : null}
 
         {hovered ? (
-          <div className={tooltipDockClass}>
+          <div ref={tooltipRef} className={tooltipClassName}>
             <div className="flex items-center justify-between gap-2">
               <span className="font-mono text-[color:var(--foreground)]">{hovered.date}</span>
               <span className="text-[color:var(--muted)]">UTC</span>
@@ -740,7 +793,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               <button
                 type="button"
                 onClick={() => setHoverIndex(null)}
-                className="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/40 text-xs text-[color:var(--foreground)] transition hover:border-white/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                className="pointer-events-auto absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/40 text-xs text-[color:var(--foreground)] transition hover:border-white/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                 aria-label="Close tooltip"
               >
                 ×
