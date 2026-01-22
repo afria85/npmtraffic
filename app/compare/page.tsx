@@ -18,7 +18,7 @@ import {
   COMPARE_ACTION_CONTAINER_CLASSES,
   COMPARE_TABLE_WRAPPER_CLASSES,
 } from "@/components/compare/compare-classes";
-import DeltaValue from "@/components/ui/DeltaValue";
+import SignedValue from "@/components/ui/SignedValue";
 import ScrollHintContainer from "@/components/ScrollHintContainer";
 
 type Props = {
@@ -339,12 +339,12 @@ export default async function ComparePage({ searchParams }: Props) {
                   </td>
                   {data.packages.map((pkg) => (
                     <Fragment key={`${row.date}-${pkg.name}-pair`}>
-                      <td className="px-3 py-2 font-mono">
-                        {formatNumber(row.values[pkg.name]?.downloads ?? null)}
-                      </td>
-                      <td className="px-3 py-2">
-                        <DeltaValue value={row.values[pkg.name]?.delta ?? null} />
-                      </td>
+                  <td className="px-3 py-2 text-right font-mono">
+                    {formatNumber(row.values[pkg.name]?.downloads ?? null)}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <SignedValue value={row.values[pkg.name]?.delta ?? null} showArrow emphasis="primary" />
+                  </td>
                     </Fragment>
                   ))}
                 </tr>

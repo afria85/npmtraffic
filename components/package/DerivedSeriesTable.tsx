@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 import ScrollHintContainer from "@/components/ScrollHintContainer";
-import DeltaValue from "@/components/ui/DeltaValue";
+import SignedValue from "@/components/ui/SignedValue";
+import StatusPill from "@/components/ui/StatusPill";
 import type { DerivedMetrics } from "@/lib/derived";
 import type { EventEntry } from "@/lib/events";
 import type { TrafficSeriesRow } from "@/lib/traffic";
@@ -83,6 +84,17 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
     }
     return values;
   }, [series]);
+
+  const tableRows = useMemo(() => {
+    const rows = series.map((row, index) => ({
+      row,
+      delta: deltas[index],
+      ma3: derived?.ma3?.[index]?.value ?? null,
+      ma7: derived?.ma7?.[index]?.value ?? null,
+      outlier: derived?.outliers?.[index] ?? null,
+    }));
+    return rows.slice().reverse();
+  }, [series, deltas, derived]);
 
   const [shareEncoded, setShareEncoded] = useState("");
 
@@ -229,12 +241,9 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {series.map((row, index) => {
-                const ma3 = derived?.ma3?.[index]?.value ?? null;
-                const ma7 = derived?.ma7?.[index]?.value ?? null;
-                const outlier = derived?.outliers?.[index];
+              {tableRows.map(({ row, delta, ma3, ma7, outlier }) => {
                 const dayEvents = groupedEvents.get(row.date);
-
+                const isOutlier = Boolean(outlier?.is_outlier);
                 return (
                   <tr key={row.date} className="text-slate-100">
                     <td className="px-3 py-2 text-xs uppercase tracking-wide text-slate-400">
@@ -252,17 +261,23 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                         ) : null}
                       </div>
                     </td>
-                    <td className="px-3 py-2 font-mono">{row.downloads.toLocaleString("en-US")}</td>
-                    <td className="px-3 py-2">
-                      <DeltaValue value={deltas[index]} />
+                    <td className="px-3 py-2 text-right font-mono tabular-nums">
+                      {row.downloads.toLocaleString("en-US")}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <SignedValue value={delta} showArrow emphasis="primary" />
                     </td>
                     {showDerived ? <td className="px-3 py-2 font-mono">{formatDerived(ma3)}</td> : null}
                     {showDerived ? <td className="px-3 py-2 font-mono">{formatDerived(ma7)}</td> : null}
                     {showDerived ? (
-                      <td className="px-3 py-2 font-mono text-emerald-300">{outlier?.is_outlier ? "Yes" : "No"}</td>
+                      <td className="px-3 py-2">
+                        <StatusPill status={isOutlier ? "YES" : "NO"} />
+                      </td>
                     ) : null}
                     {showDerived ? (
-                      <td className="px-3 py-2 font-mono">{outlier ? outlier.score.toFixed(2) : "-"}</td>
+                      <td className="px-3 py-2 text-right">
+                        <SignedValue value={outlier?.score ?? null} emphasis="secondary" precision={2} />
+                      </td>
                     ) : null}
                   </tr>
                 );
