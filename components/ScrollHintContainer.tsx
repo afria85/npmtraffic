@@ -53,15 +53,19 @@ export default function ScrollHintContainer({ className, children }: Props) {
     <div className="relative">
       {canScrollLeft ? (
         <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-black/55 to-transparent">
-          <div className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-black/30 p-1 text-slate-200/90">
-            <Chevron dir="left" />
+          <div className="absolute left-2 top-1/2 -translate-y-1/2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/30 text-slate-200/90">
+              <Chevron dir="left" />
+            </div>
           </div>
         </div>
       ) : null}
       {canScrollRight ? (
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-black/55 to-transparent">
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-black/30 p-1 text-slate-200/90">
-            <Chevron dir="right" />
+          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/30 text-slate-200/90">
+              <Chevron dir="right" />
+            </div>
           </div>
         </div>
       ) : null}

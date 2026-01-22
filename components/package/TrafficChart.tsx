@@ -513,23 +513,23 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
       <div className={headerRowClass}>
         <p className="text-sm font-semibold text-slate-200">Daily downloads ({days}d)</p>
         <div className={toggleGroupClass}>
-          <label className="inline-flex min-h-[38px] items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 shadow-sm transition hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30">
+          <label className="inline-flex min-h-[40px] items-center gap-2 px-3 py-1.5 text-xs text-slate-300">
             <input
               type="checkbox"
               checked={settings.showMA3}
               disabled={!canShowMA3}
               onChange={(event) => setSettings((prev) => ({ ...prev, showMA3: event.target.checked }))}
-              className="h-5 w-5 accent-[color:var(--accent)]"
+              className="h-4 w-4 accent-[color:var(--accent)]"
             />
             MA 3
           </label>
-          <label className="inline-flex min-h-[38px] items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 shadow-sm transition hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30">
+          <label className="inline-flex min-h-[40px] items-center gap-2 px-3 py-1.5 text-xs text-slate-300">
             <input
               type="checkbox"
               checked={settings.showMA7}
               disabled={!canShowMA7}
               onChange={(event) => setSettings((prev) => ({ ...prev, showMA7: event.target.checked }))}
-              className="h-5 w-5 accent-[color:var(--accent)]"
+              className="h-4 w-4 accent-[color:var(--accent)]"
             />
             MA 7
           </label>
@@ -794,16 +794,6 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               <span className="font-mono text-[color:var(--foreground)]">{hovered.date}</span>
               <span className="text-[color:var(--muted)]">UTC</span>
             </div>
-            {isMobile && hoverIndex != null ? (
-              <button
-                type="button"
-                onClick={() => setHoverIndex(null)}
-                className="pointer-events-auto absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/40 text-xs text-[color:var(--foreground)] transition hover:border-white/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-                aria-label="Close tooltip"
-              >
-                ×
-              </button>
-            ) : null}
             <div className="mt-2 space-y-1">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[color:var(--muted)]">Downloads</span>

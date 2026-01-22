@@ -631,16 +631,6 @@ export default function CompareChart({ series, packageNames, days }: Props) {
               <span className="font-mono text-[color:var(--foreground)]">{hovered.date}</span>
               <span className="text-[color:var(--muted)]">UTC</span>
             </div>
-            {isMobile && hoverIndex != null ? (
-              <button
-                type="button"
-                onClick={() => setHoverIndex(null)}
-                className="pointer-events-auto absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/40 text-xs text-[color:var(--foreground)] transition hover:border-white/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-                aria-label="Close tooltip"
-              >
-                ×
-              </button>
-            ) : null}
             <div className="mt-2 space-y-1">
               {packageNames.map((pkg) => (
                 <div key={pkg} className="flex items-center justify-between gap-2">
