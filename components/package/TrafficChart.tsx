@@ -31,9 +31,14 @@ type ChartSettings = {
   ma7Color: PaletteKey;
   ma3Color: PaletteKey;
   downloadsStyle: LineStyleKey;
-  maStyle: LineStyleKey;
+  ma3Style: LineStyleKey;
+  ma7Style: LineStyleKey;
   showOutliers: boolean;
   outlierColor: PaletteKey;
+};
+
+type LegacyChartSettings = ChartSettings & {
+  maStyle?: LineStyleKey;
 };
 
 const numberFormatter = new Intl.NumberFormat("en-US");
@@ -78,7 +83,7 @@ function paletteValue(key: PaletteKey) {
   return `var(${item.cssVar})`;
 }
 
-function safeParseSettings(input: string | null): Partial<ChartSettings> {
+function safeParseSettings(input: string | null): Partial<LegacyChartSettings> {
   if (!input) return {};
   try {
     const parsed = JSON.parse(input) as Partial<ChartSettings>;
@@ -205,20 +210,24 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
   const [isMobile, setIsMobile] = useState(false);
   const [settings, setSettings] = useState<ChartSettings>(() => {
     if (typeof window === "undefined") {
-      return {
-        showMA7: true,
-        showMA3: false,
-        downloadsColor: "accent",
-        ma7Color: "violet",
-        ma3Color: "orange",
-        downloadsStyle: "solid",
-        maStyle: "dashed",
-        showOutliers: true,
-        outlierColor: "amber",
-      };
+    return {
+      showMA7: true,
+      showMA3: false,
+      downloadsColor: "accent",
+      ma7Color: "violet",
+      ma3Color: "orange",
+      downloadsStyle: "solid",
+      ma3Style: "dashed",
+      ma7Style: "dashed",
+      showOutliers: true,
+      outlierColor: "amber",
+    };
     }
 
     const saved = safeParseSettings(window.localStorage.getItem(settingsKey));
+    const legacyStyle = (saved.maStyle as LineStyleKey | undefined) ?? "dashed";
+    const ma3Style = (saved.ma3Style as LineStyleKey) ?? legacyStyle;
+    const ma7Style = (saved.ma7Style as LineStyleKey) ?? legacyStyle;
     return {
       showMA7: saved.showMA7 ?? true,
       showMA3: saved.showMA3 ?? false,
@@ -226,7 +235,8 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
       ma7Color: (saved.ma7Color as PaletteKey) ?? "violet",
       ma3Color: (saved.ma3Color as PaletteKey) ?? "orange",
       downloadsStyle: (saved.downloadsStyle as LineStyleKey) ?? "solid",
-      maStyle: (saved.maStyle as LineStyleKey) ?? "dashed",
+      ma3Style,
+      ma7Style,
       showOutliers: saved.showOutliers ?? true,
       outlierColor: (saved.outlierColor as PaletteKey) ?? "amber",
     };
@@ -625,27 +635,27 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
 
           {/* MA lines */}
           {settings.showMA7 && canShowMA7 ? (
-            <path
-              d={ma7Path}
-              fill="none"
-              stroke={paletteValue(settings.ma7Color)}
-              strokeWidth={ma7StrokeWidth}
-              strokeDasharray={dashForStyle(settings.maStyle)}
-              strokeLinecap="round"
-              opacity={0.92}
-            />
+          <path
+            d={ma7Path}
+            fill="none"
+            stroke={paletteValue(settings.ma7Color)}
+            strokeWidth={ma7StrokeWidth}
+            strokeDasharray={dashForStyle(settings.ma7Style)}
+            strokeLinecap="round"
+            opacity={0.92}
+          />
           ) : null}
 
           {settings.showMA3 && canShowMA3 ? (
-            <path
-              d={ma3Path}
-              fill="none"
-              stroke={paletteValue(settings.ma3Color)}
-              strokeWidth={ma3StrokeWidth}
-              strokeDasharray={dashForStyle(settings.maStyle)}
-              strokeLinecap="round"
-              opacity={0.88}
-            />
+          <path
+            d={ma3Path}
+            fill="none"
+            stroke={paletteValue(settings.ma3Color)}
+            strokeWidth={ma3StrokeWidth}
+            strokeDasharray={dashForStyle(settings.ma3Style)}
+            strokeLinecap="round"
+            opacity={0.88}
+          />
           ) : null}
 
           {/* hover */}
@@ -717,20 +727,6 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
 
               <div className="grid grid-cols-2 gap-2">
                 <label className="flex flex-col gap-1">
-                  <span className="text-[color:var(--muted)]">MA 7 color</span>
-                  <select
-                    value={settings.ma7Color}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, ma7Color: e.target.value as PaletteKey }))}
-                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                  >
-                    {PALETTE.map((p) => (
-                      <option key={p.key} value={p.key}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="flex flex-col gap-1">
                   <span className="text-[color:var(--muted)]">MA 3 color</span>
                   <select
                     value={settings.ma3Color}
@@ -744,22 +740,48 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
                     ))}
                   </select>
                 </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[color:var(--muted)]">MA 7 color</span>
+                  <select
+                    value={settings.ma7Color}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, ma7Color: e.target.value as PaletteKey }))}
+                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                  >
+                    {PALETTE.map((p) => (
+                      <option key={p.key} value={p.key}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
-              <label className="flex flex-col gap-1">
-                <span className="text-[color:var(--muted)]">MA line style</span>
-                <select
-                  value={settings.maStyle}
-                  onChange={(e) => setSettings((prev) => ({ ...prev, maStyle: e.target.value as LineStyleKey }))}
-                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                >
-                  <option value="solid">Solid</option>
-                  <option value="dashed">Dashed</option>
-                  <option value="dotted">Dotted</option>
-                </select>
-              </label>
-            </div>
-
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1">
+                  <span className="text-[color:var(--muted)]">MA 3 line style</span>
+                  <select
+                    value={settings.ma3Style}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, ma3Style: e.target.value as LineStyleKey }))}
+                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                  >
+                    <option value="solid">Solid</option>
+                    <option value="dashed">Dashed</option>
+                    <option value="dotted">Dotted</option>
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[color:var(--muted)]">MA 7 line style</span>
+                  <select
+                    value={settings.ma7Style}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, ma7Style: e.target.value as LineStyleKey }))}
+                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                  >
+                    <option value="solid">Solid</option>
+                    <option value="dashed">Dashed</option>
+                    <option value="dotted">Dotted</option>
+                  </select>
+                </label>
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <label className="inline-flex items-center gap-2 text-xs text-[color:var(--muted)]">
                   <input
@@ -785,6 +807,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
                   </select>
                 </label>
               </div>
+            </div>
           </div>
         ) : null}
 
