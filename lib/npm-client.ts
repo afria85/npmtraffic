@@ -36,7 +36,7 @@ async function fetchJson(url: string, timeoutMs: number): Promise<Response> {
       signal: ctrl.signal,
       headers: {
         accept: "application/json",
-        "user-agent": "npmtraffic/0.2.13 (https://npmtraffic.com)",
+        "user-agent": "npmtraffic/0.2.14 (https://npmtraffic.com)",
       },
     });
   } finally {

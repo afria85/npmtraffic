@@ -17,11 +17,14 @@ export default function DonatePage() {
         <p className="text-xs uppercase tracking-[0.3em] text-slate-400">npmtraffic</p>
         <h1 className="text-3xl font-semibold tracking-tight">Support npmtraffic</h1>
         <p className="text-sm text-slate-300">
-          npmtraffic is free to use. Optional donations help cover hosting, tooling, and ongoing
-          maintenance so the project can stay fast, low-cost, and reliable. If funding ever meaningfully
-          exceeds basic maintenance needs, it will go toward roadmap items that improve trust and analysis
-          depth (for example: better attribution tooling, long-term history, and safer exports).
+          npmtraffic is free to use. Optional donations fund hosting, tooling, and ongoing maintenance so the
+          project can stay fast, low-cost, and reliable.
         </p>
+        <ul className="ml-2 space-y-1 text-sm text-slate-300">
+          <li>• Keep caches warm so daily tables and exports stay responsive.</li>
+          <li>• Prioritize roadmap items that improve auditability and attribution tooling.</li>
+          <li>• Maintain secure infrastructure without turning on ads or paywalls.</li>
+        </ul>
       </section>
       {donateLinks.length ? (
         <section>

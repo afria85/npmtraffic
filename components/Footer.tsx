@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { getProjectGithubUrl } from "@/lib/donate";
 
 export default function Footer() {
   const projectGithubUrl = getProjectGithubUrl();
+  const pathname = usePathname();
+  const isDonateRoute = pathname === "/donate" || pathname === "/support";
   return (
     <footer className="border-t border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-6 text-sm text-[color:var(--foreground)]/80">
       <div className="mx-auto flex max-w-5xl flex-col gap-4">
@@ -35,11 +40,20 @@ export default function Footer() {
           ) : null}
         </nav>
         <p className="text-xs text-[color:var(--muted)]">
-          Want to support npmtraffic? Optional donations are available on the{" "}
-          <Link href="/donate" className="underline decoration-white/20 underline-offset-4 hover:text-[color:var(--foreground)]">
-            Support
-          </Link>{" "}
-          page.
+          Optional support helps cover hosting and maintenance.
+          {!isDonateRoute ? (
+            <>
+              {" "}
+              Support is always available on the{" "}
+              <Link
+                href="/donate"
+                className="underline decoration-white/20 underline-offset-4 hover:text-[color:var(--foreground)]"
+              >
+                donate
+              </Link>{" "}
+              page.
+            </>
+          ) : null}
         </p>
         <p className="text-xs text-[color:var(--muted)]">
           npmtraffic is not affiliated with npm, Inc. Data from api.npmjs.org.
