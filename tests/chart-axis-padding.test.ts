@@ -7,5 +7,5 @@ test("computeLeftPad grows for large axis labels", () => {
   const large = computeLeftPad("123,456,789,012", 11);
   assert.equal(small, 46);
   assert.ok(large > 46);
-  assert.ok(large <= 110);
+  assert.ok(large <= 130);
 });

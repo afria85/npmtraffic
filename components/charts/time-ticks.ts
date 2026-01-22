@@ -2,6 +2,8 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 type MonthTick = { index: number; label: string };
 
+type YearLabelMode = "always" | "first-or-change" | "never";
+
 function parseDateParts(date: string) {
   const [y, m, d] = date.split("-").map((value) => Number(value));
   if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
@@ -9,14 +11,31 @@ function parseDateParts(date: string) {
   return { year: y, month: m, day: d };
 }
 
-export function formatMonthLabel(year: number, monthIndex: number, showYear: boolean) {
+export function formatMonthLabel(
+  year: number,
+  monthIndex: number,
+  showYear: boolean,
+  useFullYear: boolean
+) {
   const month = MONTHS[monthIndex] ?? "";
   if (!showYear) return month;
+  if (useFullYear) return `${month} ${year}`;
   const shortYear = String(year).slice(-2);
-  return `${month} \u2019${shortYear}`;
+  return `${month} '${shortYear}`;
 }
 
-export function buildMonthTicks(dates: string[], maxTicks: number): MonthTick[] {
+export function formatMonthLabelFromDate(date: string, useFullYear: boolean) {
+  const parts = parseDateParts(date);
+  if (!parts) return "";
+  return formatMonthLabel(parts.year, parts.month - 1, true, useFullYear);
+}
+
+export function buildMonthTicks(
+  dates: string[],
+  maxTicks: number,
+  yearMode: YearLabelMode,
+  useFullYear: boolean
+): MonthTick[] {
   if (!dates.length) return [];
   const monthStarts: { index: number; year: number; month: number }[] = [];
   let lastKey = "";
@@ -44,11 +63,12 @@ export function buildMonthTicks(dates: string[], maxTicks: number): MonthTick[] 
 
   let lastYear: number | null = null;
   return selected.map((item, idx) => {
-    const showYear = idx === 0 || lastYear !== item.year;
+    const showYear =
+      yearMode === "always" || (yearMode === "first-or-change" && (idx === 0 || lastYear !== item.year));
     lastYear = item.year;
     return {
       index: item.index,
-      label: formatMonthLabel(item.year, item.month - 1, showYear),
+      label: formatMonthLabel(item.year, item.month - 1, showYear, useFullYear),
     };
   });
 }

@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildMonthTicks, formatMonthLabel } from "../components/charts/time-ticks";
+import { buildMonthTicks, formatMonthLabel, formatMonthLabelFromDate } from "../components/charts/time-ticks";
 
-test("formatMonthLabel includes compact year when requested", () => {
-  assert.equal(formatMonthLabel(2026, 0, true), "Jan \u201926");
-  assert.equal(formatMonthLabel(2026, 0, false), "Jan");
+test("formatMonthLabel uses full year when requested", () => {
+  assert.equal(formatMonthLabel(2026, 0, true, true), "Jan 2026");
+  assert.equal(formatMonthLabel(2026, 0, false, true), "Jan");
+});
+
+test("formatMonthLabelFromDate uses UTC month and full year", () => {
+  assert.equal(formatMonthLabelFromDate("2025-12-01", true), "Dec 2025");
+  assert.equal(formatMonthLabelFromDate("2026-01-15", true), "Jan 2026");
 });
 
 test("buildMonthTicks includes year on first tick and year changes", () => {
@@ -15,7 +20,7 @@ test("buildMonthTicks includes year on first tick and year changes", () => {
     "2026-01-02",
     "2026-02-01",
   ];
-  const ticks = buildMonthTicks(dates, 6);
-  assert.equal(ticks[0]?.label, "Dec \u201925");
-  assert.equal(ticks[1]?.label, "Jan \u201926");
+  const ticks = buildMonthTicks(dates, 6, "first-or-change", true);
+  assert.equal(ticks[0]?.label, "Dec 2025");
+  assert.equal(ticks[1]?.label, "Jan 2026");
 });

@@ -272,12 +272,13 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     return Math.max(1, ...values);
   }, [series, packageNames]);
 
-  const axisFontSize = isMobile ? 12 : 11;
+  const axisFontSize = isMobile ? 13 : 11;
+  const yLabelOffset = isMobile ? 10 : 8;
   const leftPad = useMemo(
     () => computeLeftPad(numberFormatter.format(maxValue), axisFontSize),
     [maxValue, axisFontSize]
   );
-  const pad = { l: leftPad, r: 20, t: 16, b: isMobile ? 42 : 38 };
+  const pad = { l: leftPad, r: 20, t: 16, b: isMobile ? 48 : 40 };
   const innerW = WIDTH - pad.l - pad.r;
   const innerH = HEIGHT - pad.t - pad.b;
 
@@ -309,7 +310,8 @@ export default function CompareChart({ series, packageNames, days }: Props) {
 
   const xTicks = useMemo(() => {
     const maxTicks = isMobile ? 4 : 6;
-    return buildMonthTicks(series.map((row) => row.date), maxTicks);
+    const yearMode = isMobile ? "always" : "first-or-change";
+    return buildMonthTicks(series.map((row) => row.date), maxTicks, yearMode, true);
   }, [isMobile, series]);
 
   const hovered = hoverIndex == null ? null : series[hoverIndex];
@@ -394,7 +396,13 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           {yTicks.map((tick) => (
             <g key={tick.y}>
               <line x1={pad.l} x2={pad.l + innerW} y1={tick.y} y2={tick.y} stroke="var(--chart-grid)" />
-              <text x={pad.l - 8} y={tick.y + 4} textAnchor="end" fontSize={axisFontSize} fill="var(--chart-axis)">
+              <text
+                x={pad.l - yLabelOffset}
+                y={tick.y + 4}
+                textAnchor="end"
+                fontSize={axisFontSize}
+                fill="var(--chart-axis)"
+              >
                 {tick.label}
               </text>
             </g>
@@ -410,7 +418,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
             return (
               <g key={`x-${tick.index}`}>
                 <line x1={x} x2={x} y1={y} y2={y + 6} stroke="var(--chart-grid)" />
-                <text x={textX} y={y + 20} textAnchor={textAnchor} fontSize={axisFontSize} fill="var(--chart-axis)">
+                <text x={textX} y={y + 24} textAnchor={textAnchor} fontSize={axisFontSize} fill="var(--chart-axis)">
                   {tick.label}
                 </text>
               </g>
