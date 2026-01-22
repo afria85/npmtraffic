@@ -84,6 +84,7 @@ for (const name of ["logshield-cli", "next"]) {
       const githubLink = container.querySelector("a[aria-label='GitHub repository']");
       assert.ok(githubLink, "GitHub link should be present in the navbar");
       assert.ok(githubLink?.getAttribute("href")?.includes("github.com"));
+      assert.equal(githubLink?.getAttribute("title"), "GitHub repository");
       const searchInput = container.querySelector("input[placeholder='Search npm packages']");
       assert.ok(searchInput, "Search input should render in the header");
       const compareButton = Array.from(container.querySelectorAll("button")).find((button) =>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ActionMenu from "@/components/ui/ActionMenu";
 import { computeLeftPad } from "@/components/charts/axis-padding";
+import { buildMonthTicks } from "@/components/charts/time-ticks";
 
 const CHART_BUTTON_CLASSES =
   "inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold leading-none text-slate-100 transition hover:border-white/20 hover:bg-white/10";
@@ -63,8 +64,8 @@ function pickClosestIndex(x: number, count: number) {
 }
 
 function dashFor(style: LineStyleKey, isMobile: boolean) {
-  if (style === "dashed") return isMobile ? "12 8" : "8 5";
-  if (style === "dotted") return isMobile ? "0 12" : "0 8";
+  if (style === "dashed") return isMobile ? "14 8" : "10 6";
+  if (style === "dotted") return isMobile ? "1 9" : "1 6";
   return undefined;
 }
 
@@ -276,7 +277,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     () => computeLeftPad(numberFormatter.format(maxValue), axisFontSize),
     [maxValue, axisFontSize]
   );
-  const pad = { l: leftPad, r: 16, t: 16, b: 30 };
+  const pad = { l: leftPad, r: 20, t: 16, b: isMobile ? 42 : 38 };
   const innerW = WIDTH - pad.l - pad.r;
   const innerH = HEIGHT - pad.t - pad.b;
 
@@ -305,6 +306,11 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     }
     return values;
   }, [maxValue, innerH, pad.t]);
+
+  const xTicks = useMemo(() => {
+    const maxTicks = isMobile ? 4 : 6;
+    return buildMonthTicks(series.map((row) => row.date), maxTicks);
+  }, [isMobile, series]);
 
   const hovered = hoverIndex == null ? null : series[hoverIndex];
 
@@ -394,6 +400,23 @@ export default function CompareChart({ series, packageNames, days }: Props) {
             </g>
           ))}
 
+          {xTicks.map((tick, idx) => {
+            const x = pad.l + innerW * (series.length <= 1 ? 0 : tick.index / (series.length - 1));
+            const y = pad.t + innerH;
+            const isFirst = idx === 0;
+            const isLast = idx === xTicks.length - 1;
+            const textAnchor = isFirst ? "start" : isLast ? "end" : "middle";
+            const textX = isFirst ? x + 2 : isLast ? x - 2 : x;
+            return (
+              <g key={`x-${tick.index}`}>
+                <line x1={x} x2={x} y1={y} y2={y + 6} stroke="var(--chart-grid)" />
+                <text x={textX} y={y + 20} textAnchor={textAnchor} fontSize={axisFontSize} fill="var(--chart-axis)">
+                  {tick.label}
+                </text>
+              </g>
+            );
+          })}
+
           {packageNames.map((pkg) => {
             const points = pointsByPkg.get(pkg) ?? [];
             const path = toPath(points);
@@ -406,7 +429,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
                 d={path}
                 fill="none"
                 stroke={color}
-                strokeWidth={isMobile ? 2.6 : 2}
+                strokeWidth={isMobile ? 3 : 2.25}
                 strokeDasharray={dashFor(style, isMobile)}
                 strokeLinecap="round"
               />
@@ -420,7 +443,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
               y1={pad.t}
               y2={pad.t + innerH}
               stroke="var(--chart-grid)"
-              strokeWidth={isMobile ? 2.5 : 1.5}
+              strokeWidth={isMobile ? 2.8 : 1.6}
             />
           ) : null}
         </svg>

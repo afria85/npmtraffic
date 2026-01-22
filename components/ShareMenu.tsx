@@ -93,8 +93,8 @@ export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuPro
           ? `${ACTION_BUTTON_CLASSES} w-10 px-0 border-transparent bg-transparent hover:bg-white/5 hover:border-transparent sm:w-auto sm:px-3`
           : `${ACTION_BUTTON_CLASSES} inline-flex items-center gap-2`
       }
-      aria-label={iconOnly ? labelText : undefined}
-      title={iconOnly ? labelText : undefined}
+      aria-label="Share"
+      title="Share"
       onClick={onShare}
     >
       <ShareIcon />

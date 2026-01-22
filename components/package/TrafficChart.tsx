@@ -6,6 +6,7 @@ import type { TrafficSeriesRow } from "@/lib/traffic";
 import { groupEventsByDate, loadEvents } from "@/lib/events";
 import ActionMenu from "@/components/ui/ActionMenu";
 import { computeLeftPad } from "@/components/charts/axis-padding";
+import { buildMonthTicks } from "@/components/charts/time-ticks";
 
 const CHART_BUTTON_CLASSES =
   "inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold leading-none text-slate-100 transition hover:border-white/20 hover:bg-white/10";
@@ -66,8 +67,8 @@ function pickClosestIndex(x: number, count: number) {
 }
 
 function dashFor(style: LineStyleKey, isMobile: boolean) {
-  if (style === "dashed") return isMobile ? "12 8" : "8 5";
-  if (style === "dotted") return isMobile ? "0 12" : "0 8";
+  if (style === "dashed") return isMobile ? "14 8" : "10 6";
+  if (style === "dotted") return isMobile ? "1 9" : "1 6";
   return undefined;
 }
 
@@ -297,7 +298,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
     () => computeLeftPad(numberFormatter.format(maxValue), axisFontSize),
     [maxValue, axisFontSize]
   );
-  const pad = { l: leftPad, r: 16, t: 16, b: 30 };
+  const pad = { l: leftPad, r: 20, t: 16, b: isMobile ? 42 : 38 };
   const innerW = width - pad.l - pad.r;
   const innerH = height - pad.t - pad.b;
 
@@ -352,6 +353,11 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
     return values;
   }, [maxValue, innerH, pad.t]);
 
+  const xTicks = useMemo(() => {
+    const maxTicks = isMobile ? 4 : 6;
+    return buildMonthTicks(series.map((row) => row.date), maxTicks);
+  }, [isMobile, series]);
+
   const hovered = hoverIndex == null ? null : series[hoverIndex];
   const hoverPoint = hoverIndex == null ? null : downloadsPoints[hoverIndex] ?? null;
 
@@ -373,12 +379,12 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
   const dashForStyle = (style: LineStyleKey) => dashFor(style, isMobile);
 
   const downloadsStrokeWidth = isMobile ? 3.0 : 2.25;
-  const ma7StrokeWidth = isMobile ? 2.4 : 1.8;
-  const ma3StrokeWidth = isMobile ? 2.2 : 1.6;
+  const ma7StrokeWidth = isMobile ? 2.6 : 1.8;
+  const ma3StrokeWidth = isMobile ? 2.4 : 1.6;
   const outlierRadius = isMobile ? 5.2 : 4.6;
   const outlierStrokeWidth = isMobile ? 2.4 : 2;
   const hoverRadius = isMobile ? 6 : 4.5;
-  const crosshairStrokeWidth = isMobile ? 2.5 : 1.5;
+  const crosshairStrokeWidth = isMobile ? 2.8 : 1.6;
 
   const updateHoverIndexFromClientX = (clientX: number, svg: SVGSVGElement) => {
     const rect = svg.getBoundingClientRect();
@@ -477,6 +483,23 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               </text>
             </g>
           ))}
+
+          {xTicks.map((tick, idx) => {
+            const x = pad.l + innerW * (series.length <= 1 ? 0 : tick.index / (series.length - 1));
+            const y = pad.t + innerH;
+            const isFirst = idx === 0;
+            const isLast = idx === xTicks.length - 1;
+            const textAnchor = isFirst ? "start" : isLast ? "end" : "middle";
+            const textX = isFirst ? x + 2 : isLast ? x - 2 : x;
+            return (
+              <g key={`x-${tick.index}`}>
+                <line x1={x} x2={x} y1={y} y2={y + 6} stroke="var(--chart-grid)" />
+                <text x={textX} y={y + 20} textAnchor={textAnchor} fontSize={axisFontSize} fill="var(--chart-axis)">
+                  {tick.label}
+                </text>
+              </g>
+            );
+          })}
 
           {/* event markers */}
           {series.map((row, index) => {
