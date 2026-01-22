@@ -227,63 +227,77 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
             ) : null}
           </div>
         </div>
-        <ScrollHintContainer className="max-h-[65vh] overflow-auto">
-          <table className="min-w-[420px] w-full text-sm">
-            <thead className="sticky top-0 bg-black/80 text-left text-xs uppercase tracking-wider text-slate-300 backdrop-blur">
-              <tr>
-                <th className="px-3 py-2">Date</th>
-                <th className="px-3 py-2">Downloads</th>
-                <th className="px-3 py-2">Delta vs prev day</th>
-                {showDerived ? <th className="px-3 py-2">MA 3</th> : null}
-                {showDerived ? <th className="px-3 py-2">MA 7</th> : null}
-                {showDerived ? <th className="px-3 py-2">Outlier</th> : null}
-                {showDerived ? <th className="px-3 py-2">Score</th> : null}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/10">
-              {tableRows.map(({ row, delta, ma3, ma7, outlier }) => {
-                const dayEvents = groupedEvents.get(row.date);
-                const isOutlier = Boolean(outlier?.is_outlier);
-                return (
-                  <tr key={row.date} className="text-slate-100">
-                    <td className="px-3 py-2 text-xs uppercase tracking-wide text-slate-400">
-                      <div className="flex items-center gap-2">
-                        <span>{row.date}</span>
-                        {dayEvents?.length ? (
-                          <button
-                            type="button"
-                            onClick={() => setShowEventsList(true)}
-                            title={dayEvents.map((event) => `${event.event_type}: ${event.label}`).join(" / ")}
-                            className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400/20 text-emerald-300"
-                          >
-                            <span className="text-xs font-bold">•</span>
-                          </button>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono tabular-nums">
-                      {row.downloads.toLocaleString("en-US")}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <SignedValue value={delta} showArrow emphasis="primary" />
-                    </td>
-                    {showDerived ? <td className="px-3 py-2 font-mono">{formatDerived(ma3)}</td> : null}
-                    {showDerived ? <td className="px-3 py-2 font-mono">{formatDerived(ma7)}</td> : null}
-                    {showDerived ? (
-                      <td className="px-3 py-2">
-                        <StatusPill status={isOutlier ? "YES" : "NO"} />
+        <ScrollHintContainer className="max-h-[65vh]">
+          <div className="overflow-x-auto">
+            <table className="min-w-[780px] w-full whitespace-nowrap text-sm">
+              <thead className="sticky top-0 bg-black/80 text-left text-xs uppercase tracking-[0.3em] text-slate-200 backdrop-blur">
+                <tr>
+                  <th className="px-3 py-2 whitespace-nowrap text-left font-semibold">Date</th>
+                  <th className="px-3 py-2 whitespace-nowrap text-left font-semibold">Downloads</th>
+                  <th className="px-3 py-2 whitespace-nowrap text-left font-semibold">Delta vs prev day</th>
+                  {showDerived ? (
+                    <th className="px-3 py-2 whitespace-nowrap text-left font-semibold">MA 3</th>
+                  ) : null}
+                  {showDerived ? (
+                    <th className="px-3 py-2 whitespace-nowrap text-left font-semibold">MA 7</th>
+                  ) : null}
+                  {showDerived ? (
+                    <th className="px-3 py-2 whitespace-nowrap text-left font-semibold">Outlier</th>
+                  ) : null}
+                  {showDerived ? (
+                    <th className="px-3 py-2 whitespace-nowrap text-left font-semibold">Score</th>
+                  ) : null}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {tableRows.map(({ row, delta, ma3, ma7, outlier }) => {
+                  const dayEvents = groupedEvents.get(row.date);
+                  const isOutlier = Boolean(outlier?.is_outlier);
+                  return (
+                    <tr key={row.date} className="text-slate-100">
+                      <td className="px-3 py-2 text-xs uppercase tracking-wide text-slate-400">
+                        <div className="flex items-center gap-2 whitespace-nowrap">
+                          <span>{row.date}</span>
+                          {dayEvents?.length ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowEventsList(true)}
+                              title={dayEvents.map((event) => `${event.event_type}: ${event.label}`).join(" / ")}
+                              className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400/20 text-emerald-300"
+                            >
+                              <span className="text-xs font-bold">•</span>
+                            </button>
+                          ) : null}
+                        </div>
                       </td>
-                    ) : null}
-                    {showDerived ? (
-                      <td className="px-3 py-2 text-right">
-                        <SignedValue value={outlier?.score ?? null} emphasis="secondary" precision={2} />
+                      <td className="px-3 py-2 text-right font-mono tabular-nums whitespace-nowrap">
+                        {row.downloads.toLocaleString("en-US")}
                       </td>
-                    ) : null}
+                      <td className="px-3 py-2 text-right whitespace-nowrap">
+                        <SignedValue value={delta} showArrow emphasis="primary" />
+                      </td>
+                      {showDerived ? (
+                        <td className="px-3 py-2 text-right font-mono tabular-nums whitespace-nowrap">{formatDerived(ma3)}</td>
+                      ) : null}
+                      {showDerived ? (
+                        <td className="px-3 py-2 text-right font-mono tabular-nums whitespace-nowrap">{formatDerived(ma7)}</td>
+                      ) : null}
+                      {showDerived ? (
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <StatusPill status={isOutlier ? "YES" : "NO"} />
+                        </td>
+                      ) : null}
+                      {showDerived ? (
+                        <td className="px-3 py-2 text-right whitespace-nowrap">
+                          <SignedValue value={outlier?.score ?? null} emphasis="secondary" precision={2} />
+                        </td>
+                      ) : null}
                   </tr>
                 );
               })}
             </tbody>
-          </table>
+            </table>
+          </div>
         </ScrollHintContainer>
       </div>
 

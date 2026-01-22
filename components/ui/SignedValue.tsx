@@ -46,7 +46,9 @@ export default function SignedValue({ value, showArrow = false, emphasis = "prim
     : "no change";
 
   return (
-    <span className={`inline-flex items-center gap-1 font-mono text-xs tabular-nums ${textColor}`}>
+    <span
+      className={`inline-flex items-center gap-1 font-mono text-xs tabular-nums whitespace-nowrap ${textColor}`}
+    >
       <span aria-hidden="true">
         {sign}
         {formatted}

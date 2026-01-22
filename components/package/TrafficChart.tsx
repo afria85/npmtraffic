@@ -503,28 +503,33 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
     [pkgName]
   );
 
+  const headerRowClass = `flex w-full items-baseline gap-3 ${
+    isMobile ? "justify-between" : "justify-between flex-wrap"
+  }`;
+  const toggleGroupClass = `flex items-center gap-3 ${isMobile ? "flex-nowrap" : "flex-wrap"} ml-auto`;
+
   return (
     <section className="relative rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className={headerRowClass}>
         <p className="text-sm font-semibold text-slate-200">Daily downloads ({days}d)</p>
-        <div className="ml-auto flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
-          <label className="inline-flex min-h-[38px] items-center gap-2 px-2 py-1.5 text-xs text-slate-300">
+        <div className={toggleGroupClass}>
+          <label className="inline-flex min-h-[38px] items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 shadow-sm transition hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30">
             <input
               type="checkbox"
               checked={settings.showMA3}
               disabled={!canShowMA3}
               onChange={(event) => setSettings((prev) => ({ ...prev, showMA3: event.target.checked }))}
-              className="h-4 w-4 accent-[color:var(--accent)]"
+              className="h-5 w-5 accent-[color:var(--accent)]"
             />
             MA 3
           </label>
-          <label className="inline-flex min-h-[38px] items-center gap-2 px-2 py-1.5 text-xs text-slate-300">
+          <label className="inline-flex min-h-[38px] items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 shadow-sm transition hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30">
             <input
               type="checkbox"
               checked={settings.showMA7}
               disabled={!canShowMA7}
               onChange={(event) => setSettings((prev) => ({ ...prev, showMA7: event.target.checked }))}
-              className="h-4 w-4 accent-[color:var(--accent)]"
+              className="h-5 w-5 accent-[color:var(--accent)]"
             />
             MA 7
           </label>
