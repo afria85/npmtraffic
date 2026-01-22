@@ -204,6 +204,7 @@ function buildDefaultLineStyles(packageNames: string[]) {
 
 export default function CompareChart({ series, packageNames, days }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const stylePanelRef = useRef<HTMLDivElement | null>(null);
 
   const settingsKey = `npmtraffic_chart_settings:compare:${packageNames.join("|")}`;
@@ -259,6 +260,19 @@ export default function CompareChart({ series, packageNames, days }: Props) {
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [styleOpen]);
+
+  useEffect(() => {
+    if (!isMobile || hoverIndex == null) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!chartContainerRef.current) return;
+      if (chartContainerRef.current.contains(event.target as Node)) return;
+      setHoverIndex(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [hoverIndex, isMobile]);
 
 
   const maxValue = useMemo(() => {
@@ -322,7 +336,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   const tooltipSide = hoverPoint && hoverPoint.x > pad.l + innerW * 0.6 ? "left" : "right";
   const tooltipV = hoverPoint && hoverPoint.y < pad.t + innerH * 0.35 ? "bottom" : "top";
   const tooltipDockClass =
-    "pointer-events-none absolute w-[min(18rem,90%)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur " +
+      "absolute pointer-events-auto relative w-[min(18rem,90%)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur " +
     (tooltipSide === "left" ? "left-3" : "right-3") +
     " " +
     (tooltipV === "bottom" ? "bottom-3" : "top-3");
@@ -357,8 +371,10 @@ export default function CompareChart({ series, packageNames, days }: Props) {
 
   const updateHoverIndexFromClientX = (clientX: number, svg: SVGSVGElement) => {
     const rect = svg.getBoundingClientRect();
-    const x = clamp((clientX - rect.left) / rect.width, 0, 1);
-    setHoverIndex(pickClosestIndex(x, series.length));
+    const viewX = clamp(((clientX - rect.left) / rect.width) * WIDTH, 0, WIDTH);
+    const normalized = clamp((viewX - pad.l) / innerW, 0, 1);
+    // Dev note: keep this math aligned with pointsByPkg so the crosshair follows the cursor precisely.
+    setHoverIndex(pickClosestIndex(normalized, series.length));
   };
 
   return (
@@ -369,7 +385,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
         </p>
       </div>
 
-      <div className="relative mt-4">
+      <div ref={chartContainerRef} className="relative mt-4">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
@@ -390,8 +406,6 @@ export default function CompareChart({ series, packageNames, days }: Props) {
             if (!touch) return;
             updateHoverIndexFromClientX(touch.clientX, event.currentTarget);
           }}
-          onTouchEnd={() => setHoverIndex(null)}
-          onTouchCancel={() => setHoverIndex(null)}
         >
           {yTicks.map((tick) => (
             <g key={tick.y}>
@@ -565,6 +579,16 @@ export default function CompareChart({ series, packageNames, days }: Props) {
               <span className="font-mono text-[color:var(--foreground)]">{hovered.date}</span>
               <span className="text-[color:var(--muted)]">UTC</span>
             </div>
+            {isMobile && hoverIndex != null ? (
+              <button
+                type="button"
+                onClick={() => setHoverIndex(null)}
+                className="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-black/40 text-xs text-[color:var(--foreground)] transition hover:border-white/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                aria-label="Close tooltip"
+              >
+                ×
+              </button>
+            ) : null}
             <div className="mt-2 space-y-1">
               {packageNames.map((pkg) => (
                 <div key={pkg} className="flex items-center justify-between gap-2">
