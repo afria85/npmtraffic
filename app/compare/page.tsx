@@ -18,6 +18,7 @@ import {
   COMPARE_ACTION_CONTAINER_CLASSES,
   COMPARE_TABLE_WRAPPER_CLASSES,
 } from "@/components/compare/compare-classes";
+import DeltaValue from "@/components/ui/DeltaValue";
 import ScrollHintContainer from "@/components/ScrollHintContainer";
 
 type Props = {
@@ -88,12 +89,6 @@ const numberFormatter = new Intl.NumberFormat("en-US");
 function formatNumber(value: number | null) {
   if (value == null) return "-";
   return numberFormatter.format(value);
-}
-
-function formatDelta(value: number | null) {
-  if (value == null) return "-";
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${numberFormatter.format(value)}`;
 }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
@@ -347,8 +342,8 @@ export default async function ComparePage({ searchParams }: Props) {
                       <td className="px-3 py-2 font-mono">
                         {formatNumber(row.values[pkg.name]?.downloads ?? null)}
                       </td>
-                      <td className="px-3 py-2 font-mono">
-                        {formatDelta(row.values[pkg.name]?.delta ?? null)}
+                      <td className="px-3 py-2">
+                        <DeltaValue value={row.values[pkg.name]?.delta ?? null} />
                       </td>
                     </Fragment>
                   ))}

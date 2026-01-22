@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 import ScrollHintContainer from "@/components/ScrollHintContainer";
+import DeltaValue from "@/components/ui/DeltaValue";
 import type { DerivedMetrics } from "@/lib/derived";
 import type { EventEntry } from "@/lib/events";
 import type { TrafficSeriesRow } from "@/lib/traffic";
@@ -70,6 +71,18 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
   const groupedEvents = useMemo(() => groupEventsByDate(events), [events]);
   const totalEvents = events.length;
   const hasDerived = useMemo(() => derived?.ma3?.length === series.length, [derived, series.length]);
+  const deltas = useMemo(() => {
+    const values: (number | null)[] = [];
+    for (let i = 0; i < series.length; i += 1) {
+      if (i === 0) {
+        values.push(null);
+        continue;
+      }
+      const previous = series[i - 1];
+      values.push(series[i].downloads - previous.downloads);
+    }
+    return values;
+  }, [series]);
 
   const [shareEncoded, setShareEncoded] = useState("");
 
@@ -208,6 +221,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
               <tr>
                 <th className="px-3 py-2">Date</th>
                 <th className="px-3 py-2">Downloads</th>
+                <th className="px-3 py-2">Delta vs prev day</th>
                 {showDerived ? <th className="px-3 py-2">MA 3</th> : null}
                 {showDerived ? <th className="px-3 py-2">MA 7</th> : null}
                 {showDerived ? <th className="px-3 py-2">Outlier</th> : null}
@@ -239,6 +253,9 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                       </div>
                     </td>
                     <td className="px-3 py-2 font-mono">{row.downloads.toLocaleString("en-US")}</td>
+                    <td className="px-3 py-2">
+                      <DeltaValue value={deltas[index]} />
+                    </td>
                     {showDerived ? <td className="px-3 py-2 font-mono">{formatDerived(ma3)}</td> : null}
                     {showDerived ? <td className="px-3 py-2 font-mono">{formatDerived(ma7)}</td> : null}
                     {showDerived ? (
