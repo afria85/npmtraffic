@@ -13,6 +13,7 @@ import { buildExportFilename } from "@/lib/export-filename";
 import EventsPanel from "@/components/events/EventsPanel";
 import TrafficChart from "@/components/package/TrafficChartClient";
 import RetryButton from "@/components/ui/RetryButton";
+import { encodePkg } from "@/lib/og-encode";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -80,7 +81,7 @@ export async function generateMetadata({
   const canonical = buildPackageCanonical(baseUrl, name, days);
   const title = `${name} npm downloads (${days} days) | npmtraffic`;
   const description = `Daily npm download history for ${name} in a GitHub-style table`;
-  const ogImage = `${baseUrl}/api/og?pkg=${encodeURIComponent(name)}&days=${days}`;
+  const ogImage = `${baseUrl}/og/p/${encodePkg(name)}/${days}`;
 
   return {
     title,
