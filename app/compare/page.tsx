@@ -12,6 +12,7 @@ import ExportDropdown from "@/components/ExportDropdown";
 import ShareMenu from "@/components/ShareMenu";
 import SearchBox from "@/components/SearchBox";
 import CompareChart from "@/components/compare/CompareChartClient";
+import CompareAddBar from "@/components/compare/CompareAddBar";
 import { buildExportFilename } from "@/lib/export-filename";
 import RetryButton from "@/components/ui/RetryButton";
 import {
@@ -45,16 +46,19 @@ type CompareTableHeaderProps = {
 
 export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
   return (
-    <thead className="sticky top-0 bg-black/80 text-left text-xs uppercase tracking-wider text-slate-300 backdrop-blur">
+    <thead className="sticky top-0 bg-black/80 text-center text-xs uppercase tracking-[0.22em] text-slate-300 backdrop-blur sm:tracking-[0.3em]">
       <tr>
-        <th rowSpan={2} className="px-3 py-2 text-left text-xs uppercase tracking-[0.3em] text-slate-300">
+        <th
+          rowSpan={2}
+          className="px-2 py-2 text-center text-xs uppercase tracking-[0.22em] text-slate-300 whitespace-nowrap sm:px-3 sm:tracking-[0.3em]"
+        >
           Date
         </th>
         {packageNames.map((pkg) => (
           <th
             key={`${pkg}-group`}
             colSpan={2}
-            className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.3em] text-slate-100"
+            className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-[0.22em] text-slate-100 whitespace-nowrap sm:px-3 sm:tracking-[0.3em]"
           >
             {pkg}
           </th>
@@ -65,14 +69,14 @@ export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
           <Fragment key={`${pkg}-metrics`}>
             <th
               scope="col"
-              className="px-3 py-2 text-left text-xs uppercase tracking-[0.3em] text-slate-400 whitespace-nowrap"
+              className="px-2 py-2 text-center text-xs uppercase tracking-[0.22em] text-slate-400 whitespace-nowrap sm:px-3 sm:tracking-[0.3em]"
               title="Downloads for the day"
             >
               Downloads
             </th>
             <th
               scope="col"
-              className="px-3 py-2 text-left text-xs uppercase tracking-[0.3em] text-slate-400 whitespace-nowrap"
+              className="px-2 py-2 text-center text-xs uppercase tracking-[0.22em] text-slate-400 whitespace-nowrap sm:px-3 sm:tracking-[0.3em]"
               title="Delta vs previous day"
             >
               Delta vs prev day
@@ -271,6 +275,12 @@ export default async function ComparePage({ searchParams }: Props) {
           <ShareMenu url={canonical} title={`npmtraffic compare (${days} days)`} iconOnlyOnMobile />
         </div>
       </div>
+
+      <CompareAddBar
+        packages={pkgs}
+        days={days}
+        className="w-full max-w-xl"
+      />
     </div>
   );
 
@@ -329,20 +339,20 @@ export default async function ComparePage({ searchParams }: Props) {
           <span className="text-sm font-semibold">Daily downloads ({days}d)</span>
         </div>
         <ScrollHintContainer className={COMPARE_TABLE_WRAPPER_CLASSES}>
-          <table className="min-w-[720px] w-full text-sm">
+          <table className="min-w-[640px] w-max text-sm sm:w-full">
             <CompareTableHeader packageNames={tablePackageNames} />
             <tbody className="divide-y divide-white/10">
               {data.series.map((row) => (
                 <tr key={row.date} className="text-slate-100">
-                  <td className="px-3 py-2 text-xs uppercase tracking-wide text-slate-400">
+                  <td className="px-2 py-2 text-left text-xs uppercase tracking-wide text-slate-400 whitespace-nowrap sm:px-3">
                     {row.date}
                   </td>
                   {data.packages.map((pkg) => (
                     <Fragment key={`${row.date}-${pkg.name}-pair`}>
-                  <td className="px-3 py-2 text-right font-mono">
+                  <td className="px-2 py-2 text-right font-mono tabular-nums sm:px-3">
                     {formatNumber(row.values[pkg.name]?.downloads ?? null)}
                   </td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-2 py-2 text-right tabular-nums sm:px-3">
                     <SignedValue value={row.values[pkg.name]?.delta ?? null} showArrow emphasis="primary" />
                   </td>
                     </Fragment>

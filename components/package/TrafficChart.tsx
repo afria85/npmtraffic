@@ -74,7 +74,8 @@ function pickClosestIndex(x: number, count: number) {
 
 function dashFor(style: LineStyleKey, isMobile: boolean) {
   if (style === "dashed") return isMobile ? "14 8" : "10 6";
-  if (style === "dotted") return isMobile ? "1 9" : "1 6";
+  // Slightly larger dot + spacing so dotted lines remain legible on high-DPI mobile screens.
+  if (style === "dotted") return isMobile ? "2 10" : "2 8";
   return undefined;
 }
 
@@ -218,7 +219,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
       ma3Color: "orange",
       downloadsStyle: "solid",
       ma3Style: "dashed",
-      ma7Style: "dashed",
+      ma7Style: "dotted",
       showOutliers: true,
       outlierColor: "amber",
     };
@@ -226,8 +227,8 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
 
     const saved = safeParseSettings(window.localStorage.getItem(settingsKey));
     const legacyStyle = (saved.maStyle as LineStyleKey | undefined) ?? "dashed";
-    const ma3Style = (saved.ma3Style as LineStyleKey) ?? legacyStyle;
-    const ma7Style = (saved.ma7Style as LineStyleKey) ?? legacyStyle;
+    const ma3Style = (saved.ma3Style as LineStyleKey) ?? "dashed";
+    const ma7Style = (saved.ma7Style as LineStyleKey) ?? "dotted";
     return {
       showMA7: saved.showMA7 ?? true,
       showMA3: saved.showMA3 ?? false,
@@ -235,8 +236,8 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
       ma7Color: (saved.ma7Color as PaletteKey) ?? "violet",
       ma3Color: (saved.ma3Color as PaletteKey) ?? "orange",
       downloadsStyle: (saved.downloadsStyle as LineStyleKey) ?? "solid",
-      ma3Style,
-      ma7Style,
+      ma3Style: (saved.ma3Style as LineStyleKey) ?? ma3Style ?? legacyStyle,
+      ma7Style: (saved.ma7Style as LineStyleKey) ?? ma7Style ?? legacyStyle,
       showOutliers: saved.showOutliers ?? true,
       outlierColor: (saved.outlierColor as PaletteKey) ?? "amber",
     };
@@ -319,7 +320,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
 
   const width = 1000;
   const height = 260;
-  const axisFontSize = isMobile ? 13 : 11;
+  const axisFontSize = isMobile ? 14 : 12;
   const yLabelOffset = isMobile ? 10 : 8;
   const leftPad = useMemo(
     () => computeLeftPad(numberFormatter.format(maxValue), axisFontSize),
@@ -471,10 +472,27 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
   const crosshairStrokeWidth = isMobile ? 2.8 : 1.6;
 
   const updateHoverIndexFromClientX = (clientX: number, svg: SVGSVGElement) => {
-    const rect = svg.getBoundingClientRect();
-    const viewX = clamp(((clientX - rect.left) / rect.width) * width, 0, width);
-    const normalized = clamp((viewX - pad.l) / innerW, 0, 1);
-    // Dev note: this mirrors downloadsPoints' pad/innerW math so the vertical line stays under the cursor.
+    // Use the SVG CTM when available so the crosshair stays precisely under the cursor
+    // across responsive scaling, device pixel ratios, and browser zoom.
+    let viewX: number | null = null;
+    try {
+      const pt = svg.createSVGPoint();
+      pt.x = clientX;
+      pt.y = 0;
+      const ctm = svg.getScreenCTM();
+      if (ctm) {
+        const local = pt.matrixTransform(ctm.inverse());
+        viewX = local.x;
+      }
+    } catch {
+      viewX = null;
+    }
+    if (viewX == null) {
+      const rect = svg.getBoundingClientRect();
+      viewX = ((clientX - rect.left) / rect.width) * width;
+    }
+    const clampedX = clamp(viewX, 0, width);
+    const normalized = clamp((clampedX - pad.l) / innerW, 0, 1);
     setHoverIndex(pickClosestIndex(normalized, series.length));
   };
 
@@ -678,6 +696,69 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
             </g>
           ) : null}
         </svg>
+
+        {/* Legend (visual mapping). Positioned inside the chart container so it doesn't affect layout. */}
+        <div className="pointer-events-none absolute bottom-10 left-2 z-10 rounded-xl border border-white/10 bg-[color:var(--surface)] px-2.5 py-2 text-[11px] text-[color:var(--foreground)] shadow-lg sm:bottom-8">
+          <ul className="space-y-1">
+            <li className="flex items-center gap-2">
+              <svg width="32" height="8" viewBox="0 0 32 8" aria-hidden>
+                <line
+                  x1="1"
+                  y1="4"
+                  x2="31"
+                  y2="4"
+                  stroke={paletteValue(settings.downloadsColor)}
+                  strokeWidth={downloadsStrokeWidth}
+                  strokeDasharray={dashForStyle(settings.downloadsStyle)}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span className="text-[color:var(--muted)]">Downloads</span>
+            </li>
+            {settings.showMA3 && canShowMA3 ? (
+              <li className="flex items-center gap-2">
+                <svg width="32" height="8" viewBox="0 0 32 8" aria-hidden>
+                  <line
+                    x1="1"
+                    y1="4"
+                    x2="31"
+                    y2="4"
+                    stroke={paletteValue(settings.ma3Color)}
+                    strokeWidth={ma3StrokeWidth}
+                    strokeDasharray={dashForStyle(settings.ma3Style)}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span className="text-[color:var(--muted)]">MA 3</span>
+              </li>
+            ) : null}
+            {settings.showMA7 && canShowMA7 ? (
+              <li className="flex items-center gap-2">
+                <svg width="32" height="8" viewBox="0 0 32 8" aria-hidden>
+                  <line
+                    x1="1"
+                    y1="4"
+                    x2="31"
+                    y2="4"
+                    stroke={paletteValue(settings.ma7Color)}
+                    strokeWidth={ma7StrokeWidth}
+                    strokeDasharray={dashForStyle(settings.ma7Style)}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span className="text-[color:var(--muted)]">MA 7</span>
+              </li>
+            ) : null}
+            {settings.showOutliers && outlierPoints.length ? (
+              <li className="flex items-center gap-2">
+                <svg width="32" height="8" viewBox="0 0 32 8" aria-hidden>
+                  <circle cx="16" cy="4" r="3" fill={paletteValue(settings.outlierColor)} opacity="0.85" />
+                </svg>
+                <span className="text-[color:var(--muted)]">Outliers</span>
+              </li>
+            ) : null}
+          </ul>
+        </div>
 
         {styleOpen ? (
           <div

@@ -6,7 +6,7 @@ import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 export const metadata: Metadata = {
   title: "Donate | npmtraffic",
-  description: "Support npmtraffic with optional donations that keep the project running low-cost and free.",
+  description: "Support npmtraffic with optional donations that keep the project fast, free, and reliable.",
 };
 
 export default function DonatePage() {
@@ -18,7 +18,7 @@ export default function DonatePage() {
         <h1 className="text-3xl font-semibold tracking-tight">Support npmtraffic</h1>
         <p className="text-sm text-slate-300">
           npmtraffic is free to use. Optional donations fund hosting, tooling, and ongoing maintenance so the
-          project can stay fast, low-cost, and reliable.
+          project can stay fast, lightweight, and reliable.
         </p>
         <ul className="ml-2 space-y-1 text-sm text-slate-300">
           <li>• Keep caches warm so daily tables and exports stay responsive.</li>
