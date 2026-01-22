@@ -1,4 +1,4 @@
-const ANALYSIS_ROUTES = new Set(["/", "/compare", "/data"]);
+const ANALYSIS_ROUTES = new Set(["/compare", "/data"]);
 
 function normalizePath(pathname: string) {
   if (!pathname) return "/";

@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { isCompareTrayAllowed } from "../lib/compare-tray";
 
 test("compare tray allowlist includes analysis pages", () => {
-  assert.equal(isCompareTrayAllowed("/"), true);
+  assert.equal(isCompareTrayAllowed("/"), false);
   assert.equal(isCompareTrayAllowed("/compare"), true);
   assert.equal(isCompareTrayAllowed("/data"), true);
   assert.equal(isCompareTrayAllowed("/p/react"), true);
@@ -15,4 +15,5 @@ test("compare tray allowlist excludes content pages", () => {
   assert.equal(isCompareTrayAllowed("/transparency"), false);
   assert.equal(isCompareTrayAllowed("/status"), false);
   assert.equal(isCompareTrayAllowed("/donate"), false);
+  assert.equal(isCompareTrayAllowed("/support"), false);
 });

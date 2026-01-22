@@ -60,7 +60,7 @@ export async function fetchSearch(queryInput: string, limit = 10): Promise<Searc
     const res = await fetch(url.toString(), {
       headers: {
         accept: "application/json",
-        "user-agent": "npmtraffic/0.2.12 (https://npmtraffic.com)",
+        "user-agent": "npmtraffic/0.2.13 (https://npmtraffic.com)",
       },
     });
 

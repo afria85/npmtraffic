@@ -47,7 +47,8 @@ export default async function Home() {
         <header className="space-y-4 text-center">
           <p className="text-xs uppercase tracking-[0.4em] text-slate-400">npmtraffic</p>
           <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-            npm download analytics, built for maintainers
+            <span className="block">npm download analytics</span>
+            <span className="block">built for maintainers</span>
           </h1>
           <p className="text-base text-slate-300 sm:text-lg">
             Daily tables, day-to-day deltas, event markers, and audit-grade exports — the workflows you
