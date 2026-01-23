@@ -140,6 +140,27 @@ body {
   color: var(--muted);
 }
 
+/*
+  Theme toggle icons are controlled by CSS (not React state) to avoid hydration mismatches.
+  - In dark mode we show a sun (switch to light).
+  - In light mode we show a moon (switch to dark).
+*/
+.theme-icon-sun {
+  display: inline;
+}
+
+.theme-icon-moon {
+  display: none;
+}
+
+:root[data-theme="light"] .theme-icon-sun {
+  display: none;
+}
+
+:root[data-theme="light"] .theme-icon-moon {
+  display: inline;
+}
+
 
 details summary {
   list-style: none;
