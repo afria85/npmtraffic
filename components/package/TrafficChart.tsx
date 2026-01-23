@@ -840,17 +840,17 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
                   <span className="font-mono">{numberFormatter.format(hovered.downloads)}</span>
                 </div>
 
-                {settings.showMA7 && typeof hoveredMA7 === "number" ? (
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[color:var(--muted)]">MA 7</span>
-                    <span className="font-mono">{hoveredMA7.toFixed(1)}</span>
-                  </div>
-                ) : null}
-
                 {settings.showMA3 && typeof hoveredMA3 === "number" ? (
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[color:var(--muted)]">MA 3</span>
                     <span className="font-mono">{hoveredMA3.toFixed(1)}</span>
+                  </div>
+                ) : null}
+
+                {settings.showMA7 && typeof hoveredMA7 === "number" ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[color:var(--muted)]">MA 7</span>
+                    <span className="font-mono">{hoveredMA7.toFixed(1)}</span>
                   </div>
                 ) : null}
 

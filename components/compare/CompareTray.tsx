@@ -34,10 +34,7 @@ export default function CompareTray() {
 
   return (
     <div className="w-full py-3">
-      <div
-        className="w-full sm:mx-auto sm:max-w-3xl sm:px-4"
-        data-testid="compare-tray-container"
-      >
+      <div className="w-full sm:mx-auto sm:max-w-3xl sm:px-4" data-testid="compare-tray-container">
         <div className="flex w-full flex-col gap-3 rounded-2xl border border-white/10 bg-black/60 px-4 py-3 shadow-sm shadow-black/40 backdrop-blur">
           <div className="flex min-w-0 items-center gap-3">
             <div className="text-sm font-semibold text-slate-200">Compare</div>
@@ -60,6 +57,7 @@ export default function CompareTray() {
               <div className="min-w-0 flex-1" />
             )}
           </div>
+
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-slate-400">{selectionLabel}</span>
             <div className="ml-auto">
@@ -68,12 +66,7 @@ export default function CompareTray() {
                   {label}
                 </Link>
               ) : (
-                <button
-                  type="button"
-                  className={`${ACTION_BUTTON_CLASSES} opacity-50`}
-                  aria-disabled
-                  disabled
-                >
+                <button type="button" className={`${ACTION_BUTTON_CLASSES} opacity-50`} aria-disabled disabled>
                   {label}
                 </button>
               )}

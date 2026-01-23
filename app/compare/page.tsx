@@ -21,6 +21,7 @@ import {
 } from "@/components/compare/compare-classes";
 import SignedValue from "@/components/ui/SignedValue";
 import ScrollHintContainer from "@/components/ScrollHintContainer";
+import CompareUrlSync from "@/components/compare/CompareUrlSync";
 
 type Props = {
   searchParams?: Promise<{ packages?: string; pkgs?: string; days?: string }>;
@@ -307,6 +308,7 @@ export default async function ComparePage({ searchParams }: Props) {
 
   return (
     <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-6">
+      <CompareUrlSync packages={pkgs} />
       {header}
       {data.meta.isStale ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">

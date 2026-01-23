@@ -3,6 +3,7 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { COMPARE_UPDATED_EVENT, saveCompareList } from "@/lib/compare-store";
 import { POPULAR_PACKAGES } from "@/lib/constants";
 import { addRecentSearch, loadRecentSearches } from "@/lib/recent-searches";
 import { normalizePackageInput } from "@/lib/package-name";
@@ -151,13 +152,17 @@ export default function CompareAddBar({ packages, days, className }: Props) {
     const lowerSet = new Set(packages.map((p) => p.toLowerCase()));
     if (lowerSet.has(next.toLowerCase())) {
       setMessage("That package is already in the comparison.");
-      setIsListOpen(false);
+      setIsListOpen(true);
+      setActiveIndex(-1);
+      window.setTimeout(() => inputRef.current?.focus(), 0);
       return;
     }
 
     if (packages.length >= MAX_COMPARE) {
       setMessage(`Compare supports up to ${MAX_COMPARE} packages.`);
-      setIsListOpen(false);
+      setIsListOpen(true);
+      setActiveIndex(-1);
+      window.setTimeout(() => inputRef.current?.focus(), 0);
       return;
     }
 
@@ -166,6 +171,8 @@ export default function CompareAddBar({ packages, days, className }: Props) {
 
     const nextPkgs = uniqPreserveOrder([...packages, next]);
     const canonical = nextPkgs.map((p) => encodeURIComponent(p)).join(",");
+    saveCompareList(nextPkgs);
+    window.dispatchEvent(new CustomEvent(COMPARE_UPDATED_EVENT));
     router.push(`/compare?packages=${canonical}&days=${days}`);
     setQuery("");
     setResults([]);
@@ -220,6 +227,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
             }
           }}
           onFocus={() => setIsListOpen(true)}
+          onClick={() => setIsListOpen(true)}
           onBlur={() => window.setTimeout(() => setIsListOpen(false), 120)}
           onKeyDown={handleKeyDown}
           placeholder="Add a package to compare"
@@ -258,7 +266,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
                     "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition " +
                     (index === activeIndex
                       ? "bg-[color:var(--accent)]/12 text-[color:var(--foreground)]"
-                      : "text-[color:var(--foreground)] hover:bg-white/5")
+                      : "text-[color:var(--foreground)] hover:bg-[color:var(--surface-2)]")
                   }
                   onMouseEnter={() => setActiveIndex(index)}
                   onMouseDown={(e) => e.preventDefault()}
@@ -277,7 +285,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
         ) : null}
       </div>
 
-      {message ? <p className="mt-2 text-xs text-amber-200">{message}</p> : null}
+      {message ? <p className="mt-2 text-xs text-amber-700 dark:text-amber-200">{message}</p> : null}
     </div>
   );
 }
