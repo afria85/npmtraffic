@@ -236,7 +236,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
     return (
       <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 px-4 py-6">
         {header}
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+        <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
           <p className="text-sm text-slate-200">{errorText ?? "We couldn't load this package right now."}</p>
           <div className="mt-3 flex items-center gap-2">
             <RetryButton />
@@ -259,17 +259,17 @@ export default async function PackagePage({ params, searchParams }: Props) {
       ) : null}
 
       <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-2 sm:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+        <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
           <p className="whitespace-nowrap text-xs font-medium text-slate-300">
             Total downloads ({days}d)
           </p>
-          <p className="mt-1 text-lg font-semibold tabular-nums text-white sm:text-xl">
+          <p className="mt-1 text-lg font-semibold tabular-nums text-[color:var(--foreground)] sm:text-xl">
             {formatNumber(traffic.totals.sum)}
           </p>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+        <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
           <p className="whitespace-nowrap text-xs font-medium text-slate-300">Avg per day</p>
-          <p className="mt-1 text-lg font-semibold tabular-nums text-white sm:text-xl">
+          <p className="mt-1 text-lg font-semibold tabular-nums text-[color:var(--foreground)] sm:text-xl">
             {formatNumber(traffic.totals.avgPerDay)}
           </p>
         </div>

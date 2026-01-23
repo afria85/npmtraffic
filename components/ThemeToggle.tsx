@@ -83,7 +83,6 @@ export default function ThemeToggle({ className }: { className?: string }) {
         } catch {}
       }}
     >
-      <span className="sr-only">{isDark ? "Light mode" : "Dark mode"}</span>
       <span className="flex h-5 w-5 items-center justify-center">
         {isDark ? (
           // Sun icon

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { config } from "@/lib/config";
 
@@ -61,15 +62,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="manifest" href="/site.webmanifest" />
         <meta name="theme-color" content="#0b0f14" media="(prefers-color-scheme: dark)" />
         <meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)" />
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <Script id="theme-init" strategy="beforeInteractive">{THEME_INIT_SCRIPT}</Script>
       </head>
-      {/*
-        World-class dashboard ergonomics:
-        - Keep the header always available (sticky)
-        - Avoid a fixed footer on small screens (it truncates content)
-        - Constrain long tables with their own scroll containers (handled at component level)
-      */}
-      <body className="min-h-screen antialiased">
+<body className="min-h-screen antialiased">
         <div className="flex min-h-screen flex-col">
           <Header />
           <CompareTrayGate />

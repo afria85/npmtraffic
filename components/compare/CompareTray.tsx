@@ -12,7 +12,7 @@ import { getCompareButtonLabel, getCompareStatusLabel, isCompareReady } from "@/
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 const LIST_REMOVAL_CLASS =
-  "inline-flex shrink-0 items-center gap-2 rounded-full border border-white/30 bg-white/5 px-3 py-1.5 text-xs text-slate-100 transition hover:border-white/60";
+  "inline-flex shrink-0 items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1.5 text-xs text-slate-100 transition hover:bg-[color:var(--surface-3)]";
 
 export default function CompareTray() {
   const [packages, setPackages] = useState<string[]>(() => loadCompareList());
@@ -35,7 +35,7 @@ export default function CompareTray() {
   return (
     <div className="w-full py-3">
       <div className="w-full sm:mx-auto sm:max-w-3xl sm:px-4" data-testid="compare-tray-container">
-        <div className="flex w-full flex-col gap-3 rounded-2xl border border-white/10 bg-black/60 px-4 py-3 shadow-sm shadow-black/40 backdrop-blur">
+        <div className="flex w-full flex-col gap-3 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 shadow-sm shadow-black/20 backdrop-blur">
           <div className="flex min-w-0 items-center gap-3">
             <div className="text-sm font-semibold text-slate-200">Compare</div>
             {packages.length ? (

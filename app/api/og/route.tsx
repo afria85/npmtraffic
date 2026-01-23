@@ -1,4 +1,5 @@
 import { buildOgImageResponse } from "@/lib/og-image";
+import { validatePackageName } from "@/lib/package-name";
 
 export const runtime = "edge";
 
@@ -19,11 +20,13 @@ export async function GET(request: Request) {
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean)
+      .filter((name) => validatePackageName(name).ok)
       .slice(0, 5);
 
     return buildOgImageResponse({ mode: "compare", pkgs, days });
   }
 
-  const pkg = searchParams.get("pkg") ?? "";
+  const rawPkg = searchParams.get("pkg") ?? "";
+  const pkg = validatePackageName(rawPkg).ok ? rawPkg : "";
   return buildOgImageResponse({ mode: "pkg", pkg, days });
 }

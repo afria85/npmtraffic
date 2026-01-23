@@ -52,7 +52,7 @@ export default function DonatePage() {
           </div>
         </section>
       ) : (
-        <p className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300">
+        <p className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] px-4 py-3 text-sm text-slate-300">
           No donation channels configured yet.
         </p>
       )}

@@ -46,7 +46,7 @@ export default async function Home() {
       <div className="mx-auto flex max-w-2xl flex-col gap-10">
         <header className="space-y-4 text-center">
           <p className="text-xs uppercase tracking-[0.4em] text-slate-400">npmtraffic</p>
-          <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          <h1 className="text-4xl font-semibold tracking-tight text-[color:var(--foreground)] sm:text-5xl">
             <span className="block">npm download analytics</span>
             <span className="block">built for maintainers</span>
           </h1>
@@ -64,7 +64,7 @@ export default async function Home() {
                 <Link
                   key={pkg}
                   href={`/p/${encodeURIComponent(pkg)}?days=30`}
-                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+                  className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1 text-xs font-semibold text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]"
                 >
                   {pkg}
                 </Link>
@@ -86,20 +86,20 @@ export default async function Home() {
           <CompareLink />
         </div>
 
-        <section className="grid gap-3 border-t border-white/10 pt-8 sm:grid-cols-3">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <section className="grid gap-3 border-t border-[color:var(--border)] pt-8 sm:grid-cols-3">
+          <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-5">
             <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Daily tables</p>
             <p className="mt-2 text-sm text-slate-200">
               Read downloads date-by-date, spot inflection points, and export the exact dataset.
             </p>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-5">
             <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Audit-grade exports</p>
             <p className="mt-2 text-sm text-slate-200">
               CSV/JSON includes metadata (UTC range, cache status, timestamps) so analysis is reproducible.
             </p>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-5">
             <p className="text-xs uppercase tracking-[0.4em] text-slate-500">Attribution hooks</p>
             <p className="mt-2 text-sm text-slate-200">
               Add event markers (release, post, incident) and correlate them with changes in the chart.

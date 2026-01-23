@@ -44,7 +44,7 @@ export default async function StatusPage() {
         <p className="text-sm text-slate-400">Latest build, traffic health, and cache snapshot.</p>
       </header>
 
-      <section className="mb-6 space-y-2 rounded-2xl border border-white/10 bg-white/5 p-4">
+      <section className="mb-6 space-y-2 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
         <h2 className="text-sm font-semibold text-slate-200">Build + environment</h2>
         <p className="text-sm text-slate-300">
           Commit: <code>{build.commit}</code>
@@ -52,7 +52,7 @@ export default async function StatusPage() {
         <p className="text-sm text-slate-300">Environment: {build.environment}</p>
       </section>
 
-      <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+      <section className="space-y-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
         <h2 className="text-sm font-semibold text-slate-200">Provider health</h2>
         {hasHealth ? (
           <div className="space-y-2 text-sm text-slate-300">
@@ -71,7 +71,7 @@ export default async function StatusPage() {
         )}
       </section>
 
-      <section className="mt-6 space-y-2 rounded-2xl border border-white/10 bg-white/5 p-4">
+      <section className="mt-6 space-y-2 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
         <h2 className="text-sm font-semibold text-slate-200">Cache snapshot</h2>
         {hasHealth ? (
           <div className="space-y-2 text-sm text-slate-300">
@@ -89,7 +89,7 @@ export default async function StatusPage() {
         )}
       </section>
 
-      <section className="mt-6 space-y-2 rounded-2xl border border-white/10 bg-white/5 p-4">
+      <section className="mt-6 space-y-2 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
         <h2 className="text-sm font-semibold text-slate-200">Diagnostics</h2>
         <p className="text-sm text-slate-300">
           Resolved base URL: <code>{baseUrl}</code>

@@ -39,7 +39,7 @@ export default function CompareLink() {
       Compare ({list.length})
       {preview ? (
         <span
-          className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-max max-w-[min(88vw,520px)] -translate-x-1/2 rounded-xl border border-white/10 bg-black/80 px-3 py-2 text-[11px] text-slate-200 shadow-lg backdrop-blur opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100"
+          className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-max max-w-[min(88vw,520px)] -translate-x-1/2 rounded-xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] px-3 py-2 text-[11px] text-[color:var(--foreground)] shadow-lg backdrop-blur opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100"
           role="tooltip"
         >
           {preview}

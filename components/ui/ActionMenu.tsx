@@ -68,7 +68,23 @@ export default function ActionMenu({
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setOpen(false);
+        return;
+      }
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        // Basic roving focus for menuitems.
+        const container = menuRef.current;
+        if (!container) return;
+        const items = Array.from(container.querySelectorAll<HTMLElement>('[role="menuitem"]'));
+        if (!items.length) return;
+        event.preventDefault();
+        const active = document.activeElement as HTMLElement | null;
+        const current = active ? items.indexOf(active) : -1;
+        const delta = event.key === "ArrowDown" ? 1 : -1;
+        const next = current === -1 ? (delta > 0 ? 0 : items.length - 1) : (current + delta + items.length) % items.length;
+        items[next]?.focus();
+      }
     };
 
     document.addEventListener("pointerdown", onPointerDown);
@@ -79,6 +95,17 @@ export default function ActionMenu({
     };
   }, [open]);
 
+  // When opened, focus the first menu item for predictable keyboard navigation.
+  useEffect(() => {
+    if (!open) return;
+    const id = requestAnimationFrame(() => {
+      const container = menuRef.current;
+      const first = container?.querySelector<HTMLElement>('[role="menuitem"]');
+      first?.focus();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [open]);
+
   const portalRoot = typeof document === "undefined" ? null : document.body;
 
   const menuPortal =
@@ -87,9 +114,10 @@ export default function ActionMenu({
       : createPortal(
           <div
             ref={menuRef}
+            id={menuId}
             role="menu"
             aria-label={label}
-            className="fixed z-[9999] min-w-[12rem] overflow-hidden rounded-2xl border border-white/10 bg-[color:var(--surface)] shadow-xl"
+            className="fixed z-[9999] min-w-[12rem] overflow-hidden rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-xl"
             style={{
               top: Math.round(menuPosition.top),
               left: Math.round(menuPosition.left),
@@ -100,7 +128,7 @@ export default function ActionMenu({
               {items.map((item) => {
                 const isLink = Boolean(item.href);
                 const common =
-                  "w-full rounded-xl px-3 py-2 text-left text-sm text-[color:var(--foreground)] hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80";
+                  "w-full rounded-xl px-3 py-2 text-left text-sm text-[color:var(--foreground)] hover:bg-[color:var(--surface-2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
 
                 if (isLink) {
                   return (

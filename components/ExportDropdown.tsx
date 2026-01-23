@@ -160,7 +160,7 @@ export default function ExportDropdown({
         id={menuId}
         role="menu"
         aria-labelledby={buttonId}
-        className="pointer-events-auto z-50 overflow-hidden rounded-xl border border-white/10 bg-[color:var(--surface)] shadow-xl"
+        className="pointer-events-auto z-50 overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-xl"
         style={{
           position: "fixed",
           top: menuPosition.top,
@@ -179,7 +179,7 @@ export default function ExportDropdown({
                 key={item.key}
                 href={item.href}
                 role="menuitem"
-                className="block rounded-lg px-3 py-2 text-sm text-slate-100 transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
+                className="block rounded-lg px-3 py-2 text-sm text-slate-100 transition hover:bg-[color:var(--surface-3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]"
                 {...(downloadProps ?? {})}
                 onClick={() => close()}
               >

@@ -2,15 +2,15 @@ import type { NextConfig } from "next";
 
 function buildCsp(options?: { strict?: boolean }) {
   const isProd = process.env.NODE_ENV === "production";
-  const allowInline = !options?.strict;
-  // Keep inline scripts/styles until we move to nonces; report-only can validate stricter CSP.
-  const scriptSrc = ["'self'"];
-  if (allowInline) scriptSrc.push("'unsafe-inline'");
-  // Next.js dev tooling may require eval; avoid it in production and in strict mode.
-  if (!isProd && allowInline) scriptSrc.push("'unsafe-eval'");
+  const strict = Boolean(options?.strict);
 
-  const styleSrc = ["'self'"];
-  if (allowInline) styleSrc.push("'unsafe-inline'");
+  // Script policy: avoid unsafe-inline in production. Theme init runs from /public/theme-init.js.
+  const scriptSrc = ["'self'"];
+  // Next.js dev tooling may require eval; avoid it in production and in strict mode.
+  if (!isProd && !strict) scriptSrc.push("'unsafe-eval'");
+
+  // Style policy: Tailwind produces external CSS, but inline styles may still appear (e.g. SVG, charts).
+  const styleSrc = ["'self'", "'unsafe-inline'"];
 
   return [
     "default-src 'self'",
@@ -29,6 +29,7 @@ function buildCsp(options?: { strict?: boolean }) {
     .filter(Boolean)
     .join("; ");
 }
+
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["http://localhost:3000", "http://192.168.0.48:3000"],

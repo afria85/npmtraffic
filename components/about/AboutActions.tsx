@@ -10,7 +10,7 @@ import {
 import { isCompareReady } from "@/lib/compare-ui";
 
 const PILL =
-  "inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-white/20 hover:bg-white/10";
+  "inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-4 py-2 text-sm font-semibold text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]";
 
 export default function AboutActions() {
   const read = () => (typeof window === "undefined" ? [] : loadCompareList());

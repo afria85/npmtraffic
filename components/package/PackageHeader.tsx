@@ -26,7 +26,7 @@ export default function PackageHeader({
               {name}
             </h1>
             <span
-              className="inline-flex w-fit items-center whitespace-nowrap rounded-full border border-white/10 bg-white/0 px-3 py-1 text-[11px] font-medium text-slate-300"
+              className="inline-flex w-fit items-center whitespace-nowrap rounded-full border border-[color:var(--border)] bg-transparent px-3 py-1 text-[11px] font-medium text-[color:var(--muted)]"
               title={updatedLabel ?? "Updated recently"}
             >
               <span className="sm:hidden">{updatedLabelCompact ?? "Updated recently"}</span>

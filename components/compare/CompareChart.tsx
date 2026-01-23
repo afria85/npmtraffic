@@ -7,7 +7,7 @@ import { computeLeftPad } from "@/components/charts/axis-padding";
 import { buildMonthTicks } from "@/components/charts/time-ticks";
 
 const CHART_BUTTON_CLASSES =
-  "inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold leading-none text-slate-100 transition hover:border-white/20 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80";
+  "inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-xs font-semibold leading-none text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
 
 type CompareSeriesRow = {
   date: string;
@@ -452,7 +452,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   };
 
   return (
-    <section className="relative rounded-2xl border border-white/10 bg-white/5 p-4">
+    <section className="relative rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm font-semibold text-slate-200">
           Daily downloads ({days ? `${days}d` : "range"})
@@ -541,7 +541,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
             {packageNames.map((pkg) => (
               <span
                 key={pkg}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1"
+                className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1"
               >
                 <span
                   className="h-2.5 w-2.5 rounded-full"
@@ -595,7 +595,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
                 <p className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Series</p>
                 <div className="mt-2 space-y-2">
                   {packageNames.map((pkg) => (
-                    <div key={pkg} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div key={pkg} className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
                       <div className="min-w-0 text-sm font-semibold text-[color:var(--foreground)]">
                         <div className="truncate" title={pkg}>
                           {pkg}
@@ -612,7 +612,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
                                 colors: { ...prev.colors, [pkg]: e.target.value as PaletteKey },
                               }))
                             }
-                            className="w-full rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-2 text-sm text-[color:var(--foreground)]"
+                            className="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-2 text-sm text-[color:var(--foreground)]"
                           >
                             {PALETTE.map((p) => (
                               <option key={p.key} value={p.key}>
@@ -631,7 +631,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
                                 lineStyles: { ...prev.lineStyles, [pkg]: e.target.value as LineStyleKey },
                               }))
                             }
-                            className="w-full rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-2 text-sm text-[color:var(--foreground)]"
+                            className="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-2 text-sm text-[color:var(--foreground)]"
                           >
                             <option value="solid">Solid</option>
                             <option value="dashed">Dashed</option>

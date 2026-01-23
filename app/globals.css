@@ -94,17 +94,17 @@
 }
 
 :root {
-  /* System font stack ? no network fetch */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans",
+  /* System font stack (no network fetch). */
+  --app-font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans",
     sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --app-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-space);
-  --font-mono: var(--font-jetbrains);
+  --font-sans: var(--app-font-sans);
+  --font-mono: var(--app-font-mono);
 }
 
 body {
@@ -114,7 +114,7 @@ body {
     radial-gradient(900px 500px at -10% 10%, rgba(16, 185, 129, 0.14), transparent 55%),
     var(--background);
   color: var(--foreground);
-  font-family: var(--font-space), "Space Grotesk", "Work Sans", sans-serif;
+  font-family: var(--app-font-sans);
 }
 
 :root[data-theme="light"] body {
@@ -125,11 +125,8 @@ body {
 }
 
 /*
-  Pragmatic light-theme compatibility layer.
-  UI currently uses Tailwind slate/white/black utility classes tuned for dark.
-  Override the most common ones in light mode to keep the app legible.
+  Light-theme compatibility for legacy Tailwind slate text utilities.
 */
-:root[data-theme="light"] .text-white,
 :root[data-theme="light"] .text-slate-50,
 :root[data-theme="light"] .text-slate-100,
 :root[data-theme="light"] .text-slate-200,
@@ -143,41 +140,6 @@ body {
   color: var(--muted);
 }
 
-:root[data-theme="light"] .bg-white\/5 {
-  background-color: rgba(15, 23, 42, 0.03);
-}
-
-:root[data-theme="light"] .bg-white\/10 {
-  background-color: rgba(15, 23, 42, 0.05);
-}
-
-:root[data-theme="light"] .bg-black\/60 {
-  background-color: rgba(255, 255, 255, 0.75);
-}
-
-:root[data-theme="light"] .bg-black\/80 {
-  background-color: rgba(255, 255, 255, 0.85);
-}
-
-:root[data-theme="light"] .border-white\/10 {
-  border-color: var(--border);
-}
-
-:root[data-theme="light"] .border-white\/20 {
-  border-color: rgba(15, 23, 42, 0.20);
-}
-
-:root[data-theme="light"] .border-white\/30 {
-  border-color: rgba(15, 23, 42, 0.25);
-}
-
-:root[data-theme="light"] .border-white\/60 {
-  border-color: rgba(15, 23, 42, 0.40);
-}
-
-:root[data-theme="light"] .divide-white\/10 > :not([hidden]) ~ :not([hidden]) {
-  border-color: var(--border);
-}
 
 details summary {
   list-style: none;

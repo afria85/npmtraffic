@@ -3,14 +3,14 @@ import Image from "next/image";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const HEADER_PILL_CLASSES =
-  "rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10";
+  "rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-4 py-2 text-sm text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
 const REPO_URL = "https://github.com/afria85/npmtraffic";
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[color:var(--surface)] px-4 py-3 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-400">
+        <Link href="/" className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
           <Image
             src="/brand-mark.png"
             alt="npmtraffic"

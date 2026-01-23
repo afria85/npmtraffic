@@ -23,21 +23,21 @@ export default function Loading() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+        <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
           <Skeleton className="h-4 w-32 rounded-full" />
           <Skeleton className="mt-3 h-6 w-28 rounded-lg" />
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+        <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
           <Skeleton className="h-4 w-24 rounded-full" />
           <Skeleton className="mt-3 h-6 w-24 rounded-lg" />
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5 p-4">
+      <div className="overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
         <ChartSkeleton />
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
+      <div className="overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)]">
         <div className="max-h-[70vh] overflow-auto">
           <div className="space-y-2 p-4">
             {Array.from({ length: 10 }).map((_, idx) => (

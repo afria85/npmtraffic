@@ -13,19 +13,19 @@ export default function AboutPage() {
     <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-8 px-4 py-12">
       <header className="space-y-3">
         <p className="text-xs uppercase tracking-[0.3em] text-slate-400">npmtraffic</p>
-        <h1 className="text-3xl font-semibold tracking-tight text-white">npmtraffic</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--foreground)]">npmtraffic</h1>
         <div className="space-y-2 text-sm text-slate-300">
-          <h2 className="text-sm font-semibold text-white">Why npmtraffic exists</h2>
+          <h2 className="text-sm font-semibold text-[color:var(--foreground)]">Why npmtraffic exists</h2>
           <p>
             npm download counts are useful, but charts alone rarely answer operational questions: when did something change, how big was the shift, and what event likely caused it. npmtraffic is built around that workflow, with a daily table you can read like GitHub traffic.
           </p>
         </div>
       </header>
 
-      <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-5">
+      <section className="space-y-3 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-5">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-[color:var(--accent)]" aria-hidden />
-          <h2 className="text-sm font-semibold text-white">What you get</h2>
+          <h2 className="text-sm font-semibold text-[color:var(--foreground)]">What you get</h2>
         </div>
         <ul className="list-disc space-y-2 pl-5 text-sm text-slate-300">
           <li>Daily breakdown table so you can read spikes date-by-date (not just a curve).</li>
@@ -41,17 +41,17 @@ export default function AboutPage() {
       <section className="space-y-2 text-sm text-slate-300">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-[color:var(--accent)]" aria-hidden />
-          <h2 className="text-sm font-semibold text-white">Time</h2>
+          <h2 className="text-sm font-semibold text-[color:var(--foreground)]">Time</h2>
         </div>
         <p>
-          Daily rows are computed and displayed in <span className="font-semibold text-slate-100">UTC</span>.
+          Daily rows are computed and displayed in <span className="font-semibold text-[color:var(--foreground)]">UTC</span>.
         </p>
       </section>
 
-      <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-5">
+      <section className="space-y-3 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-5">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-[color:var(--accent)]" aria-hidden />
-          <h2 className="text-sm font-semibold text-white">Design principles</h2>
+          <h2 className="text-sm font-semibold text-[color:var(--foreground)]">Design principles</h2>
         </div>
         <ul className="list-disc space-y-2 pl-5 text-sm text-slate-300">
           <li>Local-first: event annotations live in your browser storage by default.</li>
@@ -63,7 +63,7 @@ export default function AboutPage() {
       <section className="space-y-2 text-sm text-slate-300">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-[color:var(--accent)]" aria-hidden />
-          <h2 className="text-sm font-semibold text-white">Privacy</h2>
+          <h2 className="text-sm font-semibold text-[color:var(--foreground)]">Privacy</h2>
         </div>
         <p>
           npmtraffic does not use third-party analytics or tracking. Basic request metadata may be processed transiently for abuse prevention (rate limiting); we do not build user profiles.
@@ -73,7 +73,7 @@ export default function AboutPage() {
       <section className="space-y-2 text-sm text-slate-300">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-[color:var(--accent)]" aria-hidden />
-          <h2 className="text-sm font-semibold text-white">Disclaimer</h2>
+          <h2 className="text-sm font-semibold text-[color:var(--foreground)]">Disclaimer</h2>
         </div>
         <p>
           npmtraffic is not affiliated with npm, Inc. Download numbers come from <code>api.npmjs.org</code> and represent total downloads, not unique users.

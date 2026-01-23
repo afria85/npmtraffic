@@ -88,7 +88,7 @@ function createPackageLayout(pkg: string, days: number) {
           {clamped}
         </div>
         <div style={{ marginTop: 18, color: MUTED, fontSize: 26 }}>
-          Table + chart ú local event markers ú audit-grade exports
+          Table · chart · local event markers · reproducible exports
         </div>
       </div>
       {createFooter()}
@@ -126,7 +126,7 @@ function createCompareLayout(pkgs: string[], days: number) {
           {clampText(title, 120)}
         </div>
         <div style={{ marginTop: 18, color: MUTED, fontSize: 26 }}>
-          Daily downloads ú deltas ú export-ready
+          Daily downloads · deltas · export-ready
         </div>
       </div>
       {createFooter()}

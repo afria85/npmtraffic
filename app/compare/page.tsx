@@ -47,7 +47,7 @@ type CompareTableHeaderProps = {
 
 export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
   return (
-	    <thead className="sticky top-0 z-20 bg-black/80 text-center text-xs uppercase tracking-[0.22em] text-slate-300 backdrop-blur sm:tracking-[0.3em]">
+	    <thead className="sticky top-0 z-20 bg-[color:var(--surface)] text-center text-xs uppercase tracking-[0.22em] text-slate-300 backdrop-blur sm:tracking-[0.3em]">
       <tr>
         <th
           rowSpan={2}
@@ -59,7 +59,7 @@ export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
 	          <th
 	            key={`${pkg}-group`}
 	            colSpan={2}
-	            className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-[0.22em] text-slate-100 sm:px-3 sm:tracking-[0.3em]"
+	            className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--foreground)] sm:px-3 sm:tracking-[0.3em]"
 	          >
 	            <div className="mx-auto max-w-[180px] truncate" title={pkg}>
 	              {pkg}
@@ -160,15 +160,15 @@ export default async function ComparePage({ searchParams }: Props) {
       <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-12">
         <div className="space-y-3">
           <p className="text-xs uppercase tracking-[0.3em] text-slate-400">npmtraffic</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-white">Compare npm packages</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--foreground)]">Compare npm packages</h1>
           <p className="text-sm text-slate-300">
             Add at least two packages to compare daily downloads, deltas, and trends.
           </p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-5">
           <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Start here</p>
           <p className="mt-2 text-sm text-slate-300">
-            Search for a package, open it, then use <span className="font-semibold text-slate-100">Add to compare</span>.
+            Search for a package, open it, then use <span className="font-semibold text-[color:var(--foreground)]">Add to compare</span>.
             When you have two or more, this page will show the overlay chart and the table.
           </p>
           <div className="mt-4">
@@ -294,7 +294,7 @@ export default async function ComparePage({ searchParams }: Props) {
     return (
       <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-6">
         {header}
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+        <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
           <p className="text-sm text-slate-200">{errorText ?? "We couldn't load the comparison right now."}</p>
           <div className="mt-3 flex items-center gap-2">
             <RetryButton />
@@ -323,14 +323,14 @@ export default async function ComparePage({ searchParams }: Props) {
       ) : null}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {data.packages.map((pkg) => (
-          <div key={pkg.name} className="rounded-xl border border-white/10 bg-white/5 p-4">
+          <div key={pkg.name} className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
             <p
               className="text-xs uppercase tracking-widest text-slate-500 truncate"
               title={pkg.name}
             >
               {pkg.name}
             </p>
-            <p className="mt-2 text-xl font-semibold text-white">
+            <p className="mt-2 text-xl font-semibold text-[color:var(--foreground)]">
               {formatNumber(pkg.total)}
             </p>
             <p className="mt-1 text-xs text-slate-400">Total downloads ({days} days)</p>
@@ -346,8 +346,8 @@ export default async function ComparePage({ searchParams }: Props) {
 
       <CompareChart series={data.series} packageNames={tablePackageNames} days={days} />
 
-      <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 text-sm text-slate-200">
+      <div className="overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)]">
+        <div className="flex items-center justify-between border-b border-[color:var(--border)] px-4 py-3 text-sm text-slate-200">
           <span className="text-sm font-semibold">Daily downloads ({days}d)</span>
         </div>
 	        <ScrollHintContainer className={COMPARE_TABLE_WRAPPER_CLASSES}>
@@ -364,7 +364,7 @@ export default async function ComparePage({ searchParams }: Props) {
             <CompareTableHeader packageNames={tablePackageNames} />
             <tbody className="divide-y divide-white/10">
               {data.series.map((row) => (
-                <tr key={row.date} className="text-slate-100">
+                <tr key={row.date} className="text-[color:var(--foreground)]">
                   <td className="px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-slate-400 whitespace-nowrap sm:px-3 sm:text-xs">
                     {row.date}
                   </td>

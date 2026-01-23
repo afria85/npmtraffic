@@ -316,7 +316,7 @@ export default function SearchBox({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="h-11 rounded-full border border-white/10 bg-white/5 px-4 text-sm text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+        className="h-11 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-4 text-sm text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]"
         aria-expanded={isOpen}
         aria-controls={sheetId}
       >
@@ -339,7 +339,7 @@ export default function SearchBox({
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="h-9 rounded-full border border-white/10 px-3 text-xs text-slate-300"
+                className="h-9 rounded-full border border-[color:var(--border)] px-3 text-xs text-slate-300"
               >
                 Close
               </button>
