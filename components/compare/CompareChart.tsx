@@ -543,7 +543,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
             ))}
           </div>
 
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
             <button
               type="button"
               className={CHART_BUTTON_CLASSES}

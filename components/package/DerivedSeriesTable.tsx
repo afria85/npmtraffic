@@ -230,7 +230,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
         <ScrollHintContainer className="max-h-[60vh] overflow-auto">
             <table className="min-w-[560px] w-max table-fixed text-sm sm:w-full">
               <colgroup>
-                <col className="w-[92px] sm:w-[130px]" />
+                <col className="w-[84px] sm:w-[130px]" />
                 <col className="w-[98px]" />
                 <col className="w-[110px]" />
                 {showDerived ? (
@@ -242,27 +242,27 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   </>
                 ) : null}
               </colgroup>
-		      <thead className="sticky top-0 z-20 bg-black/80 text-center text-xs uppercase tracking-[0.22em] text-slate-200 backdrop-blur sm:tracking-[0.3em]">
+		      <thead className="sticky top-0 z-20 bg-black/80 text-xs uppercase tracking-normal text-slate-200 backdrop-blur">
                 <tr>
-                  <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap overflow-hidden sm:px-3" title="Date (UTC)">Date</th>
-                  <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap overflow-hidden sm:px-3" title="Downloads for the day">Downloads</th>
-                  <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap overflow-hidden sm:px-3" title="Delta vs previous day">
+                  <th className="px-1.5 py-2 text-left font-semibold whitespace-nowrap overflow-hidden sm:px-3" title="Date (UTC)">Date</th>
+                  <th className="px-1.5 py-2 text-right font-semibold whitespace-nowrap overflow-hidden sm:px-3" title="Downloads for the day">Downloads</th>
+                  <th className="px-1.5 py-2 text-right font-semibold whitespace-nowrap overflow-hidden sm:px-3" title="Delta vs previous day">
                     <span className="block truncate">
-                      <span className="hidden sm:inline">Delta vs prev day</span>
-                      <span className="sm:hidden">Δ vs prev</span>
+                      <span className="hidden sm:inline">Δ vs prev day</span>
+                      <span className="sm:hidden">Δ</span>
                     </span>
                   </th>
                   {showDerived ? (
-                    <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap overflow-hidden sm:px-3" title="3-day moving average">MA 3</th>
+                    <th className="px-1.5 py-2 text-right font-semibold whitespace-nowrap overflow-hidden sm:px-3" title="3-day moving average">MA 3</th>
                   ) : null}
                   {showDerived ? (
-                    <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap overflow-hidden sm:px-3" title="7-day moving average">MA 7</th>
+                    <th className="px-1.5 py-2 text-right font-semibold whitespace-nowrap overflow-hidden sm:px-3" title="7-day moving average">MA 7</th>
                   ) : null}
                   {showDerived ? (
                     <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap overflow-hidden sm:px-3" title="Outlier flag">Outlier</th>
                   ) : null}
                   {showDerived ? (
-                    <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap overflow-hidden sm:px-3" title="Outlier score">Score</th>
+                    <th className="px-1.5 py-2 text-right font-semibold whitespace-nowrap overflow-hidden sm:px-3" title="Outlier score">Score</th>
                   ) : null}
                 </tr>
               </thead>
