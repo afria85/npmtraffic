@@ -235,7 +235,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
               suppressOpenRef.current = false;
               return;
             }
-            if (message) return;
+            if (message) setMessage(null);
             setIsListOpen(true);
           }}
           onClick={() => {
@@ -243,7 +243,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
               suppressOpenRef.current = false;
               return;
             }
-            if (message) return;
+            if (message) setMessage(null);
             setIsListOpen(true);
           }}
           onBlur={() => window.setTimeout(() => setIsListOpen(false), 120)}

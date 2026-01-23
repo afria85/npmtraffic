@@ -488,7 +488,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
                         ) : null}
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex w-full justify-end gap-2 sm:w-auto">
                         <button
                           type="button"
                           onClick={() => onEdit(entry)}
