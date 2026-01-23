@@ -428,10 +428,27 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   );
 
   const updateHoverIndexFromClientX = (clientX: number, svg: SVGSVGElement) => {
-    const rect = svg.getBoundingClientRect();
-    const viewX = clamp(((clientX - rect.left) / rect.width) * WIDTH, 0, WIDTH);
-    const normalized = clamp((viewX - pad.l) / innerW, 0, 1);
-    // Dev note: keep this math aligned with pointsByPkg so the crosshair follows the cursor precisely.
+    // Match single-package chart behavior: use SVG CTM when available to keep hover math stable
+    // across responsive scaling, device pixel ratios, and browser zoom.
+    let viewX: number | null = null;
+    try {
+      const pt = svg.createSVGPoint();
+      pt.x = clientX;
+      pt.y = 0;
+      const ctm = svg.getScreenCTM();
+      if (ctm) {
+        const local = pt.matrixTransform(ctm.inverse());
+        viewX = local.x;
+      }
+    } catch {
+      viewX = null;
+    }
+    if (viewX == null) {
+      const rect = svg.getBoundingClientRect();
+      viewX = ((clientX - rect.left) / rect.width) * WIDTH;
+    }
+    const clampedX = clamp(viewX, 0, WIDTH);
+    const normalized = clamp((clampedX - pad.l) / innerW, 0, 1);
     setHoverIndex(pickClosestIndex(normalized, series.length));
   };
 
@@ -452,7 +469,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
         <svg
           ref={svgRef}
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          className="h-64 w-full"
+          className="h-64 w-full touch-pan-y"
           role="img"
           aria-label={`Compare daily downloads line chart${days ? ` (${days} days)` : ""}`}
           onMouseLeave={() => setHoverIndex(null)}

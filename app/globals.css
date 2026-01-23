@@ -13,6 +13,15 @@
   --surface-2: rgba(255,255,255,0.06);
   --surface-3: rgba(255,255,255,0.09);
 
+  /* Targeted semantic tokens for theme-safe foreground accents */
+  --danger: #fca5a5;
+  --outlier-pill-bg: rgba(251, 191, 36, 0.16);
+  --outlier-pill-border: rgba(251, 191, 36, 0.28);
+  --outlier-pill-fg: rgba(251, 191, 36, 0.92);
+  --neutral-pill-bg: rgba(255, 255, 255, 0.06);
+  --neutral-pill-border: rgba(255, 255, 255, 0.12);
+  --neutral-pill-fg: rgba(230, 237, 243, 0.78);
+
   /* Chart tokens (theme-aware defaults) */
   --chart-grid: rgba(255, 255, 255, 0.15);
   --chart-axis: rgba(230, 237, 243, 0.78);
@@ -42,6 +51,14 @@
   --ring: rgba(37, 99, 235, 0.28);
   --surface-2: rgba(15, 23, 42, 0.06);
   --surface-3: rgba(15, 23, 42, 0.09);
+
+  --danger: #b91c1c;
+  --outlier-pill-bg: rgba(217, 119, 6, 0.18);
+  --outlier-pill-border: rgba(217, 119, 6, 0.35);
+  --outlier-pill-fg: #7c2d12;
+  --neutral-pill-bg: rgba(15, 23, 42, 0.06);
+  --neutral-pill-border: rgba(11, 18, 32, 0.12);
+  --neutral-pill-fg: rgba(11, 18, 32, 0.78);
 
   /* Chart tokens tuned for light backgrounds */
   --chart-grid: rgba(11, 18, 32, 0.18);
