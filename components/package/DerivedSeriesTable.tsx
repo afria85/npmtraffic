@@ -221,8 +221,19 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                 type="button"
                 onClick={() => setShowDerived((prev) => !prev)}
                 className={`${ACTION_BUTTON_CLASSES} bg-white/0 text-slate-200 hover:bg-white/10`}
+                title={showDerived ? "Hide derived metrics" : "Show derived metrics"}
               >
-                {showDerived ? "Hide derived metrics" : "Show derived metrics"}
+                {showDerived ? (
+                  <>
+                    <span className="sm:hidden">Hide metrics</span>
+                    <span className="hidden sm:inline">Hide derived metrics</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="sm:hidden">Show metrics</span>
+                    <span className="hidden sm:inline">Show derived metrics</span>
+                  </>
+                )}
               </button>
             ) : null}
           </div>
