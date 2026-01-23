@@ -458,6 +458,8 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           onMouseLeave={() => setHoverIndex(null)}
           onPointerDown={handlePointerEvent}
           onPointerMove={handlePointerEvent}
+          onPointerLeave={() => setHoverIndex(null)}
+          onPointerCancel={() => setHoverIndex(null)}
         >
           {yTicks.map((tick) => (
             <g key={tick.y}>
@@ -522,29 +524,36 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           ) : null}
         </svg>
 
-        {/* Legend immediately below the plot for better mobile scanning */}
-        <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-300">
-          {packageNames.map((pkg) => (
-            <span
-              key={pkg}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1"
-            >
+        {/* Footer: legend on the left, actions on the right. Wraps safely on small screens. */}
+        <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-wrap gap-2 text-xs text-slate-300">
+            {packageNames.map((pkg) => (
               <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ background: paletteValue(settings.colors[pkg] ?? "slate") }}
-              />
-              <span className="min-w-0 max-w-[220px] truncate" title={pkg}>
-                {pkg}
+                key={pkg}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1"
+              >
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ background: paletteValue(settings.colors[pkg] ?? "slate") }}
+                />
+                <span className="min-w-0 max-w-[220px] truncate" title={pkg}>
+                  {pkg}
+                </span>
               </span>
-            </span>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <div className="mt-3 flex items-center justify-end gap-2">
-          <button type="button" className={CHART_BUTTON_CLASSES} onClick={() => setStyleOpen((v) => !v)} aria-expanded={styleOpen}>
-            Style
-          </button>
-          <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              className={CHART_BUTTON_CLASSES}
+              onClick={() => setStyleOpen((v) => !v)}
+              aria-expanded={styleOpen}
+            >
+              Style
+            </button>
+            <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
+          </div>
         </div>
 
         {styleOpen ? (

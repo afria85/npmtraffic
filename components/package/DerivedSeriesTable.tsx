@@ -230,7 +230,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
         <ScrollHintContainer className="max-h-[60vh] overflow-auto">
             <table className="min-w-[560px] w-max table-fixed text-sm sm:w-full">
               <colgroup>
-                <col className="w-[130px]" />
+                <col className="w-[104px] sm:w-[130px]" />
                 <col className="w-[98px]" />
                 <col className="w-[110px]" />
                 {showDerived ? (
@@ -244,23 +244,25 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
               </colgroup>
 		      <thead className="sticky top-0 z-20 bg-black/80 text-center text-xs uppercase tracking-[0.22em] text-slate-200 backdrop-blur sm:tracking-[0.3em]">
                 <tr>
-                  <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap sm:px-3">Date</th>
-                  <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap sm:px-3">Downloads</th>
-                  <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap sm:px-3">
-                    <span className="hidden sm:inline">Delta vs prev day</span>
-                    <span className="sm:hidden">Δ vs prev</span>
+                  <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap overflow-hidden sm:px-3">Date</th>
+                  <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap overflow-hidden sm:px-3">Downloads</th>
+                  <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap overflow-hidden sm:px-3">
+                    <span className="block truncate">
+                      <span className="hidden sm:inline">Delta vs prev day</span>
+                      <span className="sm:hidden">Δ vs prev</span>
+                    </span>
                   </th>
                   {showDerived ? (
-                    <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap sm:px-3">MA 3</th>
+                    <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap overflow-hidden sm:px-3">MA 3</th>
                   ) : null}
                   {showDerived ? (
-                    <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap sm:px-3">MA 7</th>
+                    <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap overflow-hidden sm:px-3">MA 7</th>
                   ) : null}
                   {showDerived ? (
-                    <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap sm:px-3">Outlier</th>
+                    <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap overflow-hidden sm:px-3">Outlier</th>
                   ) : null}
                   {showDerived ? (
-                    <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap sm:px-3">Score</th>
+                    <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap overflow-hidden sm:px-3">Score</th>
                   ) : null}
                 </tr>
               </thead>
@@ -270,7 +272,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   const isOutlier = Boolean(outlier?.is_outlier);
                   return (
                     <tr key={row.date} className="text-slate-100">
-                      <td className="px-1.5 py-2 text-left text-xs uppercase tracking-wide text-slate-400 whitespace-nowrap sm:px-3">
+                      <td className="px-1.5 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-slate-400 whitespace-nowrap sm:px-3 sm:text-xs">
                         <div className="flex items-center gap-2 whitespace-nowrap">
                           <span>{row.date}</span>
                           {dayEvents?.length ? (

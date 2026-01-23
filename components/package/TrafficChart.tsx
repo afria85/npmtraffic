@@ -560,14 +560,12 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
         </div>
       </div>
 
-      {/*
-        Chart + legend layout contract:
+            {/*
+        Chart layout contract:
         - Legend must never overlay the plot (avoid covering data/tooltip).
-        - Desktop/tablet: legend sits to the right.
-        - Mobile: legend flows below.
+        - Legend sits below the plot to keep the chart wide on tablet/mobile.
       */}
-      <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px] md:items-start">
-        <div ref={chartContainerRef} className="relative min-w-0">
+      <div ref={chartContainerRef} className="relative mt-3 min-w-0">
           <svg
             ref={svgRef}
             viewBox={`0 0 ${width} ${height}`}
@@ -878,10 +876,11 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               </div>
             </div>
           ) : null}
-        </div>
+      </div>
 
+      <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
         {/* Legend (visual mapping). Never overlays the plot. */}
-        <div className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-3 py-2 text-[11px] text-[color:var(--foreground)] shadow-lg md:max-h-[260px] md:overflow-auto md:self-start">
+        <div className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-3 py-2 text-[11px] text-[color:var(--foreground)] shadow-lg max-w-full">
           <ul className="space-y-1">
             <li className="flex items-center gap-2">
               <svg width="32" height="8" viewBox="0 0 32 8" aria-hidden>
@@ -945,10 +944,9 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
             ) : null}
           </ul>
         </div>
-      </div>
 
-      <div className="mt-3 flex items-center justify-end gap-2">
-        <button
+        <div className="flex items-center justify-end gap-2">
+          <button
           type="button"
           className={CHART_BUTTON_CLASSES}
           onClick={() => setStyleOpen((v) => !v)}
@@ -956,8 +954,10 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
         >
           Style
         </button>
-        <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
+          <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
+        </div>
       </div>
+
     </section>
   );
 }
