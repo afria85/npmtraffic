@@ -51,32 +51,40 @@ export default async function Home() {
             <span className="block">built for maintainers</span>
           </h1>
           <p className="text-base text-[color:var(--muted)] sm:text-lg">
-            Daily tables, deltas, and event markers — plus exports with UTC ranges and cache metadata,
-            so you can explain what changed (and share the evidence).
+            Daily downloads with deltas, event markers, and reproducible exports (UTC + cache metadata).
           </p>
-          <div className="pt-4 space-y-3">
+          <div className="space-y-4 pt-4">
             <SearchBox className="mx-auto w-full max-w-xl" />
-            <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-[color:var(--muted)]">
-              <span className="text-[0.7rem] font-semibold uppercase tracking-[0.35em] text-[color:var(--muted)]">
+            <div className="mx-auto w-full max-w-xl">
+              <p className="text-center text-[0.7rem] font-semibold uppercase tracking-[0.35em] text-[color:var(--muted)]">
                 Popular packages
-              </span>
-              {POPULAR_PACKAGES.map((pkg) => (
-                <Link
-                  key={pkg}
-                  href={`/p/${encodeURIComponent(pkg)}?days=30`}
-                  className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1 text-xs font-semibold text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]"
-                >
-                  {pkg}
-                </Link>
-              ))}
+              </p>
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-xs">
+                {POPULAR_PACKAGES.map((pkg) => (
+                  <Link
+                    key={pkg}
+                    href={`/p/${encodeURIComponent(pkg)}?days=30`}
+                    className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1 text-xs font-semibold text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]"
+                  >
+                    {pkg}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-xs text-[color:var(--muted)]">
-            <Link href="/about" className="underline decoration-[color:var(--border)] underline-offset-4 hover:text-[color:var(--foreground)]">
+          <div className="pt-1 text-xs text-[color:var(--muted)]">
+            Start with a package, or compare 2–5 packages.{' '}
+            <Link
+              href="/about"
+              className="underline decoration-[color:var(--border)] underline-offset-4 hover:text-[color:var(--foreground)]"
+            >
               Why this exists
             </Link>
-            <span aria-hidden className="text-[color:var(--muted)]">·</span>
-            <Link href="/compare" className="underline decoration-[color:var(--border)] underline-offset-4 hover:text-[color:var(--foreground)]">
+            <span aria-hidden className="mx-2 text-[color:var(--muted)]">·</span>
+            <Link
+              href="/compare"
+              className="underline decoration-[color:var(--border)] underline-offset-4 hover:text-[color:var(--foreground)]"
+            >
               Compare packages
             </Link>
           </div>
