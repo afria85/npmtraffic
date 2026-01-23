@@ -51,14 +51,14 @@ export default async function Home() {
             <span className="block">built for maintainers</span>
           </h1>
           <p className="text-base text-[color:var(--muted)] sm:text-lg">
-            Daily tables, day-to-day deltas, event markers, and audit-grade exports — the workflows you
-            need to explain why downloads changed.
+            Daily tables, deltas, and event markers — plus exports with UTC ranges and cache metadata,
+            so you can explain what changed (and share the evidence).
           </p>
           <div className="pt-4 space-y-3">
             <SearchBox className="mx-auto w-full max-w-xl" />
             <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-[color:var(--muted)]">
               <span className="text-[0.7rem] font-semibold uppercase tracking-[0.35em] text-[color:var(--muted)]">
-                Popular
+                Popular packages
               </span>
               {POPULAR_PACKAGES.map((pkg) => (
                 <Link
