@@ -366,7 +366,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                               type="button"
                               onClick={() => setShowEventsList(true)}
                               title={dayEvents.map((event) => `${event.event_type}: ${event.label}`).join(" / ")}
-                              className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-400/20 text-emerald-300"
+                              className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] text-[color:var(--accent)]"
                             >
                               <span className="text-xs font-bold">&bull;</span>
                             </button>
@@ -517,7 +517,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                 </button>
                 <button
                   type="submit"
-                  className={`${ACTION_BUTTON_CLASSES} bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/20`}
+                  className={`${ACTION_BUTTON_CLASSES} bg-[color:var(--accent)] text-[color:var(--accent-foreground)] hover:opacity-90`}
                 >
                   {editingKey ? "Update event" : "Add event"}
                 </button>
@@ -559,7 +559,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   onClick={handleCopyShareLink}
                   disabled={!shareEnabled}
                   className={`${ACTION_BUTTON_CLASSES} ${
-                    shareEnabled ? "bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/20" : "opacity-50"
+                    shareEnabled ? "bg-[color:var(--accent)] text-[color:var(--accent-foreground)] hover:opacity-90" : "opacity-50"
                   }`}
                 >
                   Copy share link
@@ -615,7 +615,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                         <button
                           type="button"
                           onClick={() => handleEdit(event)}
-                          className="text-xs font-medium text-emerald-200 underline underline-offset-4"
+                          className="text-xs font-medium text-[color:var(--accent)] underline underline-offset-4"
                         >
                           Edit
                         </button>
@@ -633,7 +633,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                         href={event.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-1 inline-block text-xs font-medium text-emerald-200 underline underline-offset-4"
+                        className="mt-1 inline-block text-xs font-medium text-[color:var(--accent)] underline underline-offset-4"
                       >
                         View link
                       </a>

@@ -53,7 +53,7 @@ const THEME_INIT_SCRIPT = `(() => {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -62,9 +62,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="manifest" href="/site.webmanifest" />
         <meta name="theme-color" content="#0b0f14" media="(prefers-color-scheme: dark)" />
         <meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)" />
-        <Script id="theme-init" strategy="beforeInteractive">{THEME_INIT_SCRIPT}</Script>
+        <Script id="theme-init" strategy="beforeInteractive">
+          {THEME_INIT_SCRIPT}
+        </Script>
       </head>
-<body className="min-h-screen antialiased">
+      <body className="min-h-screen antialiased">
         <div className="flex min-h-screen flex-col">
           <Header />
           <CompareTrayGate />
