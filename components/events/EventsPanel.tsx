@@ -253,6 +253,13 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
 
   const showBanner = !dismissed && importBanner.kind !== "none";
 
+  // Keep Event markers action buttons visually consistent across the panel.
+  // Small variant is used for per-item actions (Edit/Delete).
+  const EVENT_ACTION_SM =
+    `${ACTION_BUTTON_CLASSES} h-8 sm:h-9 px-3 sm:px-3 text-xs sm:text-xs bg-[color:var(--surface)] border-[color:var(--border)] text-[color:var(--foreground)] hover:bg-[color:var(--surface-3)]`;
+  const EVENT_ACTION_DANGER_SM =
+    `${ACTION_BUTTON_CLASSES} h-8 sm:h-9 px-3 sm:px-3 text-xs sm:text-xs bg-[color:var(--surface)] border-[color:var(--border)] text-[color:var(--danger)] hover:bg-[color:var(--surface-3)]`;
+
   return (
     <section className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -485,14 +492,14 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
                         <button
                           type="button"
                           onClick={() => onEdit(entry)}
-                          className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-1 text-xs font-semibold text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]"
+                          className={EVENT_ACTION_SM}
                         >
                           Edit
                         </button>
                         <button
                           type="button"
                           onClick={() => onDelete(entry)}
-                          className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-1 text-xs font-semibold text-[color:var(--danger)] transition hover:bg-[color:var(--surface-3)]"
+                          className={EVENT_ACTION_DANGER_SM}
                         >
                           Delete
                         </button>
