@@ -358,7 +358,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   const isOutlier = Boolean(outlier?.is_outlier);
                   return (
                     <tr key={row.date} className="text-[color:var(--foreground)] border-b border-[color:var(--border)] last:border-b-0">
-                      <td className="px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-slate-400 whitespace-nowrap sm:px-3 sm:text-xs">
+                      <td className="px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-[color:var(--muted)] whitespace-nowrap sm:px-3 sm:text-xs">
                         <div className="flex items-center gap-1.5 whitespace-nowrap">
                           <span>{row.date}</span>
                           {dayEvents?.length ? (
@@ -366,7 +366,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                               type="button"
                               onClick={() => setShowEventsList(true)}
                               title={dayEvents.map((event) => `${event.event_type}: ${event.label}`).join(" / ")}
-                              className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] text-[color:var(--accent)]"
+                              className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[color:var(--accent)] bg-[color:var(--surface-2)] text-[color:var(--accent)]"
                             >
                               <span className="text-xs font-bold">&bull;</span>
                             </button>
@@ -438,25 +438,25 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
             </div>
 
             <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-xs uppercase tracking-widest text-[color:var(--muted)]">
+              <div className="grid gap-3 lg:grid-cols-2">
+                <label className="min-w-0 text-xs uppercase tracking-widest text-[color:var(--muted)]">
                   Date
                   <input
                     type="date"
                     value={form.date_utc}
                     onChange={(event) => setForm((prev) => ({ ...prev, date_utc: event.target.value }))}
-                    className="mt-1 w-full rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-sm text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
+                    className="mt-1 w-full min-w-0 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-sm text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
                     required
                   />
                 </label>
-                <label className="text-xs uppercase tracking-widest text-[color:var(--muted)]">
+                <label className="min-w-0 text-xs uppercase tracking-widest text-[color:var(--muted)]">
                   Type
                   <select
                     value={form.event_type}
                     onChange={(event) =>
                       setForm((prev) => ({ ...prev, event_type: event.target.value as EventEntry["event_type"] }))
                     }
-                    className="mt-1 w-full rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-sm text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
+                    className="mt-1 w-full min-w-0 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-sm text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
                   >
                     {EVENT_TYPES.map((type) => (
                       <option key={type} value={type}>
@@ -467,33 +467,33 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                 </label>
               </div>
 
-              <label className="text-xs uppercase tracking-widest text-[color:var(--muted)]">
+              <label className="min-w-0 text-xs uppercase tracking-widest text-[color:var(--muted)]">
                 Label
                 <input
                   value={form.label}
                   onChange={(event) => setForm((prev) => ({ ...prev, label: event.target.value }))}
-                  className="mt-1 w-full rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-sm text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
+                  className="mt-1 w-full min-w-0 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-sm text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
                   required
                 />
               </label>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-xs uppercase tracking-widest text-[color:var(--muted)]">
+              <div className="grid gap-3 lg:grid-cols-2">
+                <label className="min-w-0 text-xs uppercase tracking-widest text-[color:var(--muted)]">
                   URL (optional)
                   <input
                     value={form.url ?? ""}
                     onChange={(event) => setForm((prev) => ({ ...prev, url: event.target.value || undefined }))}
-                    className="mt-1 w-full rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-sm text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
+                    className="mt-1 w-full min-w-0 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-sm text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
                   />
                 </label>
-                <label className="text-xs uppercase tracking-widest text-[color:var(--muted)]">
+                <label className="min-w-0 text-xs uppercase tracking-widest text-[color:var(--muted)]">
                   Strength
                   <select
                     value={form.strength}
                     onChange={(event) =>
                       setForm((prev) => ({ ...prev, strength: Number(event.target.value) as 1 | 2 | 3 }))
                     }
-                    className="mt-1 w-full rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-sm text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
+                    className="mt-1 w-full min-w-0 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-sm text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
                   >
                     {[1, 2, 3].map((level) => (
                       <option key={level} value={level}>

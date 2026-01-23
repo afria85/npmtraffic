@@ -335,11 +335,11 @@ export default function SearchBox({
             className="fixed bottom-0 left-0 right-0 h-[70vh] rounded-t-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-6 shadow-2xl"
           >
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-slate-200">Search packages</p>
+              <p className="text-sm font-semibold text-[color:var(--foreground)]">Search packages</p>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="h-9 rounded-full border border-[color:var(--border)] px-3 text-xs text-slate-300"
+                className="h-9 rounded-full border border-[color:var(--border)] px-3 text-xs text-[color:var(--muted)]"
               >
                 Close
               </button>

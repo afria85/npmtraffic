@@ -47,11 +47,11 @@ type CompareTableHeaderProps = {
 
 export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
   return (
-	    <thead className="sticky top-0 z-20 bg-[color:var(--surface)] text-center text-xs uppercase tracking-[0.22em] text-slate-300 backdrop-blur sm:tracking-[0.3em]">
+	    <thead className="sticky top-0 z-20 bg-[color:var(--surface)] text-center text-xs uppercase tracking-[0.22em] text-[color:var(--muted)] backdrop-blur sm:tracking-[0.3em]">
       <tr>
         <th
           rowSpan={2}
-          className="px-2 py-2 text-center text-xs uppercase tracking-[0.22em] text-slate-300 whitespace-nowrap overflow-hidden sm:px-3 sm:tracking-[0.3em]"
+          className="px-2 py-2 text-center text-xs uppercase tracking-[0.22em] text-[color:var(--muted)] whitespace-nowrap overflow-hidden sm:px-3 sm:tracking-[0.3em]"
         >
           Date
         </th>
@@ -72,14 +72,14 @@ export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
           <Fragment key={`${pkg}-metrics`}>
             <th
               scope="col"
-              className="px-2 py-2 text-center text-xs uppercase tracking-[0.22em] text-slate-400 whitespace-nowrap overflow-hidden sm:px-3 sm:tracking-[0.3em]"
+              className="px-2 py-2 text-center text-xs uppercase tracking-[0.22em] text-[color:var(--muted)] whitespace-nowrap overflow-hidden sm:px-3 sm:tracking-[0.3em]"
               title="Downloads for the day"
             >
               <span className="block truncate">Downloads</span>
             </th>
 	            <th
 	              scope="col"
-	              className="px-2 py-2 text-center text-xs uppercase tracking-[0.22em] text-slate-400 whitespace-nowrap overflow-hidden sm:px-3 sm:tracking-[0.3em]"
+	              className="px-2 py-2 text-center text-xs uppercase tracking-[0.22em] text-[color:var(--muted)] whitespace-nowrap overflow-hidden sm:px-3 sm:tracking-[0.3em]"
 	              title="Delta vs previous day"
 	            >
               <span className="block truncate">
@@ -159,15 +159,15 @@ export default async function ComparePage({ searchParams }: Props) {
     return (
       <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-12">
         <div className="space-y-3">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">npmtraffic</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">npmtraffic</p>
           <h1 className="text-3xl font-semibold tracking-tight text-[color:var(--foreground)]">Compare npm packages</h1>
-          <p className="text-sm text-slate-300">
+          <p className="text-sm text-[color:var(--muted)]">
             Add at least two packages to compare daily downloads, deltas, and trends.
           </p>
         </div>
         <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-5">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Start here</p>
-          <p className="mt-2 text-sm text-slate-300">
+          <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">Start here</p>
+          <p className="mt-2 text-sm text-[color:var(--muted)]">
             Search for a package, open it, then use <span className="font-semibold text-[color:var(--foreground)]">Add to compare</span>.
             When you have two or more, this page will show the overlay chart and the table.
           </p>
@@ -268,7 +268,7 @@ export default async function ComparePage({ searchParams }: Props) {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Compare packages</h1>
-          <p className="mt-1 truncate text-sm text-slate-400">
+          <p className="mt-1 truncate text-sm text-[color:var(--muted)]">
             {pkgs.join(", ")} · {days} days
           </p>
         </div>
@@ -295,7 +295,7 @@ export default async function ComparePage({ searchParams }: Props) {
       <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-6">
         {header}
         <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
-          <p className="text-sm text-slate-200">{errorText ?? "We couldn't load the comparison right now."}</p>
+          <p className="text-sm text-[color:var(--foreground)]">{errorText ?? "We couldn't load the comparison right now."}</p>
           <div className="mt-3 flex items-center gap-2">
             <RetryButton />
           </div>
@@ -325,7 +325,7 @@ export default async function ComparePage({ searchParams }: Props) {
         {data.packages.map((pkg) => (
           <div key={pkg.name} className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
             <p
-              className="text-xs uppercase tracking-widest text-slate-500 truncate"
+              className="text-xs uppercase tracking-widest text-[color:var(--muted)] truncate"
               title={pkg.name}
             >
               {pkg.name}
@@ -333,9 +333,9 @@ export default async function ComparePage({ searchParams }: Props) {
             <p className="mt-2 text-xl font-semibold text-[color:var(--foreground)]">
               {formatNumber(pkg.total)}
             </p>
-            <p className="mt-1 text-xs text-slate-400">Total downloads ({days} days)</p>
+            <p className="mt-1 text-xs text-[color:var(--muted)]">Total downloads ({days} days)</p>
             <p
-              className="text-xs text-slate-400"
+              className="text-xs text-[color:var(--muted)]"
               title="Share of total downloads among the compared packages for the selected range"
             >
               {pkg.share.toFixed(2)}% of total
@@ -347,7 +347,7 @@ export default async function ComparePage({ searchParams }: Props) {
       <CompareChart series={data.series} packageNames={tablePackageNames} days={days} />
 
       <div className="overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)]">
-        <div className="flex items-center justify-between border-b border-[color:var(--border)] px-4 py-3 text-sm text-slate-200">
+        <div className="flex items-center justify-between border-b border-[color:var(--border)] px-4 py-3 text-sm text-[color:var(--foreground)]">
           <span className="text-sm font-semibold">Daily downloads ({days}d)</span>
         </div>
 	        <ScrollHintContainer className={COMPARE_TABLE_WRAPPER_CLASSES}>
@@ -365,7 +365,7 @@ export default async function ComparePage({ searchParams }: Props) {
             <tbody className="divide-y divide-white/10">
               {data.series.map((row) => (
                 <tr key={row.date} className="text-[color:var(--foreground)]">
-                  <td className="px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-slate-400 whitespace-nowrap sm:px-3 sm:text-xs">
+                  <td className="px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-[color:var(--muted)] whitespace-nowrap sm:px-3 sm:text-xs">
                     {row.date}
                   </td>
                   {data.packages.map((pkg) => (
@@ -383,12 +383,12 @@ export default async function ComparePage({ searchParams }: Props) {
             </tbody>
           </table>
         </ScrollHintContainer>
-        <p className="px-3 py-2 text-xs text-slate-400">
+        <p className="px-3 py-2 text-xs text-[color:var(--muted)]">
           Delta vs previous day = downloads today - downloads yesterday
         </p>
       </div>
 
-      <p className="text-xs text-slate-500">Data from api.npmjs.org.</p>
+      <p className="text-xs text-[color:var(--muted)]">Data from api.npmjs.org.</p>
     </main>
   );
 }
