@@ -46,7 +46,7 @@ type CompareTableHeaderProps = {
 
 export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
   return (
-    <thead className="sticky top-0 bg-black/80 text-center text-xs uppercase tracking-[0.22em] text-slate-300 backdrop-blur sm:tracking-[0.3em]">
+	    <thead className="sticky top-0 z-20 bg-black/80 text-center text-xs uppercase tracking-[0.22em] text-slate-300 backdrop-blur sm:tracking-[0.3em]">
       <tr>
         <th
           rowSpan={2}
@@ -54,15 +54,17 @@ export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
         >
           Date
         </th>
-        {packageNames.map((pkg) => (
-          <th
-            key={`${pkg}-group`}
-            colSpan={2}
-            className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-[0.22em] text-slate-100 whitespace-nowrap sm:px-3 sm:tracking-[0.3em]"
-          >
-            {pkg}
-          </th>
-        ))}
+	        {packageNames.map((pkg) => (
+	          <th
+	            key={`${pkg}-group`}
+	            colSpan={2}
+	            className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-[0.22em] text-slate-100 sm:px-3 sm:tracking-[0.3em]"
+	          >
+	            <div className="mx-auto max-w-[180px] truncate" title={pkg}>
+	              {pkg}
+	            </div>
+	          </th>
+	        ))}
       </tr>
       <tr>
         {packageNames.map((pkg) => (
@@ -74,13 +76,14 @@ export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
             >
               Downloads
             </th>
-            <th
-              scope="col"
-              className="px-2 py-2 text-center text-xs uppercase tracking-[0.22em] text-slate-400 whitespace-nowrap sm:px-3 sm:tracking-[0.3em]"
-              title="Delta vs previous day"
-            >
-              Delta vs prev day
-            </th>
+	            <th
+	              scope="col"
+	              className="px-2 py-2 text-center text-xs uppercase tracking-[0.22em] text-slate-400 whitespace-nowrap sm:px-3 sm:tracking-[0.3em]"
+	              title="Delta vs previous day"
+	            >
+	              <span className="hidden sm:inline">Delta vs prev day</span>
+	              <span className="sm:hidden">Δ prev</span>
+	            </th>
           </Fragment>
         ))}
       </tr>
@@ -317,7 +320,12 @@ export default async function ComparePage({ searchParams }: Props) {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {data.packages.map((pkg) => (
           <div key={pkg.name} className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-widest text-slate-500">{pkg.name}</p>
+            <p
+              className="text-xs uppercase tracking-widest text-slate-500 truncate"
+              title={pkg.name}
+            >
+              {pkg.name}
+            </p>
             <p className="mt-2 text-xl font-semibold text-white">
               {formatNumber(pkg.total)}
             </p>
@@ -338,8 +346,17 @@ export default async function ComparePage({ searchParams }: Props) {
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 text-sm text-slate-200">
           <span className="text-sm font-semibold">Daily downloads ({days}d)</span>
         </div>
-        <ScrollHintContainer className={COMPARE_TABLE_WRAPPER_CLASSES}>
-          <table className="min-w-[640px] w-max text-sm sm:w-full">
+	        <ScrollHintContainer className={COMPARE_TABLE_WRAPPER_CLASSES}>
+	          <table className="min-w-[760px] w-max table-fixed text-sm sm:w-full">
+	            <colgroup>
+	              <col className="w-[120px]" />
+	              {tablePackageNames.map((pkg) => (
+	                <Fragment key={`cols-${pkg}`}>
+	                  <col className="w-[120px]" />
+	                  <col className="w-[140px]" />
+	                </Fragment>
+	              ))}
+	            </colgroup>
             <CompareTableHeader packageNames={tablePackageNames} />
             <tbody className="divide-y divide-white/10">
               {data.series.map((row) => (

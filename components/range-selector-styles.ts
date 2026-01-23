@@ -13,7 +13,7 @@ export const MORE_SUMMARY_CLASSES =
   `${ACTION_BUTTON_CLASSES} list-none h-8 px-2.5 text-[11px] font-semibold sm:h-11 sm:px-4 sm:text-sm`;
 
 export function moreItemClasses(isActive: boolean) {
-  return `rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+  return `rounded-full px-3 py-1.5 text-xs font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80 ${
     isActive ? "bg-white text-black" : "text-slate-200 hover:bg-white/10"
   }`;
 }

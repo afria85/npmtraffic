@@ -7,7 +7,7 @@ import { computeLeftPad } from "@/components/charts/axis-padding";
 import { buildMonthTicks } from "@/components/charts/time-ticks";
 
 const CHART_BUTTON_CLASSES =
-  "inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold leading-none text-slate-100 transition hover:border-white/20 hover:bg-white/10";
+  "inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold leading-none text-slate-100 transition hover:border-white/20 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80";
 
 type CompareSeriesRow = {
   date: string;
@@ -397,7 +397,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   }, [hoverPoint, isMobile]);
 
   const tooltipClassName =
-    "absolute pointer-events-none rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
+    "absolute z-30 pointer-events-none rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
 
   const exports = useMemo(
     () => [
@@ -533,7 +533,9 @@ export default function CompareChart({ series, packageNames, days }: Props) {
                 className="h-2.5 w-2.5 rounded-full"
                 style={{ background: paletteValue(settings.colors[pkg] ?? "slate") }}
               />
-              {pkg}
+              <span className="min-w-0 max-w-[220px] truncate" title={pkg}>
+                {pkg}
+              </span>
             </span>
           ))}
         </div>

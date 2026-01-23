@@ -10,9 +10,10 @@ import { computeLeftPad } from "@/components/charts/axis-padding";
 import { buildMonthTicks } from "@/components/charts/time-ticks";
 
 const CHART_BUTTON_CLASSES =
-  "inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold leading-none text-slate-100 transition hover:border-white/20 hover:bg-white/10";
+  "inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold leading-none text-slate-100 transition hover:border-white/20 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80";
 
 type Point = { x: number; y: number };
+type ChartEvent = { id?: string; label?: string; title?: string; type?: string };
 
 type Props = {
   series: TrafficSeriesRow[];
@@ -101,7 +102,6 @@ function readCssVar(name: string) {
   return v || "#0b0f14";
 }
 
-
 function resolveCssVarsInSvg(xml: string) {
   if (typeof window === "undefined") return xml;
   const style = getComputedStyle(document.documentElement);
@@ -120,8 +120,6 @@ function resolveCssVarsInSvg(xml: string) {
   }
   return out;
 }
-
-
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -211,24 +209,25 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
   const [isMobile, setIsMobile] = useState(false);
   const [settings, setSettings] = useState<ChartSettings>(() => {
     if (typeof window === "undefined") {
-    return {
-      showMA7: true,
-      showMA3: false,
-      downloadsColor: "accent",
-      ma7Color: "violet",
-      ma3Color: "orange",
-      downloadsStyle: "solid",
-      ma3Style: "dashed",
-      ma7Style: "dotted",
-      showOutliers: true,
-      outlierColor: "amber",
-    };
+      return {
+        showMA7: true,
+        showMA3: false,
+        downloadsColor: "accent",
+        ma7Color: "violet",
+        ma3Color: "orange",
+        downloadsStyle: "solid",
+        ma3Style: "dashed",
+        ma7Style: "dotted",
+        showOutliers: true,
+        outlierColor: "amber",
+      };
     }
 
     const saved = safeParseSettings(window.localStorage.getItem(settingsKey));
     const legacyStyle = (saved.maStyle as LineStyleKey | undefined) ?? "dashed";
     const ma3Style = (saved.ma3Style as LineStyleKey) ?? "dashed";
     const ma7Style = (saved.ma7Style as LineStyleKey) ?? "dotted";
+
     return {
       showMA7: saved.showMA7 ?? true,
       showMA3: saved.showMA3 ?? false,
@@ -322,10 +321,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
   const height = 260;
   const axisFontSize = isMobile ? 14 : 12;
   const yLabelOffset = isMobile ? 10 : 8;
-  const leftPad = useMemo(
-    () => computeLeftPad(numberFormatter.format(maxValue), axisFontSize),
-    [maxValue, axisFontSize]
-  );
+  const leftPad = useMemo(() => computeLeftPad(numberFormatter.format(maxValue), axisFontSize), [maxValue, axisFontSize]);
   const pad = { l: leftPad, r: 20, t: 16, b: isMobile ? 48 : 40 };
   const innerW = width - pad.l - pad.r;
   const innerH = height - pad.t - pad.b;
@@ -452,11 +448,13 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
   }, [hoverPoint, width, height, isMobile]);
 
   const tooltipClassName =
-    "absolute pointer-events-none rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
+    "absolute z-30 pointer-events-none rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
   const hoveredMA7 = hoverIndex == null ? null : derived?.ma7?.[hoverIndex]?.value ?? null;
   const hoveredMA3 = hoverIndex == null ? null : derived?.ma3?.[hoverIndex]?.value ?? null;
   const hoveredOutlier = hoverIndex == null ? null : derived?.outliers?.[hoverIndex] ?? null;
-  const hoveredEvents = hovered ? eventsByDate.get(hovered.date) ?? [] : [];
+  const hoveredEvents: ChartEvent[] = hovered
+    ? (((eventsByDate.get(hovered.date) as ChartEvent[] | undefined) ?? []) as ChartEvent[])
+    : [];
 
   const canShowMA7 = Boolean(ma7Path);
   const canShowMA3 = Boolean(ma3Path);
@@ -531,9 +529,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
     [pkgName]
   );
 
-  const headerRowClass = `flex w-full items-baseline gap-3 ${
-    isMobile ? "justify-between" : "justify-between flex-wrap"
-  }`;
+  const headerRowClass = `flex w-full items-baseline gap-3 ${isMobile ? "justify-between" : "justify-between flex-wrap"}`;
   const toggleGroupClass = `flex items-center gap-3 ${isMobile ? "flex-nowrap" : "flex-wrap"} ml-auto`;
 
   return (
@@ -564,141 +560,328 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
         </div>
       </div>
 
-      <div ref={chartContainerRef} className="relative mt-3">
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${width} ${height}`}
-          className="h-60 w-full touch-pan-y sm:h-64"
-          role="img"
-          aria-label={`Daily downloads line chart (${days} days)`}
-          onMouseLeave={() => setHoverIndex(null)}
-          onPointerDown={handlePointerEvent}
-          onPointerMove={handlePointerEvent}
-          onPointerLeave={() => setHoverIndex(null)}
-        >
-          {/* grid */}
-          {yTicks.map((tick) => (
-            <g key={tick.y}>
-              <line x1={pad.l} x2={pad.l + innerW} y1={tick.y} y2={tick.y} stroke="var(--chart-grid)" />
-              <text
-                x={pad.l - yLabelOffset}
-                y={tick.y + 4}
-                textAnchor="end"
-                fontSize={axisFontSize}
-                fill="var(--chart-axis)"
-              >
-                {tick.label}
-              </text>
-            </g>
-          ))}
-
-          {xTicks.map((tick, idx) => {
-            const x = pad.l + innerW * (series.length <= 1 ? 0 : tick.index / (series.length - 1));
-            const y = pad.t + innerH;
-            const isFirst = idx === 0;
-            const isLast = idx === xTicks.length - 1;
-            const textAnchor = isFirst ? "start" : isLast ? "end" : "middle";
-            const textX = isFirst ? x + 2 : isLast ? x - 2 : x;
-            return (
-              <g key={`x-${tick.index}`}>
-                <line x1={x} x2={x} y1={y} y2={y + 6} stroke="var(--chart-grid)" />
-                <text x={textX} y={y + 24} textAnchor={textAnchor} fontSize={axisFontSize} fill="var(--chart-axis)">
+      {/*
+        Chart + legend layout contract:
+        - Legend must never overlay the plot (avoid covering data/tooltip).
+        - Desktop/tablet: legend sits to the right.
+        - Mobile: legend flows below.
+      */}
+      <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px] md:items-start">
+        <div ref={chartContainerRef} className="relative min-w-0">
+          <svg
+            ref={svgRef}
+            viewBox={`0 0 ${width} ${height}`}
+            className="h-60 w-full touch-pan-y sm:h-64"
+            role="img"
+            aria-label={`Daily downloads line chart (${days} days)`}
+            onMouseLeave={() => setHoverIndex(null)}
+            onPointerDown={handlePointerEvent}
+            onPointerMove={handlePointerEvent}
+            onPointerLeave={() => setHoverIndex(null)}
+          >
+            {/* grid */}
+            {yTicks.map((tick) => (
+              <g key={tick.y}>
+                <line x1={pad.l} x2={pad.l + innerW} y1={tick.y} y2={tick.y} stroke="var(--chart-grid)" />
+                <text
+                  x={pad.l - yLabelOffset}
+                  y={tick.y + 4}
+                  textAnchor="end"
+                  fontSize={axisFontSize}
+                  fill="var(--chart-axis)"
+                >
                   {tick.label}
                 </text>
               </g>
-            );
-          })}
+            ))}
 
-          {/* event markers */}
-          {series.map((row, index) => {
-            const dayEvents = eventsByDate.get(row.date);
-            if (!dayEvents?.length) return null;
-            const x = downloadsPoints[index]?.x ?? null;
-            if (x == null) return null;
-            return (
-              <g key={`evt-${row.date}`}>
-                <line x1={x} x2={x} y1={pad.t} y2={pad.t + innerH} stroke="var(--chart-palette-accent)" opacity={0.14} />
-                <circle cx={x} cy={pad.t + 6} r={eventMarkerRadius} fill="var(--chart-palette-accent)" opacity={0.45} />
+            {xTicks.map((tick, idx) => {
+              const x = pad.l + innerW * (series.length <= 1 ? 0 : tick.index / (series.length - 1));
+              const y = pad.t + innerH;
+              const isFirst = idx === 0;
+              const isLast = idx === xTicks.length - 1;
+              const textAnchor = isFirst ? "start" : isLast ? "end" : "middle";
+              const textX = isFirst ? x + 2 : isLast ? x - 2 : x;
+              return (
+                <g key={`x-${tick.index}`}>
+                  <line x1={x} x2={x} y1={y} y2={y + 6} stroke="var(--chart-grid)" />
+                  <text x={textX} y={y + 24} textAnchor={textAnchor} fontSize={axisFontSize} fill="var(--chart-axis)">
+                    {tick.label}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* event markers */}
+            {series.map((row, index) => {
+              const dayEvents = eventsByDate.get(row.date);
+              if (!dayEvents?.length) return null;
+              const x = downloadsPoints[index]?.x ?? null;
+              if (x == null) return null;
+              return (
+                <g key={`evt-${row.date}`}>
+                  <line x1={x} x2={x} y1={pad.t} y2={pad.t + innerH} stroke="var(--chart-palette-accent)" opacity={0.14} />
+                  <circle cx={x} cy={pad.t + 6} r={eventMarkerRadius} fill="var(--chart-palette-accent)" opacity={0.45} />
+                </g>
+              );
+            })}
+
+            {/* outlier markers */}
+            {settings.showOutliers && outlierPoints.length ? (
+              <g>
+                {outlierPoints.map((p) => (
+                  <circle
+                    key={`out-${p.index}`}
+                    cx={p.x}
+                    cy={p.y}
+                    r={outlierRadius}
+                    fill={paletteValue(settings.outlierColor)}
+                    opacity={0.82}
+                    stroke="var(--background)"
+                    strokeWidth={outlierStrokeWidth}
+                  />
+                ))}
               </g>
-            );
-          })}
+            ) : null}
 
-          {/* outlier markers */}
-          {settings.showOutliers && outlierPoints.length ? (
-            <g>
-              {outlierPoints.map((p) => (
-                <circle
-                  key={`out-${p.index}`}
-                  cx={p.x}
-                  cy={p.y}
-                  r={outlierRadius}
-                  fill={paletteValue(settings.outlierColor)}
-                  opacity={0.82}
-                  stroke="var(--background)"
-                  strokeWidth={outlierStrokeWidth}
+            {/* downloads */}
+            <path
+              d={downloadsPath}
+              fill="none"
+              stroke={paletteValue(settings.downloadsColor)}
+              strokeWidth={downloadsStrokeWidth}
+              strokeDasharray={dashForStyle(settings.downloadsStyle)}
+              strokeLinecap="round"
+            />
+
+            {/* MA lines */}
+            {settings.showMA7 && canShowMA7 ? (
+              <path
+                d={ma7Path}
+                fill="none"
+                stroke={paletteValue(settings.ma7Color)}
+                strokeWidth={ma7StrokeWidth}
+                strokeDasharray={dashForStyle(settings.ma7Style)}
+                strokeLinecap="round"
+                opacity={0.92}
+              />
+            ) : null}
+
+            {settings.showMA3 && canShowMA3 ? (
+              <path
+                d={ma3Path}
+                fill="none"
+                stroke={paletteValue(settings.ma3Color)}
+                strokeWidth={ma3StrokeWidth}
+                strokeDasharray={dashForStyle(settings.ma3Style)}
+                strokeLinecap="round"
+                opacity={0.88}
+              />
+            ) : null}
+
+            {/* hover */}
+            {hoverIndex != null ? (
+              <g>
+                <line
+                  x1={downloadsPoints[hoverIndex].x}
+                  x2={downloadsPoints[hoverIndex].x}
+                  y1={pad.t}
+                  y2={pad.t + innerH}
+                  stroke="var(--chart-grid)"
+                  strokeWidth={crosshairStrokeWidth}
                 />
-              ))}
-            </g>
+                <circle
+                  cx={downloadsPoints[hoverIndex].x}
+                  cy={downloadsPoints[hoverIndex].y}
+                  r={hoverRadius}
+                  fill={paletteValue(settings.downloadsColor)}
+                />
+              </g>
+            ) : null}
+          </svg>
+
+          {styleOpen ? (
+            <div
+              ref={stylePanelRef}
+              className="absolute right-3 top-3 z-20 w-[min(22rem,92vw)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-xl"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Chart style</div>
+                <button
+                  type="button"
+                  className={CHART_BUTTON_CLASSES + " px-2 py-1"}
+                  onClick={() => setStyleOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <label className="flex flex-col gap-1">
+                  <span className="text-[color:var(--muted)]">Downloads color</span>
+                  <select
+                    value={settings.downloadsColor}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, downloadsColor: e.target.value as PaletteKey }))}
+                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                  >
+                    {PALETTE.map((p) => (
+                      <option key={p.key} value={p.key}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-[color:var(--muted)]">Downloads line</span>
+                  <select
+                    value={settings.downloadsStyle}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, downloadsStyle: e.target.value as LineStyleKey }))}
+                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                  >
+                    <option value="solid">Solid</option>
+                    <option value="dashed">Dashed</option>
+                    <option value="dotted">Dotted</option>
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-[color:var(--muted)]">MA 3 color</span>
+                  <select
+                    value={settings.ma3Color}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, ma3Color: e.target.value as PaletteKey }))}
+                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                  >
+                    {PALETTE.map((p) => (
+                      <option key={p.key} value={p.key}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-[color:var(--muted)]">MA 3 line style</span>
+                  <select
+                    value={settings.ma3Style}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, ma3Style: e.target.value as LineStyleKey }))}
+                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                  >
+                    <option value="solid">Solid</option>
+                    <option value="dashed">Dashed</option>
+                    <option value="dotted">Dotted</option>
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-[color:var(--muted)]">MA 7 color</span>
+                  <select
+                    value={settings.ma7Color}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, ma7Color: e.target.value as PaletteKey }))}
+                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                  >
+                    {PALETTE.map((p) => (
+                      <option key={p.key} value={p.key}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-[color:var(--muted)]">MA 7 line style</span>
+                  <select
+                    value={settings.ma7Style}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, ma7Style: e.target.value as LineStyleKey }))}
+                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                  >
+                    <option value="solid">Solid</option>
+                    <option value="dashed">Dashed</option>
+                    <option value="dotted">Dotted</option>
+                  </select>
+                </label>
+
+                <label className="inline-flex items-center gap-2 text-xs text-[color:var(--muted)]">
+                  <input
+                    type="checkbox"
+                    checked={settings.showOutliers}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, showOutliers: e.target.checked }))}
+                    className="h-4 w-4 accent-[color:var(--accent)]"
+                  />
+                  Outliers
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-[color:var(--muted)]">Outlier color</span>
+                  <select
+                    value={settings.outlierColor}
+                    onChange={(e) => setSettings((prev) => ({ ...prev, outlierColor: e.target.value as PaletteKey }))}
+                    className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
+                  >
+                    {PALETTE.map((p) => (
+                      <option key={p.key} value={p.key}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </div>
           ) : null}
 
-          {/* downloads */}
-          <path
-            d={downloadsPath}
-            fill="none"
-            stroke={paletteValue(settings.downloadsColor)}
-            strokeWidth={downloadsStrokeWidth}
-            strokeDasharray={dashForStyle(settings.downloadsStyle)}
-            strokeLinecap="round"
-          />
+          {hovered ? (
+            <div ref={tooltipRef} className={tooltipClassName}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-[color:var(--foreground)]">{hovered.date}</span>
+                <span className="text-[color:var(--muted)]">UTC</span>
+              </div>
 
-          {/* MA lines */}
-          {settings.showMA7 && canShowMA7 ? (
-          <path
-            d={ma7Path}
-            fill="none"
-            stroke={paletteValue(settings.ma7Color)}
-            strokeWidth={ma7StrokeWidth}
-            strokeDasharray={dashForStyle(settings.ma7Style)}
-            strokeLinecap="round"
-            opacity={0.92}
-          />
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[color:var(--muted)]">Downloads</span>
+                  <span className="font-mono">{numberFormatter.format(hovered.downloads)}</span>
+                </div>
+
+                {settings.showMA7 && typeof hoveredMA7 === "number" ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[color:var(--muted)]">MA 7</span>
+                    <span className="font-mono">{hoveredMA7.toFixed(1)}</span>
+                  </div>
+                ) : null}
+
+                {settings.showMA3 && typeof hoveredMA3 === "number" ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[color:var(--muted)]">MA 3</span>
+                    <span className="font-mono">{hoveredMA3.toFixed(1)}</span>
+                  </div>
+                ) : null}
+
+                {settings.showOutliers && hoveredOutlier?.is_outlier ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[color:var(--muted)]">Outlier</span>
+                    <span className="font-mono">{Number(hoveredOutlier.score).toFixed(2)}</span>
+                  </div>
+                ) : null}
+
+                {hoveredEvents.length ? (
+                  <div className="pt-1">
+                    <div className="text-[10px] uppercase tracking-[0.25em] text-[color:var(--muted)]">Events</div>
+                    <ul className="mt-1 space-y-0.5">
+                      {hoveredEvents.slice(0, 3).map((e, i) => (
+                        <li key={e.id ?? `${hovered.date}-${i}`} className="truncate text-[color:var(--foreground)]">
+                          {e.label ?? e.title ?? e.type ?? "Event"}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            </div>
           ) : null}
+        </div>
 
-          {settings.showMA3 && canShowMA3 ? (
-          <path
-            d={ma3Path}
-            fill="none"
-            stroke={paletteValue(settings.ma3Color)}
-            strokeWidth={ma3StrokeWidth}
-            strokeDasharray={dashForStyle(settings.ma3Style)}
-            strokeLinecap="round"
-            opacity={0.88}
-          />
-          ) : null}
-
-          {/* hover */}
-          {hoverIndex != null ? (
-            <g>
-              <line
-                x1={downloadsPoints[hoverIndex].x}
-                x2={downloadsPoints[hoverIndex].x}
-                y1={pad.t}
-                y2={pad.t + innerH}
-                stroke="var(--chart-grid)"
-                strokeWidth={crosshairStrokeWidth}
-              />
-              <circle
-                cx={downloadsPoints[hoverIndex].x}
-                cy={downloadsPoints[hoverIndex].y}
-                r={hoverRadius}
-                fill={paletteValue(settings.downloadsColor)}
-              />
-            </g>
-          ) : null}
-        </svg>
-
-        {/* Legend (visual mapping). Positioned inside the chart container so it doesn't affect layout. */}
-        <div className="pointer-events-none absolute bottom-10 left-2 z-10 rounded-xl border border-white/10 bg-[color:var(--surface)] px-2.5 py-2 text-[11px] text-[color:var(--foreground)] shadow-lg sm:bottom-8">
+        {/* Legend (visual mapping). Never overlays the plot. */}
+        <div className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-3 py-2 text-[11px] text-[color:var(--foreground)] shadow-lg md:max-h-[260px] md:overflow-auto md:self-start">
           <ul className="space-y-1">
             <li className="flex items-center gap-2">
               <svg width="32" height="8" viewBox="0 0 32 8" aria-hidden>
@@ -715,6 +898,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               </svg>
               <span className="text-[color:var(--muted)]">Downloads</span>
             </li>
+
             {settings.showMA3 && canShowMA3 ? (
               <li className="flex items-center gap-2">
                 <svg width="32" height="8" viewBox="0 0 32 8" aria-hidden>
@@ -732,6 +916,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
                 <span className="text-[color:var(--muted)]">MA 3</span>
               </li>
             ) : null}
+
             {settings.showMA7 && canShowMA7 ? (
               <li className="flex items-center gap-2">
                 <svg width="32" height="8" viewBox="0 0 32 8" aria-hidden>
@@ -749,6 +934,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
                 <span className="text-[color:var(--muted)]">MA 7</span>
               </li>
             ) : null}
+
             {settings.showOutliers && outlierPoints.length ? (
               <li className="flex items-center gap-2">
                 <svg width="32" height="8" viewBox="0 0 32 8" aria-hidden>
@@ -759,187 +945,18 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
             ) : null}
           </ul>
         </div>
+      </div>
 
-        {styleOpen ? (
-          <div
-            ref={stylePanelRef}
-            className="absolute right-3 top-3 z-20 w-[min(22rem,92vw)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-xl"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Chart style</div>
-              <button
-                type="button"
-                className={CHART_BUTTON_CLASSES + " px-2 py-1"}
-                onClick={() => setStyleOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1">
-                <span className="text-[color:var(--muted)]">Downloads color</span>
-                <select
-                  value={settings.downloadsColor}
-                  onChange={(e) => setSettings((prev) => ({ ...prev, downloadsColor: e.target.value as PaletteKey }))}
-                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                >
-                  {PALETTE.map((p) => (
-                    <option key={p.key} value={p.key}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-[color:var(--muted)]">Downloads line</span>
-                <select
-                  value={settings.downloadsStyle}
-                  onChange={(e) => setSettings((prev) => ({ ...prev, downloadsStyle: e.target.value as LineStyleKey }))}
-                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                >
-                  <option value="solid">Solid</option>
-                  <option value="dashed">Dashed</option>
-                  <option value="dotted">Dotted</option>
-                </select>
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-[color:var(--muted)]">MA 3 color</span>
-                <select
-                  value={settings.ma3Color}
-                  onChange={(e) => setSettings((prev) => ({ ...prev, ma3Color: e.target.value as PaletteKey }))}
-                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                >
-                  {PALETTE.map((p) => (
-                    <option key={p.key} value={p.key}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-[color:var(--muted)]">MA 3 line style</span>
-                <select
-                  value={settings.ma3Style}
-                  onChange={(e) => setSettings((prev) => ({ ...prev, ma3Style: e.target.value as LineStyleKey }))}
-                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                >
-                  <option value="solid">Solid</option>
-                  <option value="dashed">Dashed</option>
-                  <option value="dotted">Dotted</option>
-                </select>
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-[color:var(--muted)]">MA 7 color</span>
-                <select
-                  value={settings.ma7Color}
-                  onChange={(e) => setSettings((prev) => ({ ...prev, ma7Color: e.target.value as PaletteKey }))}
-                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                >
-                  {PALETTE.map((p) => (
-                    <option key={p.key} value={p.key}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-[color:var(--muted)]">MA 7 line style</span>
-                <select
-                  value={settings.ma7Style}
-                  onChange={(e) => setSettings((prev) => ({ ...prev, ma7Style: e.target.value as LineStyleKey }))}
-                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                >
-                  <option value="solid">Solid</option>
-                  <option value="dashed">Dashed</option>
-                  <option value="dotted">Dotted</option>
-                </select>
-              </label>
-              <label className="inline-flex items-center gap-2 text-xs text-[color:var(--muted)]">
-                <input
-                  type="checkbox"
-                  checked={settings.showOutliers}
-                  onChange={(e) => setSettings((prev) => ({ ...prev, showOutliers: e.target.checked }))}
-                  className="h-4 w-4 accent-[color:var(--accent)]"
-                />
-                Outliers
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-[color:var(--muted)]">Outlier color</span>
-                <select
-                  value={settings.outlierColor}
-                  onChange={(e) => setSettings((prev) => ({ ...prev, outlierColor: e.target.value as PaletteKey }))}
-                  className="rounded-xl border border-white/10 bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                >
-                  {PALETTE.map((p) => (
-                    <option key={p.key} value={p.key}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          </div>
-        ) : null}
-
-        {hovered ? (
-          <div ref={tooltipRef} className={tooltipClassName}>
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-[color:var(--foreground)]">{hovered.date}</span>
-              <span className="text-[color:var(--muted)]">UTC</span>
-            </div>
-            <div className="mt-2 space-y-1">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[color:var(--muted)]">Downloads</span>
-                <span className="font-mono">{numberFormatter.format(hovered.downloads)}</span>
-              </div>
-              {settings.showMA7 && typeof hoveredMA7 === "number" ? (
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[color:var(--muted)]">MA 7</span>
-                  <span className="font-mono">{hoveredMA7.toFixed(1)}</span>
-                </div>
-              ) : null}
-              {settings.showMA3 && typeof hoveredMA3 === "number" ? (
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[color:var(--muted)]">MA 3</span>
-                  <span className="font-mono">{hoveredMA3.toFixed(1)}</span>
-                </div>
-              ) : null}
-              {settings.showOutliers && hoveredOutlier?.is_outlier ? (
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[color:var(--muted)]">Outlier score</span>
-                  <span className="font-mono">{hoveredOutlier.score.toFixed(2)}</span>
-                </div>
-              ) : null}
-            </div>
-            {hoveredEvents.length ? (
-              <div className="mt-2 border-t border-white/10 pt-2">
-                <p className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Events</p>
-                <div className="mt-1 max-h-28 overflow-auto pr-1">
-                  <ul className="space-y-1">
-                  {hoveredEvents.slice(0, 3).map((evt) => (
-                    <li key={`${evt.date_utc}|${evt.event_type}|${evt.label}`}>
-                      <span className="text-[color:var(--muted)]">{evt.event_type}</span>: {evt.label}
-                    </li>
-                  ))}
-                  {hoveredEvents.length > 3 ? <li className="text-[color:var(--muted)]">...</li> : null}
-                  </ul>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-        <div className="mt-3 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            className={CHART_BUTTON_CLASSES}
-            onClick={() => setStyleOpen((v) => !v)}
-            aria-expanded={styleOpen}
-          >
-            Style
-          </button>
-          <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
-        </div>
+      <div className="mt-3 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          className={CHART_BUTTON_CLASSES}
+          onClick={() => setStyleOpen((v) => !v)}
+          aria-expanded={styleOpen}
+        >
+          Style
+        </button>
+        <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
       </div>
     </section>
   );

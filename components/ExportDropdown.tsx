@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 export type ExportItem = {
@@ -28,6 +28,10 @@ export default function ExportDropdown({
 }) {
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
+
+  const id = useId();
+  const buttonId = `${id}-export-toggle`;
+  const menuId = `${id}-export-menu`;
 
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
@@ -153,8 +157,9 @@ export default function ExportDropdown({
     return createPortal(
       <div
         ref={menuRef}
+        id={menuId}
         role="menu"
-        aria-label={`${label} menu`}
+        aria-labelledby={buttonId}
         className="pointer-events-auto z-50 overflow-hidden rounded-xl border border-white/10 bg-[color:var(--surface)] shadow-xl"
         style={{
           position: "fixed",
@@ -174,7 +179,7 @@ export default function ExportDropdown({
                 key={item.key}
                 href={item.href}
                 role="menuitem"
-                className="block rounded-lg px-3 py-2 text-sm text-slate-100 transition hover:bg-white/10"
+                className="block rounded-lg px-3 py-2 text-sm text-slate-100 transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
                 {...(downloadProps ?? {})}
                 onClick={() => close()}
               >
@@ -186,16 +191,18 @@ export default function ExportDropdown({
       </div>,
       portalRoot
     );
-  }, [open, portalRoot, menuPosition, items, label]);
+  }, [open, portalRoot, menuPosition, items, menuId, buttonId]);
 
   return (
     <>
       <div className={className}>
         <button
           ref={triggerRef}
+          id={buttonId}
           type="button"
           aria-haspopup="menu"
           aria-expanded={open}
+          aria-controls={menuId}
           onClick={toggle}
           className={`${ACTION_BUTTON_CLASSES} inline-flex items-center gap-2`}
         >

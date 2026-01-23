@@ -242,7 +242,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   </>
                 ) : null}
               </colgroup>
-              <thead className="sticky top-0 bg-black/80 text-center text-xs uppercase tracking-[0.22em] text-slate-200 backdrop-blur sm:tracking-[0.3em]">
+		      <thead className="sticky top-0 z-20 bg-black/80 text-center text-xs uppercase tracking-[0.22em] text-slate-200 backdrop-blur sm:tracking-[0.3em]">
                 <tr>
                   <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap sm:px-3">Date</th>
                   <th className="px-1.5 py-2 text-center font-semibold whitespace-nowrap sm:px-3">Downloads</th>
