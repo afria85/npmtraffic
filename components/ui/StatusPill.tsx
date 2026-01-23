@@ -1,12 +1,10 @@
 export default function StatusPill({ status }: { status: "YES" | "NO" }) {
   const isYes = status === "YES";
 
-  const base =
-    "inline-flex items-center justify-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.25em]";
-
+  // Ensure sufficient contrast in both light and dark themes.
   const className = isYes
-    ? `${base} border-[color:var(--outlier-pill-border)] bg-[color:var(--outlier-pill-bg)] text-[color:var(--outlier-pill-fg)]`
-    : `${base} border-[color:var(--neutral-pill-border)] bg-[color:var(--neutral-pill-bg)] text-[color:var(--neutral-pill-fg)]`;
+    ? "inline-flex h-5 items-center justify-center rounded-full border border-amber-300 bg-amber-100 px-2 text-[10px] font-semibold uppercase tracking-[0.25em] leading-none text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+    : "inline-flex h-5 items-center justify-center rounded-full border border-slate-200 bg-slate-100 px-2 text-[10px] font-semibold uppercase tracking-[0.25em] leading-none text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-400";
 
   return <span className={className}>{status}</span>;
 }

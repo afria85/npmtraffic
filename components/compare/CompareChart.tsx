@@ -427,34 +427,28 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     [packageNames.length]
   );
 
-  const updateHoverIndexFromClientX = (clientX: number, svg: SVGSVGElement) => {
-    // Match single-package chart behavior: use SVG CTM when available to keep hover math stable
-    // across responsive scaling, device pixel ratios, and browser zoom.
-    let viewX: number | null = null;
-    try {
-      const pt = svg.createSVGPoint();
-      pt.x = clientX;
-      pt.y = 0;
-      const ctm = svg.getScreenCTM();
-      if (ctm) {
-        const local = pt.matrixTransform(ctm.inverse());
-        viewX = local.x;
-      }
-    } catch {
-      viewX = null;
-    }
-    if (viewX == null) {
-      const rect = svg.getBoundingClientRect();
-      viewX = ((clientX - rect.left) / rect.width) * WIDTH;
-    }
-    const clampedX = clamp(viewX, 0, WIDTH);
-    const normalized = clamp((clampedX - pad.l) / innerW, 0, 1);
+  const clientPointToSvgX = (clientX: number, clientY: number, svg: SVGSVGElement) => {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return null;
+    const pt = svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const svgPt = pt.matrixTransform(ctm.inverse());
+    return svgPt.x;
+  };
+
+  const updateHoverIndexFromClientPoint = (clientX: number, clientY: number, svg: SVGSVGElement) => {
+    const svgX = clientPointToSvgX(clientX, clientY, svg);
+    if (svgX == null) return;
+    const viewX = clamp(svgX, 0, WIDTH);
+    const normalized = clamp((viewX - pad.l) / innerW, 0, 1);
+    // Keep this math aligned with pointsByPkg so the crosshair follows the cursor precisely.
     setHoverIndex(pickClosestIndex(normalized, series.length));
   };
 
   const handlePointerEvent = (event: ReactPointerEvent<SVGSVGElement>) => {
     const svg = event.currentTarget as SVGSVGElement;
-    updateHoverIndexFromClientX(event.clientX, svg);
+    updateHoverIndexFromClientPoint(event.clientX, event.clientY, svg);
   };
 
   return (
@@ -560,7 +554,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
             ))}
           </div>
 
-          <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
+          <div className="flex items-center justify-end gap-2">
             <button
               type="button"
               className={CHART_BUTTON_CLASSES}

@@ -44,15 +44,10 @@ export default function ActionMenu({
     if (!trigger) return;
 
     const rect = trigger.getBoundingClientRect();
-    // Clamp to viewport on small screens so the menu never clips off the right edge.
-    const viewportW = typeof window !== "undefined" ? window.innerWidth : rect.left + rect.width;
+    const desiredWidth = Math.max(160, rect.width);
     const margin = 8;
-    const desiredWidth = Math.max(160, Math.round(rect.width));
-    let left = Math.round(rect.left);
-    if (left + desiredWidth > viewportW - margin) {
-      left = Math.max(margin, viewportW - desiredWidth - margin);
-    }
-    if (left < margin) left = margin;
+    const viewportWidth = typeof window === "undefined" ? rect.left + desiredWidth : window.innerWidth;
+    const left = Math.min(Math.max(rect.left, margin), Math.max(margin, viewportWidth - desiredWidth - margin));
     setMenuPosition({
       top: rect.bottom + 8,
       left,

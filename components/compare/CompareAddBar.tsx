@@ -152,7 +152,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
     const lowerSet = new Set(packages.map((p) => p.toLowerCase()));
     if (lowerSet.has(next.toLowerCase())) {
       setMessage("That package is already in the comparison.");
-      setIsListOpen(false);
+      setIsListOpen(true);
       setActiveIndex(-1);
       window.setTimeout(() => inputRef.current?.focus(), 0);
       return;
@@ -160,7 +160,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
 
     if (packages.length >= MAX_COMPARE) {
       setMessage(`Compare supports up to ${MAX_COMPARE} packages.`);
-      setIsListOpen(false);
+      setIsListOpen(true);
       setActiveIndex(-1);
       window.setTimeout(() => inputRef.current?.focus(), 0);
       return;

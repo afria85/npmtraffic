@@ -31,8 +31,8 @@ export default function SignedValue({ value, showArrow = false, emphasis = "prim
   const textColor =
     positive || negative
       ? positive
-        ? "text-emerald-300"
-        : "text-rose-300"
+        ? "text-[color:var(--signed-pos)]"
+        : "text-[color:var(--signed-neg)]"
       : emphasis === "secondary"
       ? "text-slate-400"
       : "text-slate-300";
