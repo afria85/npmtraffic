@@ -162,6 +162,11 @@ body {
 }
 
 
+
+/* Reduce paint-heavy animations on the theme toggle (helps Lighthouse's "non-composited animations"). */
+.theme-toggle {
+  transition-property: opacity, transform !important;
+}
 details summary {
   list-style: none;
 }
