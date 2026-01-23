@@ -2,15 +2,15 @@ import type { NextConfig } from "next";
 
 function buildCsp(options?: { strict?: boolean }) {
   const isProd = process.env.NODE_ENV === "production";
-  const strict = Boolean(options?.strict);
-
-  // Script policy: avoid unsafe-inline in production. Theme init runs from /public/theme-init.js.
+  const allowInline = !options?.strict;
+  // Keep inline scripts/styles until we move to nonces; report-only can validate stricter CSP.
   const scriptSrc = ["'self'"];
+  if (allowInline) scriptSrc.push("'unsafe-inline'");
   // Next.js dev tooling may require eval; avoid it in production and in strict mode.
-  if (!isProd && !strict) scriptSrc.push("'unsafe-eval'");
+  if (!isProd && allowInline) scriptSrc.push("'unsafe-eval'");
 
-  // Style policy: Tailwind produces external CSS, but inline styles may still appear (e.g. SVG, charts).
-  const styleSrc = ["'self'", "'unsafe-inline'"];
+  const styleSrc = ["'self'"];
+  if (allowInline) styleSrc.push("'unsafe-inline'");
 
   return [
     "default-src 'self'",
@@ -30,11 +30,13 @@ function buildCsp(options?: { strict?: boolean }) {
     .join("; ");
 }
 
-
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["http://localhost:3000", "http://192.168.0.48:3000"],
   async headers() {
-    const csp = buildCsp();
+    // Important: Next.js (App Router) emits small inline scripts needed for hydration and RSC.
+    // Until we wire nonces end-to-end, the enforced CSP must allow inline scripts.
+    // Validate stricter CSP via CSP_REPORT_ONLY=1.
+    const csp = buildCsp({ strict: false });
     const reportOnly = process.env.CSP_REPORT_ONLY === "1";
     const reportOnlyCsp = reportOnly ? buildCsp({ strict: true }) : null;
     return [
