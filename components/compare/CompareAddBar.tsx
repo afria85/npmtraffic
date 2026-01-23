@@ -51,6 +51,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
   const router = useRouter();
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const suppressOpenRef = useRef(false);
   const [query, setQuery] = useState("");
   const [state, setState] = useState<SearchState>("idle");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -152,16 +153,18 @@ export default function CompareAddBar({ packages, days, className }: Props) {
     const lowerSet = new Set(packages.map((p) => p.toLowerCase()));
     if (lowerSet.has(next.toLowerCase())) {
       setMessage("That package is already in the comparison.");
-      setIsListOpen(true);
+      setIsListOpen(false);
       setActiveIndex(-1);
+      suppressOpenRef.current = true;
       window.setTimeout(() => inputRef.current?.focus(), 0);
       return;
     }
 
     if (packages.length >= MAX_COMPARE) {
       setMessage(`Compare supports up to ${MAX_COMPARE} packages.`);
-      setIsListOpen(true);
+      setIsListOpen(false);
       setActiveIndex(-1);
+      suppressOpenRef.current = true;
       window.setTimeout(() => inputRef.current?.focus(), 0);
       return;
     }
@@ -179,6 +182,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
     setIsListOpen(false);
     setActiveIndex(-1);
     setMessage(null);
+    suppressOpenRef.current = true;
     window.setTimeout(() => inputRef.current?.focus(), 0);
   };
 
@@ -226,8 +230,22 @@ export default function CompareAddBar({ packages, days, className }: Props) {
               setState("idle");
             }
           }}
-          onFocus={() => setIsListOpen(true)}
-          onClick={() => setIsListOpen(true)}
+          onFocus={() => {
+            if (suppressOpenRef.current) {
+              suppressOpenRef.current = false;
+              return;
+            }
+            if (message) return;
+            setIsListOpen(true);
+          }}
+          onClick={() => {
+            if (suppressOpenRef.current) {
+              suppressOpenRef.current = false;
+              return;
+            }
+            if (message) return;
+            setIsListOpen(true);
+          }}
           onBlur={() => window.setTimeout(() => setIsListOpen(false), 120)}
           onKeyDown={handleKeyDown}
           placeholder="Add a package to compare"
@@ -285,7 +303,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
         ) : null}
       </div>
 
-      {message ? <p className="mt-2 text-xs text-amber-700 dark:text-amber-200">{message}</p> : null}
+      {message ? <p className="mt-2 text-xs text-[color:var(--warning)]">{message}</p> : null}
     </div>
   );
 }

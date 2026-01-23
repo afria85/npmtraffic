@@ -33,6 +33,18 @@
   --danger: #fda4af; /* rose-300 */
   --signed-pos: #6ee7b7; /* emerald-300 */
   --signed-neg: #fda4af; /* rose-300 */
+
+  /* Warning/notice text (theme-safe). */
+  --warning: #fde68a; /* amber-200 */
+
+  /* Status pill tokens (YES/NO) used for Outlier. */
+  --pill-yes-bg: rgba(251, 191, 36, 0.12);
+  --pill-yes-border: rgba(251, 191, 36, 0.28);
+  --pill-yes-fg: #fde68a; /* amber-200 */
+
+  --pill-no-bg: rgba(255, 255, 255, 0.06);
+  --pill-no-border: rgba(255, 255, 255, 0.10);
+  --pill-no-fg: #94a3b8; /* slate-400 */
 }
 
 /* Light theme overrides */
@@ -69,6 +81,16 @@
   --danger: #9f1239; /* rose-800 */
   --signed-pos: #047857; /* emerald-700 */
   --signed-neg: #9f1239; /* rose-800 */
+
+  --warning: #92400e; /* amber-800 */
+
+  --pill-yes-bg: #fef3c7; /* amber-100 */
+  --pill-yes-border: rgba(245, 158, 11, 0.65); /* amber-500 */
+  --pill-yes-fg: #78350f; /* amber-900 */
+
+  --pill-no-bg: rgba(15, 23, 42, 0.06);
+  --pill-no-border: rgba(11, 18, 32, 0.14);
+  --pill-no-fg: #334155; /* slate-700 */
 }
 
 :root {

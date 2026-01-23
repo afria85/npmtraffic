@@ -492,7 +492,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
                         <button
                           type="button"
                           onClick={() => onDelete(entry)}
-                          className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-700 dark:text-red-100 transition hover:bg-red-500/20"
+                          className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-1 text-xs font-semibold text-[color:var(--danger)] transition hover:bg-[color:var(--surface-3)]"
                         >
                           Delete
                         </button>
