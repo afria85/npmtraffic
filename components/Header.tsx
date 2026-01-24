@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import ThemeToggleLazy from "@/components/ThemeToggleLazy";
+import CompareLink from "@/components/compare/CompareLink";
+
 
 const HEADER_PILL_CLASSES =
   "rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-4 py-2 text-sm text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
@@ -26,6 +28,7 @@ export default function Header() {
           <Link href="/about" className={HEADER_PILL_CLASSES}>
             About
           </Link>
+          <CompareLink className={HEADER_PILL_CLASSES} />
           <a
             href={REPO_URL}
             target="_blank"

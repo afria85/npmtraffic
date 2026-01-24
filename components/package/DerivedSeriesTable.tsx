@@ -297,16 +297,12 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
         </div>
         <ScrollHintContainer className="max-h-[60vh] overflow-auto">
           <table
-            className={
-              showDerived
-                ? "min-w-[560px] w-max table-fixed text-sm sm:w-full"
-                : "w-full table-fixed text-sm"
-            }
+            className={`w-full table-fixed text-sm ${showDerived ? "min-w-[900px]" : ""}`}
           >
             <colgroup>
-              <col className="w-[38%] sm:w-[130px]" />
-              <col className="w-[22%] sm:w-[98px]" />
-              <col className="w-[40%] sm:w-[110px]" />
+              <col className="w-[120px] sm:w-[140px]" />
+              <col className="w-[130px] sm:w-[160px]" />
+              <col className="w-[150px] sm:w-[180px]" />
               {showDerived ? (
                 <>
                   <col className="w-[86px]" />
@@ -615,14 +611,14 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                         <button
                           type="button"
                           onClick={() => handleEdit(event)}
-                          className="text-xs font-medium text-[color:var(--accent)] underline underline-offset-4"
+                          className="rounded-md px-2 py-1 text-xs font-medium text-[color:var(--accent)] hover:bg-[color:var(--surface-3)]"
                         >
                           Edit
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDelete(event)}
-                          className="text-xs font-medium underline underline-offset-4 text-[color:var(--danger)]"
+                          className="rounded-md px-2 py-1 text-xs font-medium text-[color:var(--danger)] hover:bg-[color:var(--surface-3)]"
                         >
                           Delete
                         </button>

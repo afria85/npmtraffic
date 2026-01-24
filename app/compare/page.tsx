@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fragment } from "react";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
 import { clampDays, canonicalizePackages, parsePackageList, rangeForDays } from "@/lib/query";
@@ -47,11 +48,11 @@ type CompareTableHeaderProps = {
 
 export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
   return (
-	    <thead className="sticky top-0 z-20 bg-[color:var(--surface)] text-center text-xs uppercase tracking-[0.22em] text-[color:var(--muted)] backdrop-blur sm:tracking-[0.3em]">
+    <thead className="sticky top-0 z-20 bg-[color:var(--surface)] text-center text-xs uppercase tracking-[0.18em] text-[color:var(--muted)] backdrop-blur sm:tracking-[0.3em]">
       <tr>
         <th
           rowSpan={2}
-          className="px-2 py-2 text-center text-xs uppercase tracking-[0.22em] text-[color:var(--muted)] whitespace-nowrap overflow-hidden sm:px-3 sm:tracking-[0.3em]"
+          className="px-2 py-2 text-center text-xs uppercase tracking-[0.18em] text-[color:var(--muted)] whitespace-nowrap sm:px-3 sm:tracking-[0.3em]"
         >
           Date
         </th>
@@ -59,7 +60,7 @@ export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
 	          <th
 	            key={`${pkg}-group`}
 	            colSpan={2}
-	            className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--foreground)] sm:px-3 sm:tracking-[0.3em]"
+	            className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--foreground)] sm:px-3 sm:tracking-[0.3em]"
 	          >
 	            <div className="mx-auto max-w-[180px] truncate" title={pkg}>
 	              {pkg}
@@ -72,19 +73,19 @@ export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
           <Fragment key={`${pkg}-metrics`}>
             <th
               scope="col"
-              className="px-2 py-2 text-center text-xs uppercase tracking-[0.22em] text-[color:var(--muted)] whitespace-nowrap overflow-hidden sm:px-3 sm:tracking-[0.3em]"
+              className="px-2 py-2 text-center text-xs uppercase tracking-[0.18em] text-[color:var(--muted)] whitespace-nowrap sm:px-3 sm:tracking-[0.3em]"
               title="Downloads for the day"
             >
-              <span className="block truncate">Downloads</span>
+              <span className="block whitespace-nowrap">Downloads</span>
             </th>
 	            <th
 	              scope="col"
-	              className="px-2 py-2 text-center text-xs uppercase tracking-[0.22em] text-[color:var(--muted)] whitespace-nowrap overflow-hidden sm:px-3 sm:tracking-[0.3em]"
+	              className="px-2 py-2 text-center text-xs uppercase tracking-[0.18em] text-[color:var(--muted)] whitespace-nowrap sm:px-3 sm:tracking-[0.3em]"
 	              title="Delta vs previous day"
 	            >
-              <span className="block truncate">
-<span className="hidden sm:inline">Delta vs prev day</span>
-	              <span className="sm:hidden">Δ prev</span>
+              <span className="block whitespace-nowrap">
+                <span className="hidden sm:inline">Delta vs prev day</span>
+                <span className="sm:hidden">Δ prev</span>
               </span>
             </th>
           </Fragment>
@@ -271,6 +272,17 @@ export default async function ComparePage({ searchParams }: Props) {
           <p className="mt-1 truncate text-sm text-[color:var(--muted)]">
             {pkgs.join(", ")} · {days} days
           </p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[color:var(--muted)]">
+            <span className="text-[11px] uppercase tracking-widest">Open package:</span>
+            {pkgs.map((name, i) => (
+              <span key={name} className="flex items-center gap-2">
+                <Link href={`/p/${encodeURIComponent(name)}`} className="text-sm font-medium text-[color:var(--link)] hover:underline">
+                  {name}
+                </Link>
+                {i < pkgs.length - 1 ? <span aria-hidden="true">,</span> : null}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -324,22 +336,32 @@ export default async function ComparePage({ searchParams }: Props) {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {data.packages.map((pkg) => (
           <div key={pkg.name} className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
-            <p
-              className="text-xs uppercase tracking-widest text-[color:var(--muted)] truncate"
-              title={pkg.name}
-            >
-              {pkg.name}
-            </p>
-            <p className="mt-2 text-xl font-semibold text-[color:var(--foreground)]">
-              {formatNumber(pkg.total)}
-            </p>
-            <p className="mt-1 text-xs text-[color:var(--muted)]">Total downloads ({days} days)</p>
-            <p
-              className="text-xs text-[color:var(--muted)]"
-              title="Share of total downloads among the compared packages for the selected range"
-            >
-              {pkg.share.toFixed(2)}% of total
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p
+                  className="text-xs uppercase tracking-widest text-[color:var(--muted)] truncate"
+                  title={pkg.name}
+                >
+                  {pkg.name}
+                </p>
+                <p className="mt-2 text-xl font-semibold text-[color:var(--foreground)]">
+                  {formatNumber(pkg.total)}
+                </p>
+                <p className="mt-1 text-xs text-[color:var(--muted)]">Total downloads ({days} days)</p>
+                <p
+                  className="text-xs text-[color:var(--muted)]"
+                  title="Share of total downloads among the compared packages for the selected range"
+                >
+                  {pkg.share.toFixed(2)}% of total
+                </p>
+              </div>
+              <Link
+                href={`/p/${encodeURIComponent(pkg.name)}`}
+                className="shrink-0 text-xs font-medium text-[color:var(--link)] hover:underline"
+              >
+                View
+              </Link>
+            </div>
           </div>
         ))}
       </div>
