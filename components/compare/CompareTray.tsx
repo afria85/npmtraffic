@@ -11,12 +11,16 @@ import {
 import { getCompareButtonLabel, getCompareStatusLabel, isCompareReady } from "@/lib/compare-ui";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
+// React requires getServerSnapshot to return a cached value.
+const EMPTY_SNAPSHOT: string[] = [];
+const getEmptySnapshot = () => EMPTY_SNAPSHOT;
+
 const LIST_REMOVAL_CLASS =
   "inline-flex shrink-0 items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1.5 text-xs text-slate-100 transition hover:bg-[color:var(--surface-3)]";
 
 export default function CompareTray() {
   // Hydration-safe: SSR snapshot is always empty. Client reads localStorage after mount via the store.
-  const packages = useSyncExternalStore(subscribeCompareList, loadCompareList, () => []);
+  const packages = useSyncExternalStore(subscribeCompareList, loadCompareList, getEmptySnapshot);
 
   const handleRemove = useCallback((name: string) => {
     removeFromCompare(name);

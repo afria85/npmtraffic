@@ -32,6 +32,10 @@ type Props = {
 };
 
 const DEBOUNCE_MS = 300;
+
+// React requires getServerSnapshot to return a cached value.
+const EMPTY_SNAPSHOT: string[] = [];
+const getEmptySnapshot = () => EMPTY_SNAPSHOT;
 const POPULAR_LIMIT = 8;
 const MAX_COMPARE = 5;
 
@@ -55,7 +59,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
   const [query, setQuery] = useState("");
   const [state, setState] = useState<SearchState>("idle");
   const [results, setResults] = useState<SearchResult[]>([]);
-  const recent = useSyncExternalStore(subscribeRecentSearches, loadRecentSearches, () => []);
+  const recent = useSyncExternalStore(subscribeRecentSearches, loadRecentSearches, getEmptySnapshot);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isListOpen, setIsListOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);

@@ -5,6 +5,13 @@ const STORAGE_KEY = "npmtraffic:compare";
 export const COMPARE_UPDATED_EVENT = "npmtraffic:compare-updated";
 const MAX_COMPARE = 5;
 
+// React's useSyncExternalStore requires getSnapshot to return a stable
+// reference when the underlying store hasn't changed. Cache parsed storage
+// by raw payload to avoid infinite render loops in dev and hydration edge cases.
+const EMPTY_LIST: string[] = [];
+let cachedRaw: string | null = null;
+let cachedList: string[] = EMPTY_LIST;
+
 export function subscribeCompareList(onStoreChange: () => void) {
   if (typeof window === "undefined") return () => {};
   const handler = () => onStoreChange();
@@ -25,23 +32,36 @@ export function clearCompareList() {
   broadcastUpdate([]);
 }
 
-
 export function loadCompareList() {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return EMPTY_LIST;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+    if (raw === cachedRaw) return cachedList;
+    cachedRaw = raw;
+    if (!raw) {
+      cachedList = EMPTY_LIST;
+      return cachedList;
+    }
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item) => typeof item === "string");
+    if (!Array.isArray(parsed)) {
+      cachedList = EMPTY_LIST;
+      return cachedList;
+    }
+    cachedList = parsed.filter((item) => typeof item === "string");
+    return cachedList;
   } catch {
-    return [];
+    cachedRaw = null;
+    cachedList = EMPTY_LIST;
+    return cachedList;
   }
 }
 
 export function saveCompareList(list: string[]) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  const nextRaw = JSON.stringify(list);
+  window.localStorage.setItem(STORAGE_KEY, nextRaw);
+  cachedRaw = nextRaw;
+  cachedList = list;
 }
 
 function broadcastUpdate(list: string[]) {
@@ -85,4 +105,4 @@ export function buildCompareUrl(list: string[], days = 30) {
   return `/compare?packages=${pkgs}&days=${days}`;
 }
 
-export { STORAGE_KEY, MAX_COMPARE };
+export { STORAGE_KEY, MAX_COMPARE, EMPTY_LIST };

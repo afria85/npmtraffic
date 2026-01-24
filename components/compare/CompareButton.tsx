@@ -13,6 +13,10 @@ type CompareButtonProps = {
   name: string;
 };
 
+// React requires getServerSnapshot to return a cached value.
+const EMPTY_SNAPSHOT: string[] = [];
+const getEmptySnapshot = () => EMPTY_SNAPSHOT;
+
 function includesPackage(list: string[], name: string) {
   const needle = name.toLowerCase();
   return list.some((item) => item.toLowerCase() === needle);
@@ -20,7 +24,7 @@ function includesPackage(list: string[], name: string) {
 
 export default function CompareButton({ name }: CompareButtonProps) {
   // Hydration-safe: server snapshot is always empty; client picks up localStorage after mount.
-  const compareList = useSyncExternalStore(subscribeCompareList, loadCompareList, () => []);
+  const compareList = useSyncExternalStore(subscribeCompareList, loadCompareList, getEmptySnapshot);
 
   const isActive = useMemo(() => includesPackage(compareList, name), [compareList, name]);
 

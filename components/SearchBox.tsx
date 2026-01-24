@@ -34,6 +34,10 @@ type SearchBoxProps = {
 const DEBOUNCE_MS = 300;
 const POPULAR_LIMIT = 8;
 
+// React requires getServerSnapshot to return a cached value.
+const EMPTY_SNAPSHOT: string[] = [];
+const getEmptySnapshot = () => EMPTY_SNAPSHOT;
+
 function SearchPanel({
   autoFocus,
   onClose,
@@ -49,7 +53,7 @@ function SearchPanel({
   const [query, setQuery] = useState("");
   const [state, setState] = useState<SearchState>("idle");
   const [results, setResults] = useState<SearchResult[]>([]);
-  const recent = useSyncExternalStore(subscribeRecentSearches, loadRecentSearches, () => []);
+  const recent = useSyncExternalStore(subscribeRecentSearches, loadRecentSearches, getEmptySnapshot);
   const [requestId, setRequestId] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isListOpen, setIsListOpen] = useState(false);
