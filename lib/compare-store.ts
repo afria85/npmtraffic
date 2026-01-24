@@ -5,6 +5,27 @@ const STORAGE_KEY = "npmtraffic:compare";
 export const COMPARE_UPDATED_EVENT = "npmtraffic:compare-updated";
 const MAX_COMPARE = 5;
 
+export function subscribeCompareList(onStoreChange: () => void) {
+  if (typeof window === "undefined") return () => {};
+  const handler = () => onStoreChange();
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === STORAGE_KEY) handler();
+  };
+  window.addEventListener(COMPARE_UPDATED_EVENT, handler as EventListener);
+  window.addEventListener("storage", onStorage);
+  return () => {
+    window.removeEventListener(COMPARE_UPDATED_EVENT, handler as EventListener);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
+export function clearCompareList() {
+  if (typeof window === "undefined") return;
+  saveCompareList([]);
+  broadcastUpdate([]);
+}
+
+
 export function loadCompareList() {
   if (typeof window === "undefined") return [];
   try {

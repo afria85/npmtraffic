@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import {
-  COMPARE_UPDATED_EVENT,
   buildCompareUrl,
   loadCompareList,
+  subscribeCompareList,
 } from "@/lib/compare-store";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
@@ -16,23 +16,23 @@ function formatComparePreview(list: string[]) {
   return `${firstTwo.join(", ")}, +${list.length - 2}`;
 }
 
-export default function CompareLink() {
-  const [list, setList] = useState<string[]>(() => loadCompareList());
+export default function CompareLink({
+  days = 30,
+  className,
+}: {
+  days?: number;
+  className?: string;
+} = {}) {
+  const list = useSyncExternalStore(subscribeCompareList, loadCompareList, () => []);
 
-  useEffect(() => {
-    const handleUpdate = () => setList(loadCompareList());
-    window.addEventListener(COMPARE_UPDATED_EVENT, handleUpdate);
-    return () => window.removeEventListener(COMPARE_UPDATED_EVENT, handleUpdate);
-  }, []);
-
-  const url = buildCompareUrl(list, 30);
+  const url = useMemo(() => buildCompareUrl(list, days), [list, days]);
   const preview = useMemo(() => formatComparePreview(list), [list]);
   if (!url) return null;
 
   return (
     <Link
       href={url}
-      className={ACTION_BUTTON_CLASSES + " group relative"}
+      className={(className ?? ACTION_BUTTON_CLASSES) + " group relative"}
       title={preview ? `Compare: ${preview}` : "Compare"}
       aria-label={preview ? `Compare selected packages: ${preview}` : "Compare selected packages"}
     >
