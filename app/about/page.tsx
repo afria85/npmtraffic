@@ -66,8 +66,7 @@ export default function AboutPage() {
           <h2 className="text-sm font-semibold text-[color:var(--foreground)]">Privacy</h2>
         </div>
         <p>
-          npmtraffic uses cookie-free, privacy-first analytics (GoatCounter) to understand basic site usage (page views, top pages, referrers). We do not use cross-site tracking cookies and we do not build user profiles. Basic request metadata may be processed transiently for abuse prevention (rate limiting).
-        </p>
+          npmtraffic uses privacy-friendly analytics (Vercel Web Analytics) to understand basic site usage (page views, top pages, referrers). We do not use cross-site tracking cookies and we do not build user profiles. Basic request metadata may be processed transiently for abuse prevention (rate limiting).</p>
       </section>
 
       <section className="space-y-2 text-sm text-slate-300">

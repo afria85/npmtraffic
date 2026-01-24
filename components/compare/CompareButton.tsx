@@ -3,8 +3,8 @@
 import { useSyncExternalStore } from "react";
 import {
   addToCompare,
-  removeFromCompare,
   loadCompareList,
+  removeFromCompare,
   subscribeCompareList,
 } from "@/lib/compare-store";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
@@ -14,18 +14,14 @@ type CompareButtonProps = {
 };
 
 export default function CompareButton({ name }: CompareButtonProps) {
-  // IMPORTANT: hydration-safe read.
-  // During SSR/hydration we return an empty list, then subscribe to the real
-  // localStorage-backed store after hydration completes.
+  // Hydration-safe: server snapshot is an empty list; client updates after mount via store subscription.
   const compareList = useSyncExternalStore(subscribeCompareList, loadCompareList, () => []);
-
   const lower = name.toLowerCase();
   const isActive = compareList.some((item) => item.toLowerCase() === lower);
 
   const handleClick = () => {
     if (isActive) removeFromCompare(name);
     else addToCompare(name);
-    // No local state: updates propagate via COMPARE_UPDATED_EVENT + storage events.
   };
 
   return (
@@ -37,7 +33,12 @@ export default function CompareButton({ name }: CompareButtonProps) {
     >
       {isActive ? (
         <>
-          <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 16 16"
+            className="h-3.5 w-3.5"
+            fill="none"
+          >
             <path
               d="M3.5 8.25l2.75 2.75 6.25-6.25"
               stroke="currentColor"

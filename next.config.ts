@@ -4,7 +4,7 @@ function buildCsp(options?: { strict?: boolean }) {
   const isProd = process.env.NODE_ENV === "production";
   const allowInline = !options?.strict;
   // Keep inline scripts/styles until we move to nonces; report-only can validate stricter CSP.
-  const scriptSrc = ["'self'", "https://gc.zgo.at"];
+  const scriptSrc = ["'self'"];
   if (allowInline) scriptSrc.push("'unsafe-inline'");
   // Next.js dev tooling may require eval; avoid it in production and in strict mode.
   if (!isProd && allowInline) scriptSrc.push("'unsafe-eval'");
@@ -18,7 +18,7 @@ function buildCsp(options?: { strict?: boolean }) {
     `style-src ${styleSrc.join(" ")}`,
     "img-src 'self' data: https:",
     "font-src 'self' data:",
-    "connect-src 'self' https://api.npmjs.org https://registry.npmjs.org https://*.goatcounter.com",
+    "connect-src 'self' https://api.npmjs.org https://registry.npmjs.org https://vitals.vercel-insights.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",

@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import {
-  COMPARE_UPDATED_EVENT,
   buildCompareUrl,
   loadCompareList,
+  subscribeCompareList,
 } from "@/lib/compare-store";
 import { isCompareReady } from "@/lib/compare-ui";
 
@@ -13,14 +13,8 @@ const PILL =
   "inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-4 py-2 text-sm font-semibold text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]";
 
 export default function AboutActions() {
-  const read = () => (typeof window === "undefined" ? [] : loadCompareList());
-  const [packages, setPackages] = useState<string[]>(() => read());
-
-  useEffect(() => {
-    const handleUpdate = () => setPackages(read());
-    window.addEventListener(COMPARE_UPDATED_EVENT, handleUpdate);
-    return () => window.removeEventListener(COMPARE_UPDATED_EVENT, handleUpdate);
-  }, []);
+  // Hydration-safe: server snapshot is empty; client updates after mount via store subscription.
+  const packages = useSyncExternalStore(subscribeCompareList, loadCompareList, () => []);
 
   const ready = isCompareReady(packages.length);
   const compareUrl = useMemo(() => (ready ? buildCompareUrl(packages, 30) : null), [ready, packages]);

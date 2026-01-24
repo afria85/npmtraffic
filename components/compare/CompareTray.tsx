@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import {
   buildCompareUrl,
   loadCompareList,
@@ -14,14 +14,8 @@ import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 const LIST_REMOVAL_CLASS =
   "inline-flex shrink-0 items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1.5 text-xs text-slate-100 transition hover:bg-[color:var(--surface-3)]";
 
-function formatRemovalClassName(base: string) {
-  // Improve light-mode legibility without changing layout.
-  return base.replace("text-slate-100", "text-[color:var(--foreground)]");
-}
-
 export default function CompareTray() {
-  // Hydration-safe: React will use the server snapshot during hydration and
-  // switch to the client snapshot (localStorage-backed) after hydration.
+  // Hydration-safe: server snapshot is empty; client updates after mount via store subscription.
   const packages = useSyncExternalStore(subscribeCompareList, loadCompareList, () => []);
 
   const handleRemove = useCallback((name: string) => {
@@ -29,16 +23,16 @@ export default function CompareTray() {
   }, []);
 
   const ready = isCompareReady(packages.length);
-  const compareUrl = useMemo(() => (ready ? buildCompareUrl(packages, 30) : null), [packages, ready]);
-  const label = useMemo(() => getCompareButtonLabel(packages.length), [packages.length]);
-  const selectionLabel = useMemo(() => getCompareStatusLabel(packages.length), [packages.length]);
+  const compareUrl = ready ? buildCompareUrl(packages, 30) : null;
+  const label = getCompareButtonLabel(packages.length);
+  const selectionLabel = getCompareStatusLabel(packages.length);
 
   return (
     <div className="w-full py-3">
       <div className="w-full sm:mx-auto sm:max-w-3xl sm:px-4" data-testid="compare-tray-container">
         <div className="flex w-full flex-col gap-3 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 shadow-sm shadow-black/20 backdrop-blur">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="text-sm font-semibold text-[color:var(--foreground)]">Compare</div>
+            <div className="text-sm font-semibold text-slate-200">Compare</div>
             {packages.length ? (
               <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto pb-1">
                 {packages.map((pkg) => (
@@ -46,7 +40,7 @@ export default function CompareTray() {
                     key={pkg}
                     type="button"
                     onClick={() => handleRemove(pkg)}
-                    className={formatRemovalClassName(LIST_REMOVAL_CLASS)}
+                    className={LIST_REMOVAL_CLASS}
                     aria-label={`Remove ${pkg} from compare`}
                   >
                     {pkg}

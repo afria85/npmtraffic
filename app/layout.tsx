@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { config } from "@/lib/config";
 
@@ -65,13 +66,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script id="theme-init" strategy="beforeInteractive">
           {THEME_INIT_SCRIPT}
         </Script>
-        <Script
-          id="goatcounter"
-          strategy="afterInteractive"
-          data-goatcounter="https://npmtraffic.goatcounter.com/count"
-          src="https://gc.zgo.at/count.js"
-          async
-        />
       </head>
       <body className="min-h-screen antialiased" suppressHydrationWarning>
         <div className="flex min-h-screen flex-col">
@@ -80,6 +74,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="flex-1">{children}</div>
           <Footer />
         </div>
+        <Analytics />
       </body>
     </html>
   );
