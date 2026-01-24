@@ -1,7 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { addToCompare, removeFromCompare, loadCompareList } from "@/lib/compare-store";
+import { useSyncExternalStore } from "react";
+import {
+  addToCompare,
+  removeFromCompare,
+  loadCompareList,
+  subscribeCompareList,
+} from "@/lib/compare-store";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 type CompareButtonProps = {
@@ -9,12 +14,18 @@ type CompareButtonProps = {
 };
 
 export default function CompareButton({ name }: CompareButtonProps) {
-  const [compareList, setCompareList] = useState<string[]>(() => loadCompareList());
-  const isActive = compareList.some((item) => item.toLowerCase() === name.toLowerCase());
+  // IMPORTANT: hydration-safe read.
+  // During SSR/hydration we return an empty list, then subscribe to the real
+  // localStorage-backed store after hydration completes.
+  const compareList = useSyncExternalStore(subscribeCompareList, loadCompareList, () => []);
+
+  const lower = name.toLowerCase();
+  const isActive = compareList.some((item) => item.toLowerCase() === lower);
 
   const handleClick = () => {
-    const nextList = isActive ? removeFromCompare(name) : addToCompare(name);
-    setCompareList(nextList);
+    if (isActive) removeFromCompare(name);
+    else addToCompare(name);
+    // No local state: updates propagate via COMPARE_UPDATED_EVENT + storage events.
   };
 
   return (
@@ -26,12 +37,7 @@ export default function CompareButton({ name }: CompareButtonProps) {
     >
       {isActive ? (
         <>
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 16 16"
-            className="h-3.5 w-3.5"
-            fill="none"
-          >
+          <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none">
             <path
               d="M3.5 8.25l2.75 2.75 6.25-6.25"
               stroke="currentColor"
