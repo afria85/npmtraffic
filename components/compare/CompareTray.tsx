@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 import {
   buildCompareUrl,
   loadCompareList,
@@ -15,7 +15,7 @@ const LIST_REMOVAL_CLASS =
   "inline-flex shrink-0 items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1.5 text-xs text-slate-100 transition hover:bg-[color:var(--surface-3)]";
 
 export default function CompareTray() {
-  // Hydration-safe: server snapshot is empty; client updates after mount via store subscription.
+  // Hydration-safe: SSR snapshot is always empty. Client reads localStorage after mount via the store.
   const packages = useSyncExternalStore(subscribeCompareList, loadCompareList, () => []);
 
   const handleRemove = useCallback((name: string) => {
@@ -23,7 +23,7 @@ export default function CompareTray() {
   }, []);
 
   const ready = isCompareReady(packages.length);
-  const compareUrl = ready ? buildCompareUrl(packages, 30) : null;
+  const compareUrl = useMemo(() => (ready ? buildCompareUrl(packages, 30) : null), [ready, packages]);
   const label = getCompareButtonLabel(packages.length);
   const selectionLabel = getCompareStatusLabel(packages.length);
 

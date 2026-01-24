@@ -1,10 +1,10 @@
 "use client";
 
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { POPULAR_PACKAGES } from "@/lib/constants";
-import { addRecentSearch, loadRecentSearches } from "@/lib/recent-searches";
+import { addRecentSearch, loadRecentSearches, subscribeRecentSearches } from "@/lib/recent-searches";
 import { normalizePackageInput } from "@/lib/package-name";
 
 type SearchResult = {
@@ -45,12 +45,11 @@ function SearchPanel({
 }) {
   const router = useRouter();
   const listId = useId();
-  const inputId = `${listId}-input`;
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [state, setState] = useState<SearchState>("idle");
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [recent, setRecent] = useState<string[]>(() => loadRecentSearches());
+  const recent = useSyncExternalStore(subscribeRecentSearches, loadRecentSearches, () => []);
   const [requestId, setRequestId] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isListOpen, setIsListOpen] = useState(false);
@@ -160,8 +159,7 @@ function SearchPanel({
   const showList = isListOpen && options.length > 0;
 
   const selectPackage = (value: string) => {
-    const merged = addRecentSearch(value);
-    setRecent(merged);
+    addRecentSearch(value);
     setIsListOpen(false);
     router.push(`/p/${encodeURIComponent(value)}?days=30`);
     onClose?.();
@@ -213,8 +211,6 @@ function SearchPanel({
     <div className={className}>
       <div className="relative">
         <input
-          id={inputId}
-          name="q"
           ref={inputRef}
           value={query}
           onChange={(event) => {

@@ -1,8 +1,10 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
-import CompareTray from "@/components/compare/CompareTray";
 import { isCompareTrayAllowed } from "@/lib/compare-tray";
+
+const CompareTray = dynamic(() => import("@/components/compare/CompareTray"), { ssr: false });
 
 export default function CompareTrayGate() {
   const pathname = usePathname() ?? "/";

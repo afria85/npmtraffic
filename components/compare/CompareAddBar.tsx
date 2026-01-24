@@ -1,11 +1,11 @@
 "use client";
 
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { COMPARE_UPDATED_EVENT, saveCompareList } from "@/lib/compare-store";
 import { POPULAR_PACKAGES } from "@/lib/constants";
-import { addRecentSearch, loadRecentSearches } from "@/lib/recent-searches";
+import { addRecentSearch, loadRecentSearches, subscribeRecentSearches } from "@/lib/recent-searches";
 import { normalizePackageInput } from "@/lib/package-name";
 
 type SearchResult = {
@@ -55,7 +55,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
   const [query, setQuery] = useState("");
   const [state, setState] = useState<SearchState>("idle");
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [recent, setRecent] = useState<string[]>(() => loadRecentSearches());
+  const recent = useSyncExternalStore(subscribeRecentSearches, loadRecentSearches, () => []);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isListOpen, setIsListOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -169,8 +169,8 @@ export default function CompareAddBar({ packages, days, className }: Props) {
       return;
     }
 
-    const mergedRecent = addRecentSearch(next);
-    setRecent(mergedRecent);
+    addRecentSearch(next);
+    
 
     const nextPkgs = uniqPreserveOrder([...packages, next]);
     const canonical = nextPkgs.map((p) => encodeURIComponent(p)).join(",");
