@@ -65,6 +65,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script id="theme-init" strategy="beforeInteractive">
           {THEME_INIT_SCRIPT}
         </Script>
+        <Script
+          id="goatcounter"
+          strategy="afterInteractive"
+          data-goatcounter="https://npmtraffic.goatcounter.com/count"
+          src="https://gc.zgo.at/count.js"
+          async
+        />
       </head>
       <body className="min-h-screen antialiased" suppressHydrationWarning>
         <div className="flex min-h-screen flex-col">

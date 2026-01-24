@@ -45,6 +45,7 @@ function SearchPanel({
 }) {
   const router = useRouter();
   const listId = useId();
+  const inputId = `${listId}-input`;
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [state, setState] = useState<SearchState>("idle");
@@ -212,6 +213,8 @@ function SearchPanel({
     <div className={className}>
       <div className="relative">
         <input
+          id={inputId}
+          name="q"
           ref={inputRef}
           value={query}
           onChange={(event) => {

@@ -46,7 +46,7 @@ export default function TransparencyPage() {
         </p>
         <h3 className="text-sm font-semibold text-slate-200">Rate limiting</h3>
         <p>
-          Public endpoints are rate limited to prevent abuse. Rate limiting uses request metadata transiently and is not used for profiling. We do not use third-party analytics or tracking.
+          Public endpoints are rate limited to prevent abuse. Rate limiting uses request metadata transiently and is not used for profiling. We use cookie-free, privacy-first analytics (GoatCounter) to understand basic site usage.
         </p>
         <h3 className="text-sm font-semibold text-slate-200">Local-first events &amp; sharing</h3>
         <p>

@@ -1,29 +1,23 @@
 "use client";
 
 import { useEffect } from "react";
-import {
-  COMPARE_UPDATED_EVENT,
-  loadCompareList,
-  saveCompareList,
-} from "@/lib/compare-store";
+import { COMPARE_UPDATED_EVENT, loadCompareList, saveCompareList } from "@/lib/compare-store";
 
 function canonicalize(list: string[]) {
-  // ringan: unique + sort (sesuai kebiasaan compare-store)
+  // Normalize and de-duplicate while preserving order. This keeps the URL-driven
+  // compare list stable without forcing an arbitrary sort.
   const uniq = Array.from(new Set(list.map((s) => s.trim()).filter(Boolean)));
-  // jangan sort kalau kamu ingin preserve urutan URL; kalau ingin konsisten, sort:
   return uniq;
 }
 
 export default function CompareUrlSync({ packages }: { packages: string[] }) {
   useEffect(() => {
-    // Ini "sync external system" (localStorage), bukan setState.
+    // Sync an external system (localStorage) from URL state. No React state updates here.
     const canonical = canonicalize(packages);
     if (canonical.length < 2) return;
 
     const current = canonicalize(loadCompareList());
-    const same =
-      current.length === canonical.length && current.every((v, i) => v === canonical[i]);
-
+    const same = current.length === canonical.length && current.every((v, i) => v === canonical[i]);
     if (same) return;
 
     saveCompareList(canonical);
