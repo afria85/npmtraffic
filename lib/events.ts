@@ -34,6 +34,10 @@ const STORAGE_NAMESPACE = "npmtraffic:events";
 const SCHEMA_VERSION_KEY = "npmtraffic:events_schema_version";
 const SCHEMA_VERSION = "1";
 
+const EVENTS_CHANGED_EVENT = "npmtraffic:events-changed";
+
+type EventsChangedDetail = { pkg?: string };
+
 // Keep below typical 2k URL limits (and room for other query params).
 export const SHARE_MAX_LENGTH = 1500;
 
@@ -94,10 +98,42 @@ function persistEvents(pkg: string, events: EventEntry[]) {
   ensureSchemaVersion();
   const filtered = events.filter(isValidEvent);
   window.localStorage.setItem(storageKey(pkg), JSON.stringify(filtered.sort(sortEvents)));
+  try {
+    window.dispatchEvent(
+      new CustomEvent<EventsChangedDetail>(EVENTS_CHANGED_EVENT, { detail: { pkg: pkg.toLowerCase() } })
+    );
+  } catch {
+    // ignore
+  }
 }
 
 export function saveEvents(pkg: string, events: EventEntry[]) {
   persistEvents(pkg, events);
+}
+
+export function subscribeEvents(pkg: string, listener: () => void) {
+  if (typeof window === "undefined") return () => {};
+  const key = storageKey(pkg);
+  const pkgLower = pkg.toLowerCase();
+
+  const onStorage = (event: StorageEvent) => {
+    if (event.key !== key) return;
+    listener();
+  };
+
+  const onCustom = (event: Event) => {
+    const detail = (event as CustomEvent<EventsChangedDetail>).detail;
+    if (detail?.pkg && detail.pkg !== pkgLower) return;
+    listener();
+  };
+
+  window.addEventListener("storage", onStorage);
+  window.addEventListener(EVENTS_CHANGED_EVENT, onCustom as EventListener);
+
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(EVENTS_CHANGED_EVENT, onCustom as EventListener);
+  };
 }
 
 export function groupEventsByDate(events: EventEntry[]) {
@@ -401,4 +437,14 @@ export function importEventsFromPayload(pkg: string, payload: string) {
   }
   const merged = mergeEvents(pkg, parsed.events);
   return { ...merged, errors: parsed.errors };
+}
+
+/**
+ * Backwards-compatible alias for {@link importEventsFromPayload}.
+ *
+ * Some older UI/components referred to this helper as `importEvents(...)`.
+ * Prefer using `importEventsFromPayload(...)` going forward.
+ */
+export function importEvents(pkg: string, payload: string) {
+  return importEventsFromPayload(pkg, payload);
 }

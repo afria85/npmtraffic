@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useMemo, useRef, useState, type ChangeEvent} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   EVENT_TYPES,
   addEvent,
@@ -9,6 +9,8 @@ import {
   eventIdentifier,
   exportEvents,
   importEventsFromPayload,
+  loadEvents,
+  subscribeEvents,
   isValidDate,
   type EventEntry,
   type EventType,
@@ -83,23 +85,13 @@ function downloadText(filename: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-function loadEvents(pkgName: string): EventEntry[] {
-  try {
-    const raw = exportEvents(pkgName);
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? (parsed as EventEntry[]) : [];
-  } catch {
-    return [];
-  }
-}
 
 export default function EventsPanel({ pkgName, encoded }: Props) {
-  // IMPORTANT: initialized lazily (no useEffect => passes eslint rule)
-  const [events, setEvents] = useState<EventEntry[]>(() => loadEvents(pkgName));
+  const [events, setEvents] = useState<EventEntry[]>([]);
 
   const [status, setStatus] = useState<string | null>(null);
 
-  const [draftDate, setDraftDate] = useState<string>(todayUtc());
+  const [draftDate, setDraftDate] = useState<string>("");
   const [draftType, setDraftType] = useState<EventType>("release");
   const [draftLabel, setDraftLabel] = useState<string>("");
   const [draftUrl, setDraftUrl] = useState<string>("");
@@ -110,6 +102,23 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [importBanner, setImportBanner] = useState<ImportBanner>({ kind: "none" });
+
+  const refreshEvents = useCallback(() => {
+    setEvents(pkgName ? loadEvents(pkgName) : []);
+  }, [pkgName]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const t = window.setTimeout(() => {
+      refreshEvents();
+      setDraftDate((current) => current || todayUtc());
+    }, 0);
+    const unsubscribe = pkgName ? subscribeEvents(pkgName, refreshEvents) : () => {};
+    return () => {
+      window.clearTimeout(t);
+      unsubscribe();
+    };
+  }, [pkgName, refreshEvents]);
 
   useEffect(() => {
     let cancelled = false;
@@ -258,10 +267,10 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
   const EVENT_ACTION_SM =
     `${ACTION_BUTTON_CLASSES} h-8 sm:h-9 px-3 sm:px-3 text-xs sm:text-xs bg-[color:var(--surface)] border-[color:var(--border)] text-[color:var(--foreground)] hover:bg-[color:var(--surface-3)]`;
   const EVENT_ACTION_DANGER_SM =
-    `${ACTION_BUTTON_CLASSES} h-8 sm:h-9 px-3 sm:px-3 text-xs sm:text-xs bg-[color:var(--surface)] border-[color:var(--border)] text-[color:var(--danger)] hover:bg-[color:var(--surface-3)]`;
+    `${ACTION_BUTTON_CLASSES} h-8 sm:h-9 px-3 sm:px-3 text-xs sm:text-xs bg-[color:var(--surface)] border-[color:var(--border)] text-rose-700 dark:text-rose-300 hover:bg-[color:var(--surface-3)]`;
 
   return (
-    <section className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] p-4">
+    <section id="events-panel" className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold text-[color:var(--foreground)]">Event markers (local-first)</h2>
@@ -345,6 +354,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
           </label>
           <input
             id="event-date"
+            type="date"
             value={draftDate}
             onChange={(e) => setDraftDate(e.target.value)}
             placeholder="YYYY-MM-DD"

@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { config } from "@/lib/config";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: {
@@ -68,9 +69,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </Script>
       </head>
       <body className="min-h-screen antialiased" suppressHydrationWarning>
-        <div className="flex min-h-screen flex-col">
+        <div
+          className="flex min-h-screen flex-col"
+          style={{ paddingBottom: "var(--compare-tray-space, 0px)" }}
+        >
           <Header />
-          <CompareTrayGate />
+          <Suspense fallback={null}>
+            <CompareTrayGate />
+          </Suspense>
           <div className="flex-1">{children}</div>
           <Footer />
         </div>

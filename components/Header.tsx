@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import ThemeToggleLazy from "@/components/ThemeToggleLazy";
-import CompareLink from "@/components/compare/CompareLink";
 
 
 const HEADER_PILL_CLASSES =
@@ -28,7 +27,6 @@ export default function Header() {
           <Link href="/about" className={HEADER_PILL_CLASSES}>
             About
           </Link>
-          <CompareLink className={HEADER_PILL_CLASSES} />
           <a
             href={REPO_URL}
             target="_blank"

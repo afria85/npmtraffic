@@ -90,7 +90,7 @@ export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuPro
       type="button"
       className={
         iconOnly
-          ? `${ACTION_BUTTON_CLASSES} w-10 px-0 border-transparent bg-transparent hover:bg-[color:var(--surface-2)] hover:border-transparent sm:w-auto sm:px-3`
+          ? `${ACTION_BUTTON_CLASSES} w-10 px-0 sm:w-auto`
           : `${ACTION_BUTTON_CLASSES} inline-flex items-center gap-2`
       }
       aria-label="Share"

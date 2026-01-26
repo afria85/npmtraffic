@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 :root {
+  /* iOS safe-area inset helper used by client overlays. */
+  --sab: env(safe-area-inset-bottom, 0px);
+
   /* Theme tokens used by the app chrome */
   --background: #0b0f14;
   --foreground: #e6edf3;
@@ -108,6 +111,8 @@
 }
 
 body {
+  /* Default to supporting both schemes; the explicit theme overrides below keep
+     native form controls (date picker, select menus) aligned with the toggle. */
   color-scheme: light dark;
   background:
     radial-gradient(1200px 600px at 90% -10%, rgba(59, 130, 246, 0.18), transparent 60%),
@@ -115,6 +120,34 @@ body {
     var(--background);
   color: var(--foreground);
   font-family: var(--app-font-sans);
+}
+
+/* Ensure the browser uses the chosen theme for native controls. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+/*
+  Native form controls (select/date) can render their popovers using browser/OS UI.
+  Force the scheme per toggle to avoid unreadable combinations (e.g. white menu + white text).
+*/
+:root[data-theme="dark"] .nt-select,
+:root[data-theme="dark"] .nt-date {
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] .nt-select,
+:root[data-theme="light"] .nt-date {
+  color-scheme: light;
+}
+
+/* Hide WebKit's date picker indicator and render our own icon for consistent placement across themes. */
+.nt-date::-webkit-calendar-picker-indicator {
+  opacity: 0;
 }
 
 :root[data-theme="light"] body {

@@ -116,6 +116,32 @@ test("compare tray enables CTA when two packages are selected", () => {
   }
 });
 
+test("compare tray clear button clears selection", () => {
+  const { dom, cleanup } = setupDom();
+  try {
+    dom.window.localStorage.setItem(STORAGE_KEY, JSON.stringify(["react", "vue"]));
+    const { container, unmount } = renderComponent(dom, <CompareTray />);
+    const clearButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.trim() === "Clear"
+    );
+    assert.ok(clearButton, "Clear button should render when selection is non-empty");
+
+    act(() => {
+      clearButton?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+    });
+
+    assert.equal(dom.window.localStorage.getItem(STORAGE_KEY), JSON.stringify([]));
+    assert.ok(
+      dom.window.document.body.textContent?.includes("Select 2–5 packages to compare"),
+      "status text should reset after clearing"
+    );
+
+    unmount();
+  } finally {
+    cleanup();
+  }
+});
+
 test("compare toggle reflects selection state", () => {
   const { dom, cleanup } = setupDom();
   try {

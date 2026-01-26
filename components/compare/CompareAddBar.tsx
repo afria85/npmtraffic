@@ -242,11 +242,10 @@ export default function CompareAddBar({ packages, days, className }: Props) {
             if (message) setMessage(null);
             setIsListOpen(true);
           }}
-          onClick={() => {
-            if (suppressOpenRef.current) {
-              suppressOpenRef.current = false;
-              return;
-            }
+          onPointerDown={() => {
+            // On mobile, tapping an already-focused input may not reliably fire `onClick`.
+            // Use pointer events so the list re-opens consistently.
+            if (suppressOpenRef.current) suppressOpenRef.current = false;
             if (message) setMessage(null);
             setIsListOpen(true);
           }}

@@ -48,11 +48,12 @@ type CompareTableHeaderProps = {
 
 export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
   return (
-    <thead className="sticky top-0 z-20 bg-[color:var(--surface)] text-center text-xs uppercase tracking-[0.18em] text-[color:var(--muted)] backdrop-blur sm:tracking-[0.3em]">
+    <thead className="sticky top-0 z-20 bg-[color:var(--surface)] text-xs uppercase tracking-normal text-slate-200 backdrop-blur">
       <tr>
         <th
           rowSpan={2}
-          className="px-2 py-2 text-center text-xs uppercase tracking-[0.18em] text-[color:var(--muted)] whitespace-nowrap sm:px-3 sm:tracking-[0.3em]"
+          className="px-2 py-2 text-left font-semibold whitespace-nowrap sm:px-3"
+          title="Date (UTC)"
         >
           Date
         </th>
@@ -60,7 +61,7 @@ export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
 	          <th
 	            key={`${pkg}-group`}
 	            colSpan={2}
-	            className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--foreground)] sm:px-3 sm:tracking-[0.3em]"
+ 	            className="px-2 py-2 text-center font-semibold whitespace-nowrap sm:px-3"
 	          >
 	            <div className="mx-auto max-w-[180px] truncate" title={pkg}>
 	              {pkg}
@@ -73,20 +74,18 @@ export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
           <Fragment key={`${pkg}-metrics`}>
             <th
               scope="col"
-              className="px-2 py-2 text-center text-xs uppercase tracking-[0.18em] text-[color:var(--muted)] whitespace-nowrap sm:px-3 sm:tracking-[0.3em]"
+              className="px-2 py-2 text-right font-semibold whitespace-nowrap sm:px-3"
               title="Downloads for the day"
             >
-              <span className="block whitespace-nowrap">Downloads</span>
+              Downloads
             </th>
 	            <th
 	              scope="col"
-	              className="px-2 py-2 text-center text-xs uppercase tracking-[0.18em] text-[color:var(--muted)] whitespace-nowrap sm:px-3 sm:tracking-[0.3em]"
-	              title="Delta vs previous day"
+	              className="px-2 py-2 text-right font-semibold whitespace-nowrap sm:px-3"
+	              title="&Delta; vs previous day"
 	            >
-              <span className="block whitespace-nowrap">
-                <span className="hidden sm:inline">Delta vs prev day</span>
-                <span className="sm:hidden">Δ prev</span>
-              </span>
+	              <span className="hidden sm:inline">&Delta; vs prev day</span>
+	              <span className="sm:hidden">&Delta; vs prev day</span>
             </th>
           </Fragment>
         ))}
@@ -406,7 +405,7 @@ export default async function ComparePage({ searchParams }: Props) {
           </table>
         </ScrollHintContainer>
         <p className="px-3 py-2 text-xs text-[color:var(--muted)]">
-          Delta vs previous day = downloads today - downloads yesterday
+          &Delta; vs previous day = downloads today - downloads yesterday
         </p>
       </div>
 

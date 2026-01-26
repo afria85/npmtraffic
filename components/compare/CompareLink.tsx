@@ -9,6 +9,11 @@ import {
 } from "@/lib/compare-store";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
+const EMPTY_SNAPSHOT: string[] = [];
+function getEmptySnapshot() {
+  return EMPTY_SNAPSHOT;
+}
+
 function formatComparePreview(list: string[]) {
   if (!list.length) return "";
   const firstTwo = list.slice(0, 2);
@@ -23,7 +28,11 @@ export default function CompareLink({
   days?: number;
   className?: string;
 } = {}) {
-  const list = useSyncExternalStore(subscribeCompareList, loadCompareList, () => []);
+  const list = useSyncExternalStore(
+    subscribeCompareList,
+    loadCompareList,
+    getEmptySnapshot,
+  );
 
   const url = useMemo(() => buildCompareUrl(list, days), [list, days]);
   const preview = useMemo(() => formatComparePreview(list), [list]);

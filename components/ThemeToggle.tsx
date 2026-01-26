@@ -25,8 +25,10 @@ function getActiveTheme(): Theme {
 
 function applyTheme(theme: Theme) {
   if (typeof document === "undefined") return;
-  document.documentElement.dataset.theme = theme;
-  document.documentElement.style.colorScheme = theme;
+  const root = document.documentElement;
+  root.dataset.theme = theme;
+  root.style.colorScheme = theme;
+  root.classList.toggle("dark", theme === "dark");
 }
 
 /**
