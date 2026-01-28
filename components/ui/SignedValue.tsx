@@ -19,7 +19,7 @@ function formatNumber(value: number, precision?: number) {
 export default function SignedValue({ value, showArrow = false, emphasis = "primary", precision }: Props) {
   if (value == null) {
     return (
-      <span className="inline-flex items-center font-mono text-xs tabular-nums text-slate-500">
+      <span className="inline-flex items-center font-mono text-xs tabular-nums text-[var(--foreground)]0">
         —
         <span className="sr-only">Value unavailable</span>
       </span>
@@ -34,8 +34,8 @@ export default function SignedValue({ value, showArrow = false, emphasis = "prim
         ? "text-[color:var(--signed-pos)]"
         : "text-[color:var(--signed-neg)]"
       : emphasis === "secondary"
-      ? "text-slate-400"
-      : "text-slate-300";
+      ? "text-[var(--foreground-tertiary)]"
+      : "text-[var(--foreground-secondary)]";
   const formatted = formatNumber(Math.abs(value), precision);
   const sign = positive ? "+" : negative ? "−" : "";
   const arrow = showArrow && value !== 0 ? (positive ? "▲" : "▼") : "";

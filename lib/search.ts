@@ -1,5 +1,6 @@
 import { cacheGetWithStale, cacheSetWithStale } from "@/lib/cache";
 import { normalizePackageInput } from "@/lib/package-name";
+import { USER_AGENT } from "./version";
 
 const FRESH_TTL_SECONDS = 60 * 15;
 const STALE_TTL_SECONDS = 60 * 60 * 24;
@@ -60,7 +61,7 @@ export async function fetchSearch(queryInput: string, limit = 10): Promise<Searc
     const res = await fetch(url.toString(), {
       headers: {
         accept: "application/json",
-        "user-agent": "npmtraffic/0.2.15 (https://npmtraffic.com)",
+        "user-agent": USER_AGENT,
       },
     });
 

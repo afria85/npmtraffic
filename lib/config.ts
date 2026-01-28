@@ -1,7 +1,7 @@
 export const config = {
   site: {
     name: "npmtraffic",
-    tagline: "Daily npm download trends with deltas, comparisons, and exportable datasets.",
+    tagline: "Track npm package downloads with daily precision, export data with full metadata, and mark important events.",
     url: "https://npmtraffic.com",
   },
   cache: {

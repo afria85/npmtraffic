@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
+import { Button } from "@/components/ui/Button";
 
 type RetryButtonProps = {
   className?: string;
@@ -12,12 +12,13 @@ export default function RetryButton({ className, label = "Retry" }: RetryButtonP
   const router = useRouter();
 
   return (
-    <button
-      type="button"
-      className={`${ACTION_BUTTON_CLASSES}${className ? ` ${className}` : ""}`}
+    <Button
+      variant="secondary"
+      size="sm"
+      className={className}
       onClick={() => router.refresh()}
     >
       {label}
-    </button>
+    </Button>
   );
 }

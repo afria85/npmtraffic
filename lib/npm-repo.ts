@@ -1,5 +1,6 @@
 import { cacheGetWithStale, cacheSetWithStale } from "@/lib/cache";
 import { normalizePackageInput } from "@/lib/package-name";
+import { USER_AGENT } from "./version";
 
 const CACHE_TTL_SECONDS = 60 * 60 * 24;
 
@@ -39,7 +40,7 @@ export async function getPackageGithubRepo(pkgInput: string) {
     const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkg)}`, {
       headers: {
         accept: "application/json",
-        "user-agent": "npmtraffic/0.2.15 (https://npmtraffic.com)",
+        "user-agent": USER_AGENT,
       },
     });
     if (!res.ok) return cached.value?.url ?? null;
