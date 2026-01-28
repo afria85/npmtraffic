@@ -73,18 +73,26 @@ type OgImageOptions =
   | { mode: "compare"; pkgs: string[]; days: number; stats?: CompareStats };
 
 /**
- * BrandMark - npmtraffic logo
- * Matches public/brand-mark.svg exactly:
- * - Left pillar: #06b6d4 (ACCENT)
- * - Middle diagonal: #22d3ee
- * - Right pillar: #0891b2
+ * BrandMark - npmtraffic logo (OG-safe)
+ *
+ * Use the same geometry as the in-app mark (components/BrandMark.tsx), but keep fills solid
+ * to stay compatible with OG renderers.
  */
 function BrandMark({ size = 44 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
-      <rect x="0" y="0" width="14" height="48" rx="3" fill="#06b6d4" />
-      <polygon points="16,0 28,0 32,28 20,28" fill="#22d3ee" />
-      <rect x="34" y="0" width="14" height="48" rx="3" fill="#0891b2" />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ display: "block" }}
+      aria-label="npmtraffic"
+    >
+      <rect rx="24" width="256" height="256" fill="#07090d" />
+      <rect x="5.5" y="5.5" width="245" height="245" rx="20" fill="#07090d" stroke="#1a2230" strokeWidth="11" />
+      <rect x="67.5" y="61.5" width="64" height="130" rx="32" transform="rotate(20 67.5 61.5)" fill="#6d34ff" />
+      <polygon points="87,172 137,130 160,145 110,187" fill="#e11d48" />
+      <rect x="125.5" y="71.5" width="64" height="130" rx="32" transform="rotate(20 125.5 71.5)" fill="#6d34ff" opacity="0.95" />
     </svg>
   );
 }

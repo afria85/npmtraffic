@@ -82,7 +82,10 @@ export async function generateMetadata({
   const canonical = buildPackageCanonical(baseUrl, name, days);
   const title = `${name} npm downloads (${days} days) | npmtraffic`;
   const description = `Daily npm download history for ${name} in a GitHub-style table`;
-  const ogImage = `${baseUrl}/og/p/${encodePkg(name)}/${days}`;
+  // Some scrapers (notably WhatsApp) are more reliable when og:image URLs end with an image extension.
+  // The /og/p route supports both "{days}" and "{days}.png".
+  const ogImage = `${baseUrl}/og/p/${encodePkg(name)}/${days}.png`;
+  const fallbackOgImage = `${baseUrl}/og.png`;
 
   return {
     title,
@@ -96,23 +99,38 @@ export async function generateMetadata({
       title,
       description,
       url: canonical,
-      images: [{ 
-        url: ogImage, 
-        alt: `${name} npm download statistics`,
-        width: 1200,
-        height: 630,
-        type: "image/png",
-      }],
+      images: [
+        {
+          url: ogImage,
+          alt: `${name} npm download statistics`,
+          width: 1200,
+          height: 630,
+          type: "image/png",
+        },
+        {
+          url: fallbackOgImage,
+          alt: "npmtraffic",
+          width: 1200,
+          height: 630,
+          type: "image/png",
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       site: "@npmtraffic",
       title,
       description,
-      images: [{
-        url: ogImage,
-        alt: `${name} npm download statistics`,
-      }],
+      images: [
+        {
+          url: ogImage,
+          alt: `${name} npm download statistics`,
+        },
+        {
+          url: fallbackOgImage,
+          alt: "npmtraffic",
+        },
+      ],
     },
   };
 }

@@ -6,9 +6,21 @@ import type { NextRequest } from "next/server";
 export const runtime = "edge";
 
 function parseDays(value: string | undefined) {
-  const n = Number(value);
+  const cleaned = (value ?? "").trim().toLowerCase().replace(/\.png$/, "");
+  const n = Number(cleaned);
   if (!Number.isFinite(n) || n <= 0) return 30;
   return Math.max(1, Math.min(365, Math.round(n)));
+}
+
+// Some scrapers issue HEAD requests to validate og:image URLs.
+// Provide a lightweight, cacheable response without doing upstream fetches.
+export async function HEAD() {
+  return new Response(null, {
+    headers: {
+      "content-type": "image/png",
+      "cache-control": "public, max-age=0, s-maxage=900, stale-while-revalidate=86400",
+    },
+  });
 }
 
 export async function GET(
