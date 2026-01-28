@@ -14,6 +14,7 @@ import EventsPanel from "@/components/events/EventsPanel";
 import TrafficChart from "@/components/package/TrafficChartClient";
 import RetryButton from "@/components/ui/RetryButton";
 import { encodePkg } from "@/lib/og-encode";
+import { getPackageGithubRepo } from "@/lib/npm-repo";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -153,6 +154,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
   }
 
   const updatedLabel = data ? formatUpdatedAt(data.meta.fetchedAt) : null;
+  const repoUrl = data ? await getPackageGithubRepo(name) : null;
   const updatedLabelCompact = data ? formatUpdatedAtCompact(data.meta.fetchedAt) : null;
   const rangeSelector = (
     <RangeSelector
@@ -215,11 +217,12 @@ export default async function PackagePage({ params, searchParams }: Props) {
         name={name}
         updatedLabel={updatedLabel}
         updatedLabelCompact={updatedLabelCompact}
+        repoUrl={repoUrl}
       />
 
       {/* Command bar: range left, export/share right */}
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-        <div className="min-w-[230px]">{rangeSelector}</div>
+        <div className="min-w-0 sm:min-w-[230px]">{rangeSelector}</div>
         <div className="flex flex-shrink-0 items-center justify-end gap-2">
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
           <ShareMenu

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   EVENT_TYPES,
   addEvent,
@@ -16,6 +16,8 @@ import {
   type EventType,
 } from "@/lib/events";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
+import { DateField } from "@/components/ui/DateField";
+import { SelectField } from "@/components/ui/SelectField";
 
 type Props = {
   pkgName: string;
@@ -36,7 +38,7 @@ function UploadIcon() {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="h-4 w-4"
+      className="h-5 w-5"
       aria-hidden
     >
       <path d="M12 16V4" />
@@ -55,7 +57,7 @@ function DownloadIcon() {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="h-4 w-4"
+      className="h-5 w-5"
       aria-hidden
     >
       <path d="M12 4v12" />
@@ -85,10 +87,8 @@ function downloadText(filename: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-
 export default function EventsPanel({ pkgName, encoded }: Props) {
   const [events, setEvents] = useState<EventEntry[]>([]);
-
   const [status, setStatus] = useState<string | null>(null);
 
   const [draftDate, setDraftDate] = useState<string>("");
@@ -102,6 +102,12 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [importBanner, setImportBanner] = useState<ImportBanner>({ kind: "none" });
+
+  // ? Hydration-safe, stable id for the form grid container.
+  // If any third-party script/extension injects random ids into nodes without an id,
+  // providing our own stable id prevents mismatches.
+  const reactId = useId();
+  const formGridId = useMemo(() => `events-form-${reactId.replace(/:/g, "")}`, [reactId]);
 
   const refreshEvents = useCallback(() => {
     setEvents(pkgName ? loadEvents(pkgName) : []);
@@ -189,7 +195,6 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
     };
 
     if (editingKey) {
-      // delete+add to allow edits that change identifier fields
       deleteEvent(pkgName, editingKey);
       const added = addEvent(pkgName, entry);
       setEvents(added);
@@ -262,19 +267,26 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
 
   const showBanner = !dismissed && importBanner.kind !== "none";
 
-  // Keep Event markers action buttons visually consistent across the panel.
-  // Small variant is used for per-item actions (Edit/Delete).
   const EVENT_ACTION_SM =
-    `${ACTION_BUTTON_CLASSES} h-8 sm:h-9 px-3 sm:px-3 text-xs sm:text-xs bg-[color:var(--surface)] border-[color:var(--border)] text-[color:var(--foreground)] hover:bg-[color:var(--surface-3)]`;
+    `${ACTION_BUTTON_CLASSES} h-8 sm:h-9 px-3 sm:px-3 text-xs sm:text-xs bg-[var(--surface)] border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--surface-hover)]`;
   const EVENT_ACTION_DANGER_SM =
-    `${ACTION_BUTTON_CLASSES} h-8 sm:h-9 px-3 sm:px-3 text-xs sm:text-xs bg-[color:var(--surface)] border-[color:var(--border)] text-rose-700 dark:text-rose-300 hover:bg-[color:var(--surface-3)]`;
+    `${ACTION_BUTTON_CLASSES} h-8 sm:h-9 px-3 sm:px-3 text-xs sm:text-xs bg-[var(--surface)] border-[var(--border)] text-rose-700 dark:text-rose-300 hover:bg-[var(--surface-hover)]`;
+
+  // ? Lint-safe strength coercion (no `any`)
+  const STRENGTH_VALUES = ["", "1", "2", "3"] as const;
+  type StrengthValue = (typeof STRENGTH_VALUES)[number];
+
+  function coerceStrength(value: unknown): StrengthValue {
+    const v = typeof value === "string" ? value : "";
+    return (STRENGTH_VALUES as readonly string[]).includes(v) ? (v as StrengthValue) : "";
+  }
 
   return (
-    <section id="events-panel" className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] p-4">
+    <section id="events-panel" className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-[color:var(--foreground)]">Event markers (local-first)</h2>
-          <p className="mt-1 text-xs text-[color:var(--muted)]">
+          <h2 className="text-sm font-semibold text-[var(--foreground)]">Event markers (local-first)</h2>
+          <p className="mt-1 text-xs text-[var(--foreground-tertiary)]">
             Add contextual markers (releases, posts, docs changes) to explain spikes. Stored locally in your browser.
           </p>
         </div>
@@ -282,7 +294,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
           <button
             type="button"
             onClick={onPickImportFile}
-            className={`${ACTION_BUTTON_CLASSES} gap-2 w-10 px-0 sm:w-auto sm:px-4 border-[color:var(--border)] bg-[color:var(--surface-2)] text-[color:var(--foreground)] hover:bg-[color:var(--surface-3)]`}
+            className={`${ACTION_BUTTON_CLASSES} gap-2 h-11 w-11 px-0 sm:h-10 sm:w-auto sm:px-4 border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-hover)]`}
             aria-label="Import"
           >
             <UploadIcon />
@@ -291,7 +303,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
           <button
             type="button"
             onClick={onExportJson}
-            className={`${ACTION_BUTTON_CLASSES} gap-2 w-10 px-0 sm:w-auto sm:px-4 border-[color:var(--border)] bg-[color:var(--surface-2)] text-[color:var(--foreground)] hover:bg-[color:var(--surface-3)]`}
+            className={`${ACTION_BUTTON_CLASSES} gap-2 h-11 w-11 px-0 sm:h-10 sm:w-auto sm:px-4 border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-hover)]`}
             aria-label="Export"
           >
             <DownloadIcon />
@@ -324,7 +336,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
             <button
               type="button"
               onClick={() => setDismissed(true)}
-              className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1 text-xs font-semibold text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]"
+              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-semibold text-[var(--foreground)] transition hover:bg-[var(--surface-hover)]"
             >
               Dismiss
             </button>
@@ -339,74 +351,47 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
       ) : null}
 
       {status ? (
-        <div className="mt-3 rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-xs text-[color:var(--foreground)]">
+        <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--foreground)]">
           {status}
         </div>
       ) : null}
 
-      <div className="mt-4 grid gap-3 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3 sm:grid-cols-6">
-        <div className="sm:col-span-2">
+      <div
+        id={formGridId}
+        className="mt-4 grid grid-cols-1 gap-x-4 gap-y-5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 md:grid-cols-6 md:gap-y-6"
+      >
+        <div className="min-w-0 space-y-2 md:col-span-3">
           <label
             htmlFor="event-date"
-            className="block text-xs font-semibold text-[color:var(--foreground)]"
+            className="block text-xs font-semibold uppercase tracking-wider text-[var(--foreground-tertiary)]"
           >
-            Date (UTC)
+            Date
           </label>
-          <input
+          <DateField
             id="event-date"
-            type="date"
             value={draftDate}
             onChange={(e) => setDraftDate(e.target.value)}
             placeholder="YYYY-MM-DD"
-            className="mt-1 w-full rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-2 text-sm text-[color:var(--foreground)] outline-none focus:border-[color:var(--ring)]"
+            inputClassName="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
           />
         </div>
 
-        <div className="sm:col-span-2">
-          <label
-            htmlFor="event-type"
-            className="block text-xs font-semibold text-[color:var(--foreground)]"
-          >
-            Type
-          </label>
-          <select
+        <div className="min-w-0 md:col-span-3">
+          <SelectField
+            label="Type"
             id="event-type"
             value={draftType}
-            onChange={(e) => setDraftType(e.target.value as EventType)}
-            className="mt-1 w-full rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-2 text-sm text-[color:var(--foreground)] outline-none focus:border-[color:var(--ring)]"
-          >
-            {EVENT_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setDraftType(value as EventType)}
+            options={EVENT_TYPES.map((type) => ({ label: type, value: type }))}
+            selectClassName="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 pr-12 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+            iconClassName="text-[var(--foreground-secondary)]"
+          />
         </div>
 
-        <div className="sm:col-span-2">
-          <label
-            htmlFor="event-strength"
-            className="block text-xs font-semibold text-[color:var(--foreground)]"
-          >
-            Strength
-          </label>
-          <select
-            id="event-strength"
-            value={draftStrength}
-            onChange={(e) => setDraftStrength(e.target.value as "" | "1" | "2" | "3")}
-            className="mt-1 w-full rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-2 text-sm text-[color:var(--foreground)] outline-none focus:border-[color:var(--ring)]"
-          >
-            <option value="">None</option>
-            <option value="1">1 (low)</option>
-            <option value="2">2 (medium)</option>
-            <option value="3">3 (high)</option>
-          </select>
-        </div>
-
-        <div className="sm:col-span-4">
+        <div className="min-w-0 space-y-2 md:col-span-6">
           <label
             htmlFor="event-label"
-            className="block text-xs font-semibold text-[color:var(--foreground)]"
+            className="block text-xs font-semibold uppercase tracking-wider text-[var(--foreground-tertiary)]"
           >
             Label
           </label>
@@ -415,31 +400,32 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
             value={draftLabel}
             onChange={(e) => setDraftLabel(e.target.value)}
             placeholder="e.g. v0.4.4 released"
-            className="mt-1 w-full rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-2 text-sm text-[color:var(--foreground)] outline-none focus:border-[color:var(--ring)]"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
           />
         </div>
 
-        <div className="sm:col-span-2">
-          <label
-            htmlFor="event-url"
-            className="block text-xs font-semibold text-[color:var(--foreground)]"
-          >
-            URL (optional)
-          </label>
-          <input
-            id="event-url"
-            value={draftUrl}
-            onChange={(e) => setDraftUrl(e.target.value)}
-            placeholder="https://..."
-            className="mt-1 w-full rounded-md border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-2 text-sm text-[color:var(--foreground)] outline-none focus:border-[color:var(--ring)]"
+        <div className="min-w-0 md:col-span-3">
+          <SelectField
+            label="Strength"
+            id="event-strength"
+            value={draftStrength}
+            onChange={(value) => setDraftStrength(coerceStrength(value))}
+            options={[
+              { label: "None", value: "" },
+              { label: "1", value: "1" },
+              { label: "2", value: "2" },
+              { label: "3", value: "3" },
+            ]}
+            selectClassName="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 pr-12 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+            iconClassName="text-[var(--foreground-secondary)]"
           />
         </div>
 
-        <div className="sm:col-span-6 flex w-full flex-wrap items-center justify-end gap-2">
+        <div className="min-w-0 md:col-span-6 flex w-full flex-wrap items-center justify-end gap-2">
           <button
             type="button"
             onClick={onSubmit}
-            className={`${ACTION_BUTTON_CLASSES} bg-[color:var(--surface-3)] text-[color:var(--foreground)] hover:bg-[color:var(--surface-2)]`}
+            className={`${ACTION_BUTTON_CLASSES} bg-[var(--accent)] text-[color:var(--accent-foreground)] hover:opacity-90`}
           >
             {editingKey ? "Save" : "Add"}
           </button>
@@ -447,7 +433,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
             <button
               type="button"
               onClick={clearDraft}
-              className={`${ACTION_BUTTON_CLASSES} bg-[color:var(--surface-2)] text-[color:var(--foreground)] hover:bg-[color:var(--surface-3)]`}
+              className={`${ACTION_BUTTON_CLASSES} bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-hover)]`}
             >
               Cancel
             </button>
@@ -459,14 +445,12 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
         {events.length ? (
           <div className="space-y-3">
             {grouped.map(({ date, items }) => (
-              <div key={date} className="rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-2)]">
+              <div key={date} className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
                 <div className="flex items-center justify-between px-3 py-2">
-                  <span className="text-xs font-semibold tracking-[0.3em] text-[color:var(--foreground)]">
-                    {date}
-                  </span>
-                  <span className="text-xs text-[color:var(--muted)]">{items.length}</span>
+                  <span className="text-xs font-semibold tracking-[0.3em] text-[var(--foreground)]">{date}</span>
+                  <span className="text-xs text-[var(--foreground-tertiary)]">{items.length}</span>
                 </div>
-                <div className="divide-y divide-[color:var(--border)]">
+                <div className="divide-y divide-[var(--border)]">
                   {items.map((entry) => (
                     <div
                       key={eventIdentifier(entry)}
@@ -474,24 +458,24 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-3)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.25em] text-[color:var(--foreground)]">
+                          <span className="rounded border border-[var(--border)] bg-[var(--surface-hover)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--foreground)]">
                             {entry.event_type}
                           </span>
                           {entry.strength ? (
-                            <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-3)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.25em] text-[color:var(--foreground)]">
+                            <span className="rounded border border-[var(--border)] bg-[var(--surface-hover)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--foreground)]">
                               s{entry.strength}
                             </span>
                           ) : null}
                         </div>
 
-                        <p className="mt-1 break-words text-sm text-[color:var(--foreground)]">{entry.label}</p>
+                        <p className="mt-1 break-words text-sm text-[var(--foreground)]">{entry.label}</p>
 
                         {entry.url ? (
                           <a
                             href={entry.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="mt-1 inline-block break-all text-xs text-[color:var(--accent)] hover:underline"
+                            className="mt-1 inline-block break-all text-xs text-[var(--accent)] hover:underline"
                           >
                             {entry.url}
                           </a>
@@ -499,18 +483,10 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
                       </div>
 
                       <div className="flex w-full justify-end gap-2 sm:w-auto">
-                        <button
-                          type="button"
-                          onClick={() => onEdit(entry)}
-                          className={EVENT_ACTION_SM}
-                        >
+                        <button type="button" onClick={() => onEdit(entry)} className={EVENT_ACTION_SM}>
                           Edit
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => onDelete(entry)}
-                          className={EVENT_ACTION_DANGER_SM}
-                        >
+                        <button type="button" onClick={() => onDelete(entry)} className={EVENT_ACTION_DANGER_SM}>
                           Delete
                         </button>
                       </div>
@@ -521,7 +497,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-[color:var(--muted)]">No events yet. Add the first marker above.</p>
+          <p className="text-sm text-[var(--foreground-tertiary)]">No events yet. Add the first marker above.</p>
         )}
       </div>
     </section>

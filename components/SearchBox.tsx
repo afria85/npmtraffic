@@ -213,7 +213,7 @@ function SearchPanel({
 
   return (
     <div className={className}>
-      <div className="relative">
+      <div className="relative z-30">
         <input
           ref={inputRef}
           value={query}
@@ -233,7 +233,7 @@ function SearchPanel({
           onBlur={() => window.setTimeout(() => setIsListOpen(false), 120)}
           onKeyDown={handleKeyDown}
           placeholder="Search npm packages"
-          className="h-11 w-full rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 text-sm text-[color:var(--foreground)] placeholder:text-[color:var(--muted)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/30"
+          className="h-11 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
           role="combobox"
           aria-expanded={showList}
           aria-controls={listId}
@@ -242,12 +242,12 @@ function SearchPanel({
         />
         {state === "loading" ? (
           <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[color:var(--border)] border-t-[color:var(--accent)]" aria-hidden />
+            <div className="h-4 w-4 animate-spin rounded-lg border-2 border-[var(--border)] border-t-[var(--accent)]" aria-hidden />
           </div>
         ) : null}
         {showList ? (
           <div
-            className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-lg"
+            className="absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl backdrop-blur-sm"
             role="listbox"
             id={listId}
           >
@@ -270,7 +270,7 @@ function SearchPanel({
                 >
                   <span>{option.label}</span>
                   {option.helper ? (
-                    <span className="max-w-[50%] truncate text-xs text-[color:var(--muted)]">
+                    <span className="max-w-[50%] truncate text-xs text-[var(--foreground-tertiary)]">
                       {option.helper}
                     </span>
                   ) : null}
@@ -282,7 +282,7 @@ function SearchPanel({
       </div>
 
       {statusMessage ? (
-        <p className="mt-2 text-xs text-slate-400" aria-live="polite">
+        <p className="mt-2 text-xs text-[var(--foreground-tertiary)]" aria-live="polite">
           {statusMessage}
           {requestId ? ` (req ${requestId})` : ""}
         </p>
@@ -294,7 +294,7 @@ function SearchPanel({
 export default function SearchBox({
   variant = "inline",
   className,
-  triggerLabel = "Search packages",
+  triggerLabel = "Search npm packages",
 }: SearchBoxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const sheetId = "searchbox-sheet";
@@ -319,7 +319,7 @@ export default function SearchBox({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="h-11 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-4 text-sm text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)]"
+        className="h-11 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-left text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--surface-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]/40 inline-flex items-center justify-between gap-2"
         aria-expanded={isOpen}
         aria-controls={sheetId}
       >
@@ -335,14 +335,14 @@ export default function SearchBox({
             id={sheetId}
             role="dialog"
             aria-modal="true"
-            className="fixed bottom-0 left-0 right-0 h-[70vh] rounded-t-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-6 shadow-2xl"
+            className="fixed bottom-0 left-0 right-0 h-[70vh] rounded-t-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl"
           >
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-[color:var(--foreground)]">Search packages</p>
+              <p className="text-sm font-semibold text-[var(--foreground)]">Search packages</p>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="h-9 rounded-full border border-[color:var(--border)] px-3 text-xs text-[color:var(--muted)]"
+                className="h-9 rounded-lg border border-[var(--border)] px-3 text-xs text-[var(--foreground-tertiary)]"
               >
                 Close
               </button>

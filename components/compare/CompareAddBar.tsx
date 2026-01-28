@@ -252,7 +252,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
           onBlur={() => window.setTimeout(() => setIsListOpen(false), 120)}
           onKeyDown={handleKeyDown}
           placeholder="Add a package to compare"
-          className="h-11 w-full rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-4 text-sm text-[color:var(--foreground)] placeholder:text-[color:var(--muted)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]/30"
+          className="h-11 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
           role="combobox"
           aria-expanded={showList}
           aria-controls={listId}
@@ -263,7 +263,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
         {state === "loading" ? (
           <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
             <div
-              className="h-4 w-4 animate-spin rounded-full border-2 border-[color:var(--border)] border-t-[color:var(--accent)]"
+              className="h-4 w-4 animate-spin rounded-lg border-2 border-[var(--border)] border-t-[var(--accent)]"
               aria-hidden
             />
           </div>
@@ -271,7 +271,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
 
         {showList ? (
           <div
-            className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-lg"
+            className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-lg"
             role="listbox"
             id={listId}
           >
@@ -286,8 +286,8 @@ export default function CompareAddBar({ packages, days, className }: Props) {
                   className={
                     "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition " +
                     (index === activeIndex
-                      ? "bg-[color:var(--accent)]/12 text-[color:var(--foreground)]"
-                      : "text-[color:var(--foreground)] hover:bg-[color:var(--surface-2)]")
+                      ? "bg-[var(--accent)]/12 text-[var(--foreground)]"
+                      : "text-[var(--foreground)] hover:bg-[var(--surface)]")
                   }
                   onMouseEnter={() => setActiveIndex(index)}
                   onMouseDown={(e) => e.preventDefault()}
@@ -295,7 +295,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
                 >
                   <span className="min-w-0 truncate">{option.label}</span>
                   {option.helper ? (
-                    <span className="ml-3 hidden shrink-0 text-xs text-[color:var(--muted)] sm:inline">
+                    <span className="ml-3 hidden shrink-0 text-xs text-[var(--foreground-tertiary)] sm:inline">
                       {option.helper}
                     </span>
                   ) : null}

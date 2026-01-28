@@ -37,25 +37,30 @@ export default async function StatusPage() {
   const { build, health, hasHealth } = getStatusOverview();
 
   return (
-    <main className="mx-auto min-h-full max-w-4xl px-4 py-12">
+    <main className="mx-auto min-h-full max-w-4xl px-6 py-16 sm:py-20">
       <header className="mb-6">
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">npmtraffic</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-[var(--foreground-tertiary)]">npmtraffic</p>
         <h1 className="mt-2 text-4xl font-semibold">Status</h1>
-        <p className="text-sm text-slate-400">Latest build, traffic health, and cache snapshot.</p>
+        <p className="text-sm text-[var(--foreground-tertiary)]">Latest build, traffic health, and cache snapshot.</p>
+        <div className="mt-4 nt-note-warning text-xs">
+          <p className="text-[inherit]">
+            <strong>Note:</strong> Status reflects recent requests only (in-memory). Not a guarantee of uptime. For historical data, see transparency page.
+          </p>
+        </div>
       </header>
 
-      <section className="mb-6 space-y-2 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
-        <h2 className="text-sm font-semibold text-slate-200">Build + environment</h2>
-        <p className="text-sm text-slate-300">
+      <section className="mb-6 space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+        <h2 className="text-sm font-semibold text-[var(--foreground-secondary)]">Build + environment</h2>
+        <p className="text-sm text-[var(--foreground-secondary)]">
           Commit: <code>{build.commit}</code>
         </p>
-        <p className="text-sm text-slate-300">Environment: {build.environment}</p>
+        <p className="text-sm text-[var(--foreground-secondary)]">Environment: {build.environment}</p>
       </section>
 
-      <section className="space-y-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
-        <h2 className="text-sm font-semibold text-slate-200">Provider health</h2>
+      <section className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+        <h2 className="text-sm font-semibold text-[var(--foreground-secondary)]">Provider health</h2>
         {hasHealth ? (
-          <div className="space-y-2 text-sm text-slate-300">
+          <div className="space-y-2 text-sm text-[var(--foreground-secondary)]">
             {health.lastSuccessAt ? (
               <p>Last traffic success: {new Date(health.lastSuccessAt).toUTCString()}</p>
             ) : null}
@@ -67,14 +72,14 @@ export default async function StatusPage() {
             ) : null}
           </div>
         ) : (
-          <p className="text-sm text-slate-400">No health data recorded yet.</p>
+          <p className="text-sm text-[var(--foreground-tertiary)]">No health data recorded yet.</p>
         )}
       </section>
 
-      <section className="mt-6 space-y-2 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
-        <h2 className="text-sm font-semibold text-slate-200">Cache snapshot</h2>
+      <section className="mt-6 space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+        <h2 className="text-sm font-semibold text-[var(--foreground-secondary)]">Cache snapshot</h2>
         {hasHealth ? (
-          <div className="space-y-2 text-sm text-slate-300">
+          <div className="space-y-2 text-sm text-[var(--foreground-secondary)]">
             {health.lastCacheStatus ? (
               <p>
                 Last cache status: {health.lastCacheStatus}
@@ -85,16 +90,16 @@ export default async function StatusPage() {
             )}
           </div>
         ) : (
-          <p className="text-sm text-slate-400">No cache data recorded yet.</p>
+          <p className="text-sm text-[var(--foreground-tertiary)]">No cache data recorded yet.</p>
         )}
       </section>
 
-      <section className="mt-6 space-y-2 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
-        <h2 className="text-sm font-semibold text-slate-200">Diagnostics</h2>
-        <p className="text-sm text-slate-300">
+      <section className="mt-6 space-y-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+        <h2 className="text-sm font-semibold text-[var(--foreground-secondary)]">Diagnostics</h2>
+        <p className="text-sm text-[var(--foreground-secondary)]">
           Resolved base URL: <code>{baseUrl}</code>
         </p>
-        <p className="text-sm text-slate-300">{CACHE_TTL_SUMMARY}</p>
+        <p className="text-sm text-[var(--foreground-secondary)]">{CACHE_TTL_SUMMARY}</p>
       </section>
     </main>
   );

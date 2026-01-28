@@ -24,7 +24,7 @@ function ShareIcon() {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="h-4 w-4"
+      className="h-5 w-5"
       aria-hidden
     >
       <path d="M12 3l4 4m-4-4L8 7" />
@@ -90,7 +90,7 @@ export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuPro
       type="button"
       className={
         iconOnly
-          ? `${ACTION_BUTTON_CLASSES} w-10 px-0 sm:w-auto`
+          ? `${ACTION_BUTTON_CLASSES} h-11 w-11 px-0 sm:h-10 sm:w-auto`
           : `${ACTION_BUTTON_CLASSES} inline-flex items-center gap-2`
       }
       aria-label="Share"

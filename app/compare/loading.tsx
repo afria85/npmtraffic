@@ -15,11 +15,11 @@ export default function Loading() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
+      <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
         <ChartSkeleton />
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)]">
+      <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
         <div className="space-y-2 p-4">
           {Array.from({ length: 10 }).map((_, idx) => (
             <Skeleton key={idx} className="h-6 w-full rounded-lg" />

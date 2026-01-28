@@ -10,6 +10,8 @@ import ActionMenu from "@/components/ui/ActionMenu";
 import type { DerivedMetrics } from "@/lib/derived";
 import type { EventEntry } from "@/lib/events";
 import type { TrafficSeriesRow } from "@/lib/traffic";
+import { DateField } from "@/components/ui/DateField";
+import { SelectField } from "@/components/ui/SelectField";
 import {
   addEvent,
   deleteEvent,
@@ -21,7 +23,6 @@ import {
   importEventsFromPayload,
   loadEvents,
   subscribeEvents,
-  updateEvent,
   SHARE_MAX_LENGTH,
   decodeSharePayloadV2,
 } from "@/lib/events";
@@ -54,7 +55,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
   const [form, setForm] = useState<EventEntry>(DEFAULT_FORM);
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [, setStatusMessage] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<{ text: string; tone: "info" | "warning" } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const searchParams = useSearchParams();
@@ -72,6 +73,15 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
       cancelled = true;
     };
   }, [sharedParam]);
+
+  useEffect(() => {
+    if (!statusMessage || typeof window === "undefined") return;
+    const t = window.setTimeout(() => setStatusMessage(null), 3500);
+    return () => window.clearTimeout(t);
+  }, [statusMessage]);
+
+  const showStatus = (text: string, tone: "info" | "warning" = "info") =>
+    setStatusMessage({ text, tone });
 
   // Modal a11y: focus management + Escape/Tab handling.
   useEffect(() => {
@@ -207,7 +217,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
     event.preventDefault();
     if (!pkgName) return;
     if (!form.date_utc || !form.label) {
-      setStatusMessage("Date and label are required.");
+      showStatus("Date and label are required.", "warning");
       return;
     }
     const entry: EventEntry = {
@@ -218,12 +228,14 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
       strength: form.strength,
     };
     if (editingKey) {
-      updateEvent(pkgName, entry);
-      setStatusMessage("Event updated.");
+      deleteEvent(pkgName, editingKey);
+      addEvent(pkgName, entry);
+      showStatus("Event updated.");
     } else {
       addEvent(pkgName, entry);
-      setStatusMessage("Event added.");
+      showStatus("Event added.");
     }
+    refreshEvents();
     setForm({ ...DEFAULT_FORM, date_utc: todayUtcDate() });
     setEditingKey(null);
     refresh();
@@ -233,13 +245,14 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
     setForm(entry);
     setEditingKey(eventIdentifier(entry));
     setShowEventsList(true);
-    setStatusMessage("Editing event. Save to apply.");
+    showStatus("Editing event. Save to apply.");
   };
 
   const handleDelete = (entry: EventEntry) => {
     if (!pkgName) return;
     deleteEvent(pkgName, eventIdentifier(entry));
-    setStatusMessage("Event removed.");
+    showStatus("Event removed.");
+    refreshEvents();
     refresh();
   };
 
@@ -259,43 +272,78 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
     if (!pkgName) return;
     const text = await file.text();
     const result = importEventsFromPayload(pkgName, text);
-    setStatusMessage(
+    showStatus(
       `Imported ${result.added} new, ${result.updated} updated.` +
         (result.errors.length ? ` ${result.errors.join(" ")}` : "")
     );
+    refreshEvents();
     refresh();
   };
 
   const handleCopyShareLink = async () => {
-    if (!shareEnabled) return;
+    if (typeof window === "undefined") return;
+
+    if (!events.length) {
+      showStatus("Add at least one event to enable timeline sharing.", "warning");
+      return;
+    }
+
+    const encoded = shareEncoded || (await encodeSharePayloadV2(events));
+    if (!encoded) {
+      showStatus("No timeline link available to copy.", "warning");
+      return;
+    }
+
+    if (encoded.length > SHARE_MAX_LENGTH) {
+      showStatus("Timeline link is too large to copy.", "warning");
+      return;
+    }
+
     const url = new URL(window.location.href);
-    url.searchParams.set("events", shareEncoded);
-    navigator.clipboard?.writeText(url.toString());
-    setStatusMessage("Share link copied.");
+    url.searchParams.set("events", encoded);
+    const text = url.toString();
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        showStatus("Timeline link copied.");
+        return;
+      }
+    } catch {
+      // fall through
+    }
+
+    // Fallback for browsers that block programmatic clipboard access.
+    window.prompt("Copy timeline link:", text);
+    showStatus("Copy the timeline link from the prompt.");
   };
 
   const handleImportShared = () => {
     if (!pkgName || !sharedParam || !sharedData.events.length) return;
     const result = importEventsFromPayload(pkgName, JSON.stringify(sharedData.events));
-    setStatusMessage(
+    showStatus(
       `Imported ${result.added} new, ${result.updated} updated.` +
         (result.errors.length ? ` ${result.errors.join(" ")}` : "")
     );
+    refreshEvents();
     refresh();
   };
 
   const sharedEvents = sharedData.events;
   return (
     <>
-      <div className="overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)]">
-        <div className="flex items-center gap-2 border-b border-[color:var(--border)] px-4 py-3 text-sm text-slate-200">
-          <span className="min-w-0 flex-1 truncate text-sm font-semibold">Daily downloads ({days}d)</span>
+      <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-[var(--border)] px-4 py-3 text-sm text-[var(--foreground-secondary)]">
+          <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+            <span className="sm:hidden">Downloads ({days}d)</span>
+            <span className="hidden sm:inline">Daily downloads ({days}d)</span>
+          </span>
           <div className="flex flex-none items-center justify-end gap-2">
             {totalEvents ? (
               <button
                 type="button"
                 onClick={openEventsModal}
-                className={`${ACTION_BUTTON_CLASSES} px-2 sm:px-3 bg-transparent text-[color:var(--foreground)] hover:bg-[color:var(--surface-2)]`}
+                className={`${ACTION_BUTTON_CLASSES} px-2 sm:px-3 bg-transparent text-[var(--foreground)] hover:bg-[var(--surface)]`}
               >
                 Events ({totalEvents})
               </button>
@@ -304,7 +352,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
               <button
                 type="button"
                 onClick={() => setShowDerived((prev) => !prev)}
-                className={`${ACTION_BUTTON_CLASSES} px-2 sm:px-3 bg-transparent text-[color:var(--foreground)] hover:bg-[color:var(--surface-2)]`}
+                className={`${ACTION_BUTTON_CLASSES} px-2 sm:px-3 bg-transparent text-[var(--foreground)] hover:bg-[var(--surface)]`}
                 title={showDerived ? "Hide derived metrics" : "Show derived metrics"}
               >
                 {showDerived ? (
@@ -324,30 +372,30 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
         </div>
         <ScrollHintContainer className="max-h-[60vh] overflow-auto">
           <table
-            className={`w-full text-sm ${showDerived ? "min-w-[800px]" : ""}`}
+            className={`w-full text-sm ${showDerived ? "min-w-[760px]" : ""}`}
             style={{ tableLayout: showDerived ? "auto" : "fixed" }}
           >
             <colgroup>
-              {/* Kolom Date */}
-              <col className={showDerived ? "w-auto" : "w-[30%] min-w-[100px] sm:w-[140px]"} />
-              {/* Kolom Downloads */}
-              <col className={showDerived ? "w-auto" : "w-[35%] min-w-[110px] sm:w-[160px]"} />
-              {/* Kolom Delta */}
-              <col className={showDerived ? "w-auto" : "w-[35%] min-w-[120px] sm:w-[180px]"} />
+              {/* Date */}
+              <col className={showDerived ? "w-[86px] sm:w-[140px]" : "w-[34%] sm:w-[140px]"} />
+              {/* Downloads */}
+              <col className={showDerived ? "w-[86px] sm:w-[160px]" : "w-[33%] sm:w-[160px]"} />
+              {/* Delta */}
+              <col className={showDerived ? "w-[86px] sm:w-[180px]" : "w-[33%] sm:w-[180px]"} />
               {showDerived ? (
                 <>
                   {/* MA 3 */}
-                  <col className="w-auto min-w-[70px]" />
+                  <col className="w-[86px]" />
                   {/* MA 7 */}
-                  <col className="w-auto min-w-[70px]" />
+                  <col className="w-[86px]" />
                   {/* Outlier */}
-                  <col className="w-auto min-w-[70px]" />
+                  <col className="w-[80px]" />
                   {/* Score */}
-                  <col className="w-auto min-w-[70px]" />
+                  <col className="w-[60px]" />
                 </>
               ) : null}
             </colgroup>
-            <thead className="sticky top-0 z-20 bg-[color:var(--surface)] text-xs uppercase tracking-normal text-slate-200 backdrop-blur">
+            <thead className="sticky top-0 z-20 bg-[var(--surface)] text-xs uppercase tracking-normal text-[var(--foreground-secondary)] backdrop-blur">
                 <tr>
                   <th className="px-2 py-2 text-left font-semibold whitespace-nowrap sm:px-3" title="Date (UTC)">
                     Date
@@ -363,12 +411,12 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   </th>
                   {showDerived ? (
                     <th className="px-2 py-2 text-right font-semibold whitespace-nowrap sm:px-3" title="3-day moving average">
-                      MA3
+                      MA 3
                     </th>
                   ) : null}
                   {showDerived ? (
                     <th className="px-2 py-2 text-right font-semibold whitespace-nowrap sm:px-3" title="7-day moving average">
-                      MA7
+                      MA 7
                     </th>
                   ) : null}
                   {showDerived ? (
@@ -383,13 +431,13 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   ) : null}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="text-sm">
                 {tableRows.map(({ row, delta, ma3, ma7, outlier }) => {
                   const dayEvents = groupedEvents.get(row.date);
                   const isOutlier = Boolean(outlier?.is_outlier);
                   return (
-                    <tr key={row.date} className="text-[color:var(--foreground)] border-b border-[color:var(--border)] last:border-b-0">
-                      <td className="px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-slate-400 whitespace-nowrap sm:px-3 sm:text-xs">
+                    <tr key={row.date} className="text-[var(--foreground)] border-b border-[var(--border)] last:border-b-0">
+                      <td className="px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-[var(--foreground-tertiary)] whitespace-nowrap sm:px-3 sm:text-xs">
                         <div className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
                           <span className="min-w-0 truncate">{row.date}</span>
                           {dayEvents?.length ? (
@@ -397,7 +445,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                               type="button"
                               onClick={openEventsModal}
                               title={dayEvents.map((event) => `${event.event_type}: ${event.label}`).join(" / ")}
-                              className="inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] text-[color:var(--accent)]"
+                              className="inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--accent)]"
                             >
                               <span className="text-xs font-bold">&bull;</span>
                             </button>
@@ -451,13 +499,13 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
             role="dialog"
             aria-modal="true"
             aria-label="Package timeline"
-            className="flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] shadow-xl shadow-black/40 max-h-[calc(100dvh-2rem)]"
+            className="flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl shadow-black/40 max-h-[calc(100dvh-2rem)]"
           >
-            <div className="sticky top-0 z-10 border-b border-[color:var(--border)] bg-[color:var(--surface)]/95 px-6 py-5 backdrop-blur">
+            <div className="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--surface)]/95 px-6 py-5 backdrop-blur">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.4em] text-[color:var(--muted)]">Events</p>
-                  <p className="text-lg font-semibold text-[color:var(--foreground)]">Package timeline</p>
+                  <p className="text-xs uppercase tracking-[0.4em] text-[var(--foreground-tertiary)]">Events</p>
+                  <p className="text-lg font-semibold text-[var(--foreground)]">Package timeline</p>
                 </div>
                 <button
                   ref={closeButtonRef}
@@ -471,85 +519,67 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-5">
-              <form className="space-y-4" onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="min-w-0 text-xs uppercase tracking-widest text-[color:var(--muted)]">
-                    Date
-                    <input
-                      type="date"
-                      value={form.date_utc}
-                      onChange={(event) => setForm((prev) => ({ ...prev, date_utc: event.target.value }))}
-                      className="mt-1 w-full rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-sm text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
-                      required
-                    />
-                  </label>
+              <form className="space-y-5 sm:space-y-6" onSubmit={handleSubmit}>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <label className="min-w-0 flex flex-col gap-2 text-xs uppercase tracking-widest text-[var(--foreground-tertiary)]">
+  Date
+  <DateField
+    value={form.date_utc}
+    onChange={(event) => setForm((prev) => ({ ...prev, date_utc: (event.target as HTMLInputElement).value }))}
+    required
+    inputClassName="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 pr-11 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+    iconClassName="text-[var(--foreground-tertiary)]"
+  />
+</label>
 
-                  <label className="min-w-0 text-xs uppercase tracking-widest text-[color:var(--muted)]">
-                    Type
-                    <div className="relative mt-1">
-                      <select
-                        value={form.event_type}
-                        onChange={(event) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            event_type: event.target.value as EventEntry["event_type"],
-                          }))
-                        }
-                        className="nt-select w-full appearance-none rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 pr-10 text-sm text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
-                      >
-                        {EVENT_TYPES.map((type) => (
-                          <option key={type} value={type}>
-                            {type}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDownIcon className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--muted)]" />
-                    </div>
-                  </label>
+                  <div className="min-w-0">
+  <SelectField
+    label="Type"
+    value={form.event_type}
+    onChange={(value) =>
+      setForm((prev) => ({
+        ...prev,
+        event_type: value as EventEntry["event_type"],
+      }))
+    }
+    options={EVENT_TYPES.map((type) => ({ label: type, value: type }))}
+    className="text-xs uppercase tracking-widest text-[var(--foreground-tertiary)]"
+  />
+</div>
                 </div>
 
-                <label className="text-xs uppercase tracking-widest text-[color:var(--muted)]">
+                <label className="flex flex-col gap-2 text-xs uppercase tracking-widest text-[var(--foreground-tertiary)]">
                   Label
                   <input
                     value={form.label}
                     onChange={(event) => setForm((prev) => ({ ...prev, label: event.target.value }))}
-                    className="mt-1 w-full rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-sm text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
                     required
                   />
                 </label>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <label className="min-w-0 text-xs uppercase tracking-widest text-[color:var(--muted)]">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <label className="min-w-0 flex flex-col gap-2 text-xs uppercase tracking-widest text-[var(--foreground-tertiary)]">
                     URL (optional)
                     <input
                       value={form.url ?? ""}
                       onChange={(event) => setForm((prev) => ({ ...prev, url: event.target.value || undefined }))}
-                      className="mt-1 w-full rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-sm text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
+                      className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
                     />
                   </label>
 
-                  <label className="min-w-0 text-xs uppercase tracking-widest text-[color:var(--muted)]">
-                    Strength
-                    <div className="relative mt-1">
-                      <select
-                        value={form.strength}
-                        onChange={(event) =>
-                          setForm((prev) => ({ ...prev, strength: Number(event.target.value) as 1 | 2 | 3 }))
-                        }
-                        className="nt-select w-full appearance-none rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 pr-10 text-sm text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
-                      >
-                        {[1, 2, 3].map((level) => (
-                          <option key={level} value={level}>
-                            {level}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDownIcon className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--muted)]" />
-                    </div>
-                  </label>
+                  <div className="min-w-0">
+  <SelectField
+    label="Strength"
+    value={String(form.strength)}
+    onChange={(value) => setForm((prev) => ({ ...prev, strength: Number(value) as 1 | 2 | 3 }))}
+    options={[1, 2, 3].map((level) => ({ label: String(level), value: String(level) }))}
+    className="text-xs uppercase tracking-widest text-[var(--foreground-tertiary)]"
+  />
+</div>
                 </div>
 
-                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+                <div className="flex flex-nowrap items-center justify-end gap-2 sm:hidden">
                   <button
                     type="button"
                     onClick={() => {
@@ -562,13 +592,47 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   </button>
                   <button
                     type="submit"
-                    className={`${ACTION_BUTTON_CLASSES} bg-[color:var(--accent)] text-[color:var(--accent-foreground)] hover:opacity-90`}
+                    className={`${ACTION_BUTTON_CLASSES} bg-[var(--accent)] text-[color:var(--accent-foreground)] hover:opacity-90`}
+                  >
+                    {editingKey ? "Update event" : "Add event"}
+                  </button>
+                  <ActionMenu
+                    label="Actions"
+                    buttonClassName={ACTION_BUTTON_CLASSES}
+                    items={[
+                      { key: "export", label: "Export JSON", onClick: handleExport },
+                      {
+                        key: "import",
+                        label: "Import JSON\u2026",
+                        onClick: () => {
+                          importFileRef.current?.click();
+                        },
+                      },
+                      { key: "share", label: "Copy timeline link", onClick: handleCopyShareLink },
+                    ]}
+                  />
+                </div>
+
+                <div className="hidden items-center justify-end gap-3 sm:flex">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm({ ...DEFAULT_FORM, date_utc: todayUtcDate() });
+                      setEditingKey(null);
+                    }}
+                    className={ACTION_BUTTON_CLASSES}
+                  >
+                    Reset
+                  </button>
+                  <button
+                    type="submit"
+                    className={`${ACTION_BUTTON_CLASSES} bg-[var(--accent)] text-[color:var(--accent-foreground)] hover:opacity-90`}
                   >
                     {editingKey ? "Update event" : "Add event"}
                   </button>
                 </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="hidden items-center justify-between gap-3 sm:flex">
                   <div className="flex items-center gap-2">
                     <ActionMenu
                       label="Actions"
@@ -584,19 +648,6 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                         },
                       ]}
                     />
-                    <input
-                      ref={importFileRef}
-                      type="file"
-                      accept="application/json"
-                      className="hidden"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) {
-                          handleImportFile(file);
-                        }
-                        event.target.value = "";
-                      }}
-                    />
                   </div>
 
                   <button
@@ -605,24 +656,52 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                     disabled={!shareEnabled}
                     className={`${ACTION_BUTTON_CLASSES}${shareEnabled ? "" : " opacity-50"}`}
                   >
-                    Copy share link
+                    Copy timeline link
                   </button>
                 </div>
 
-                <p className="text-xs text-[color:var(--muted)]">
-                  Conflicts keep existing entries unless the import provides missing URL/strength.
+                <input
+                  ref={importFileRef}
+                  type="file"
+                  accept="application/json"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) {
+                      handleImportFile(file);
+                    }
+                    event.target.value = "";
+                  }}
+                />
+
+                {statusMessage ? (
+                  <div
+                    role="status"
+                    className={
+                      statusMessage.tone === "warning"
+                        ? "nt-note-warning"
+                        : "rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--foreground)]"
+                    }
+                  >
+                    {statusMessage.text}
+                  </div>
+                ) : null}
+
+                <p className="text-xs text-[var(--foreground-tertiary)]">
+                  Import merges by date. Existing entries stay unless the import fills missing URL or strength.
                 </p>
-                <p className="text-xs text-[color:var(--muted)]">
+                <p className="text-xs text-[var(--foreground-tertiary)]">
+                  Timeline sharing encodes events into the URL (?events=...).{" "}
                   {shareTooLarge
-                    ? "Events too large to share."
+                    ? "Too many events to share in a URL."
                     : shareEncoded
-                    ? `Share string ${shareEncoded.length} chars long.`
-                    : "Add events to enable sharing."}
+                    ? `Share link encodes ${totalEvents} event${totalEvents === 1 ? "" : "s"} (${shareEncoded.length} chars).`
+                    : "Add an event to enable sharing."}
                 </p>
 
                 {sharedParam ? (
-                  <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3 text-xs text-[color:var(--foreground)]">
-                    <p className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">Shared events</p>
+                  <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-xs text-[var(--foreground)]">
+                    <p className="text-xs uppercase tracking-[0.3em] text-[var(--foreground-tertiary)]">Shared events</p>
                     {sharedData.error ? (
                       <p className="mt-1 text-[color:var(--warning)]">{sharedData.error}</p>
                     ) : sharedEvents.length ? (
@@ -653,7 +732,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                     />
                   ))
                 ) : (
-                  <p className="text-sm text-[color:var(--muted)]">No events recorded for this package.</p>
+                  <p className="text-sm text-[var(--foreground-tertiary)]">No events recorded for this package.</p>
                 )}
               </div>
             </div>
@@ -664,22 +743,6 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
   );
 }
 
-function ChevronDownIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      aria-hidden="true"
-      className={className}
-    >
-      <path
-        fillRule="evenodd"
-        d="M5.22 7.72a.75.75 0 0 1 1.06 0L10 11.44l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.78a.75.75 0 0 1 0-1.06Z"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
-}
 
 function EventRow({
   event,
@@ -692,18 +755,18 @@ function EventRow({
 }) {
   // Keep modal item actions visually consistent with the rest of the UI.
   const ACTION_SM =
-    `${ACTION_BUTTON_CLASSES} h-8 px-3 text-xs bg-[color:var(--surface)] border-[color:var(--border)] text-[color:var(--foreground)] hover:bg-[color:var(--surface-3)]`;
+    `${ACTION_BUTTON_CLASSES} h-8 px-3 text-xs bg-[var(--surface)] border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--surface-hover)]`;
   const ACTION_DANGER_SM =
-    `${ACTION_BUTTON_CLASSES} h-8 px-3 text-xs bg-[color:var(--surface)] border-[color:var(--border)] text-rose-700 dark:text-rose-300 hover:bg-[color:var(--surface-3)]`;
+    `${ACTION_BUTTON_CLASSES} h-8 px-3 text-xs bg-[var(--surface)] border-[var(--border)] text-rose-700 dark:text-rose-300 hover:bg-[var(--surface-hover)]`;
 
   return (
-    <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] px-4 py-3 text-sm">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="font-medium text-[color:var(--foreground)]">{event.label}</p>
-          <p className="text-xs text-[color:var(--muted)]">{event.date_utc}</p>
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <p className="break-words font-medium text-[var(--foreground)]">{event.label}</p>
+          <p className="text-xs text-[var(--foreground-tertiary)]">{event.date_utc}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-shrink-0 flex-wrap items-center justify-end gap-2">
           <button type="button" onClick={onEdit} className={ACTION_SM}>
             Edit
           </button>
@@ -718,13 +781,13 @@ function EventRow({
           href={event.url}
           target="_blank"
           rel="noreferrer"
-          className="mt-1 inline-block text-xs font-medium text-[color:var(--accent)] underline underline-offset-4"
+          className="mt-1 inline-block text-xs font-medium text-[var(--accent)] underline underline-offset-4"
         >
           View link
         </a>
       ) : null}
 
-      <p className="mt-2 text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">
+      <p className="mt-2 text-xs uppercase tracking-[0.3em] text-[var(--foreground-tertiary)]">
         {event.event_type}
         {event.strength ? ` \u00B7 strength ${event.strength}` : ""}
       </p>

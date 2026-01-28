@@ -3,11 +3,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import ActionMenu from "@/components/ui/ActionMenu";
+import { IconChevronDown } from "@/components/ui/icons";
 import { computeLeftPad } from "@/components/charts/axis-padding";
 import { buildMonthTicks } from "@/components/charts/time-ticks";
 
-const CHART_BUTTON_CLASSES =
-  "inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-xs font-semibold leading-none text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
+const CHART_BUTTON_CLASSES = "inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold leading-none text-[var(--foreground)] transition-colors hover:bg-[var(--surface-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]";
 
 type CompareSeriesRow = {
   date: string;
@@ -46,6 +46,40 @@ const PALETTE: { key: PaletteKey; label: string; cssVar: string }[] = [
 
 const WIDTH = 1000;
 const HEIGHT = 260;
+
+function ChartSelect({
+  label,
+  value,
+  onChange,
+  options,
+  labelClassName = "text-[var(--foreground-tertiary)]",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ label: string; value: string }>;
+  labelClassName?: string;
+}) {
+  return (
+    <label className="block">
+      <span className={`mb-1 block ${labelClassName}`}>{label}</span>
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full appearance-none rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 pr-10 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+        >
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <IconChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground-tertiary)]" />
+      </div>
+    </label>
+  );
+}
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -397,7 +431,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   }, [hoverPoint, isMobile]);
 
   const tooltipClassName =
-    "absolute z-30 pointer-events-none rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
+    "absolute z-30 pointer-events-none rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
 
   const exports = useMemo(
     () => [
@@ -452,9 +486,9 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   };
 
   return (
-    <section className="relative rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
+    <section className="relative rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-slate-200">
+        <p className="text-sm font-semibold text-[var(--foreground-secondary)]">
           Daily downloads ({days ? `${days}d` : "range"})
         </p>
       </div>
@@ -537,14 +571,14 @@ export default function CompareChart({ series, packageNames, days }: Props) {
 
         {/* Footer: legend on the left, actions on the right. Wraps safely on small screens. */}
         <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
-          <div className="flex flex-wrap gap-2 text-xs text-slate-300">
+          <div className="flex flex-wrap gap-2 text-xs text-[var(--foreground-secondary)]">
             {packageNames.map((pkg) => (
               <span
                 key={pkg}
-                className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1"
+                className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1"
               >
                 <span
-                  className="h-2.5 w-2.5 rounded-full"
+                  className="h-2.5 w-2.5 rounded-lg"
                   style={{ background: paletteValue(settings.colors[pkg] ?? "slate") }}
                 />
                 <span className="min-w-0 max-w-[220px] truncate" title={pkg}>
@@ -582,62 +616,54 @@ export default function CompareChart({ series, packageNames, days }: Props) {
             />
             <div
               ref={stylePanelRef}
-              className="relative flex max-h-[min(85dvh,640px)] w-full flex-col overflow-hidden rounded-t-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-4 text-sm text-[color:var(--foreground)] shadow-xl sm:max-h-[min(70vh,560px)] sm:w-[min(28rem,92vw)] sm:rounded-2xl"
+              className="relative flex max-h-[min(85dvh,640px)] w-full flex-col overflow-hidden rounded-t-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-4 text-sm text-[var(--foreground)] shadow-xl sm:max-h-[min(70vh,560px)] sm:w-[min(28rem,92vw)] sm:rounded-2xl"
             >
               <div className="flex shrink-0 items-center justify-between gap-2">
-                <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Chart style</div>
+                <div className="text-[11px] uppercase tracking-[0.35em] text-[var(--foreground-tertiary)]">Chart style</div>
                 <button type="button" className={CHART_BUTTON_CLASSES + " px-2 py-1"} onClick={() => setStyleOpen(false)}>
                   Close
                 </button>
               </div>
 
               <div className="mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 pb-4">
-                <p className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Series</p>
+                <p className="text-[11px] uppercase tracking-[0.35em] text-[var(--foreground-tertiary)]">Series</p>
                 <div className="mt-2 space-y-2">
                   {packageNames.map((pkg) => (
-                    <div key={pkg} className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
-                      <div className="min-w-0 text-sm font-semibold text-[color:var(--foreground)]">
+                    <div key={pkg} className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3">
+                      <div className="min-w-0 text-sm font-semibold text-[var(--foreground)]">
                         <div className="truncate" title={pkg}>
                           {pkg}
                         </div>
                       </div>
                       <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        <label className="block">
-                          <span className="mb-1 block text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Color</span>
-                          <select
-                            value={settings.colors[pkg] ?? "slate"}
-                            onChange={(e) =>
-                              setSettings((prev) => ({
-                                ...prev,
-                                colors: { ...prev.colors, [pkg]: e.target.value as PaletteKey },
-                              }))
-                            }
-                            className="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-2 text-sm text-[color:var(--foreground)]"
-                          >
-                            {PALETTE.map((p) => (
-                              <option key={p.key} value={p.key}>
-                                {p.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label className="block">
-                          <span className="mb-1 block text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Line</span>
-                          <select
-                            value={settings.lineStyles[pkg] ?? "solid"}
-                            onChange={(e) =>
-                              setSettings((prev) => ({
-                                ...prev,
-                                lineStyles: { ...prev.lineStyles, [pkg]: e.target.value as LineStyleKey },
-                              }))
-                            }
-                            className="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-2 text-sm text-[color:var(--foreground)]"
-                          >
-                            <option value="solid">Solid</option>
-                            <option value="dashed">Dashed</option>
-                            <option value="dotted">Dotted</option>
-                          </select>
-                        </label>
+                        <ChartSelect
+                          label="Color"
+                          labelClassName="text-[11px] uppercase tracking-[0.35em] text-[var(--foreground-tertiary)]"
+                          value={settings.colors[pkg] ?? "slate"}
+                          onChange={(value) =>
+                            setSettings((prev) => ({
+                              ...prev,
+                              colors: { ...prev.colors, [pkg]: value as PaletteKey },
+                            }))
+                          }
+                          options={PALETTE.map((p) => ({ label: p.label, value: p.key }))}
+                        />
+                        <ChartSelect
+                          label="Line"
+                          labelClassName="text-[11px] uppercase tracking-[0.35em] text-[var(--foreground-tertiary)]"
+                          value={settings.lineStyles[pkg] ?? "solid"}
+                          onChange={(value) =>
+                            setSettings((prev) => ({
+                              ...prev,
+                              lineStyles: { ...prev.lineStyles, [pkg]: value as LineStyleKey },
+                            }))
+                          }
+                          options={[
+                            { label: "Solid", value: "solid" },
+                            { label: "Dashed", value: "dashed" },
+                            { label: "Dotted", value: "dotted" },
+                          ]}
+                        />
                       </div>
                     </div>
                   ))}
@@ -650,13 +676,13 @@ export default function CompareChart({ series, packageNames, days }: Props) {
         {hovered ? (
           <div ref={tooltipRef} className={tooltipClassName}>
             <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-[color:var(--foreground)]">{hovered.date}</span>
-              <span className="text-[color:var(--muted)]">UTC</span>
+              <span className="font-mono text-[var(--foreground)]">{hovered.date}</span>
+              <span className="text-[var(--foreground-tertiary)]">UTC</span>
             </div>
             <div className="mt-2 space-y-1">
               {packageNames.map((pkg) => (
                 <div key={pkg} className="flex items-center justify-between gap-2">
-                  <span className="text-[color:var(--muted)]">{pkg}</span>
+                  <span className="text-[var(--foreground-tertiary)]">{pkg}</span>
                   <span className="font-mono">{numberFormatter.format(hovered.values[pkg]?.downloads ?? 0)}</span>
                 </div>
               ))}

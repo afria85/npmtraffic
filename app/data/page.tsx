@@ -39,15 +39,15 @@ export default function DataPage() {
   return (
     <main className="mx-auto min-h-full max-w-4xl px-4 py-12">
       <header className="mb-6">
-        <Link href="/" className="text-xs uppercase tracking-[0.3em] text-slate-400">
+        <Link href="/" className="text-xs uppercase tracking-[0.3em] text-[var(--foreground-tertiary)]">
           npmtraffic
         </Link>
         <h1 className="mt-2 text-4xl font-semibold">Data</h1>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-[var(--foreground-tertiary)]">
           Data freshness, caching, and error explanations.
         </p>
       </header>
-      <section className="space-y-4 text-slate-200">
+      <section className="space-y-4 text-[var(--foreground-secondary)]">
         <p>
           Downloads data comes directly from <code>api.npmjs.org</code>. Each table reflects the last day
           ending on {endDate} (yesterday UTC), as npm&#39;s download counters lag for the current day.
@@ -78,19 +78,19 @@ export default function DataPage() {
             <em>source</em>. JSON responses expose the normalized range along with a <code>meta</code> block that repeats those fields
             plus cache status, stale flags, derived method metadata, and the requestId for auditing.
           </p>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-[var(--foreground-tertiary)]">
             Both CSV and JSON exports now share an <strong>export metadata</strong> block (from/to dates, timezone=UTC, generated_at timestamp, source, request_id, cache status, and stale indicators)
             so you can verify precisely what data was generated and why.
           </p>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-[var(--foreground-tertiary)]">
             Derived metrics such as trailing MA3/MA7 and MAD-based outlier scores are available in the exports and behind the
             &quot;Show derived metrics&quot; toggle on package pages. These values are computed heuristically and do not alter the raw download counts.
           </p>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-[var(--foreground-tertiary)]">
             Events are user-provided notes stored locally per package in the browser. They add markers to the table rows,
             show in the list overlay, and are never synced or stored on the server.
           </p>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-[var(--foreground-tertiary)]">
             Downloads reflect all traffic captured by <code>api.npmjs.org</code>; they are not unique user counts and may include CI, bots, or repeated installs.
           </p>
         </div>

@@ -6,11 +6,90 @@ import type { DerivedMetrics } from "@/lib/derived";
 import type { TrafficSeriesRow } from "@/lib/traffic";
 import { groupEventsByDate, loadEvents } from "@/lib/events";
 import ActionMenu from "@/components/ui/ActionMenu";
+import { IconChevronDown } from "@/components/ui/icons";
 import { computeLeftPad } from "@/components/charts/axis-padding";
 import { buildMonthTicks } from "@/components/charts/time-ticks";
+function MetricCheckbox({
+  label,
+  checked,
+  disabled,
+  title,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  disabled?: boolean;
+  title?: string;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <label
+      className={`inline-flex items-center gap-2 text-xs font-medium text-[var(--foreground-secondary)] select-none ${
+        disabled ? "opacity-50 cursor-not-allowed" : ""
+      }`}
+      title={title}
+    >
+      <span className="relative inline-flex h-4 w-4 flex-none">
+        <input
+          type="checkbox"
+          checked={checked}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.checked)}
+          className="peer h-4 w-4 appearance-none rounded-md border border-[var(--border)] bg-[var(--surface)] shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30 checked:bg-[var(--accent)] checked:border-[var(--accent)]"
+        />
+        <svg
+          viewBox="0 0 20 20"
+          fill="none"
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 m-auto h-3 w-3 text-white opacity-0 transition-opacity peer-checked:opacity-100"
+        >
+          <path
+            d="M16.7 5.8 8.6 13.9 3.3 8.6"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+      <span>{label}</span>
+    </label>
+  );
+}
 
-const CHART_BUTTON_CLASSES =
-  "inline-flex items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-2 text-xs font-semibold leading-none text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
+function ChartSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ label: string; value: string }>;
+}) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-[var(--foreground-tertiary)]">{label}</span>
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full appearance-none rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 pr-10 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+        >
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <IconChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--foreground-tertiary)]" />
+      </div>
+    </label>
+  );
+}
+
+const CHART_BUTTON_CLASSES = "inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold leading-none text-[var(--foreground)] transition-colors hover:bg-[var(--surface-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]";
 
 type Point = { x: number; y: number };
 type ChartEvent = { id?: string; label?: string; title?: string; type?: string };
@@ -448,7 +527,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
   }, [hoverPoint, width, height, isMobile]);
 
   const tooltipClassName =
-    "absolute z-30 pointer-events-none rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
+    "absolute z-30 pointer-events-none rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
   const hoveredMA7 = hoverIndex == null ? null : derived?.ma7?.[hoverIndex]?.value ?? null;
   const hoveredMA3 = hoverIndex == null ? null : derived?.ma3?.[hoverIndex]?.value ?? null;
   const hoveredOutlier = hoverIndex == null ? null : derived?.outliers?.[hoverIndex] ?? null;
@@ -529,34 +608,17 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
     [pkgName]
   );
 
-  const headerRowClass = `flex w-full items-baseline gap-3 ${isMobile ? "justify-between" : "justify-between flex-wrap"}`;
-  const toggleGroupClass = `flex items-center gap-3 ${isMobile ? "flex-nowrap" : "flex-wrap"} ml-auto`;
+  const headerRowClass = "flex w-full min-w-0 flex-wrap items-center justify-between gap-2 sm:gap-3";
+  const toggleGroupClass = "ml-auto flex items-center justify-end gap-2 sm:gap-3";
 
   return (
-    <section className="relative rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3 sm:p-4">
+    <section className="relative rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 sm:p-4">
       <div className={headerRowClass}>
-        <p className="text-sm font-semibold text-slate-200">Daily downloads ({days}d)</p>
+        <p className="text-sm font-semibold text-[var(--foreground-secondary)]">Daily downloads ({days}d)</p>
         <div className={toggleGroupClass}>
-          <label className="inline-flex min-h-[40px] items-center gap-2 px-3 py-1.5 text-xs text-slate-300">
-            <input
-              type="checkbox"
-              checked={settings.showMA3}
-              disabled={!canShowMA3}
-              onChange={(event) => setSettings((prev) => ({ ...prev, showMA3: event.target.checked }))}
-              className="h-4 w-4 accent-[color:var(--accent)]"
-            />
-            MA 3
-          </label>
-          <label className="inline-flex min-h-[40px] items-center gap-2 px-3 py-1.5 text-xs text-slate-300">
-            <input
-              type="checkbox"
-              checked={settings.showMA7}
-              disabled={!canShowMA7}
-              onChange={(event) => setSettings((prev) => ({ ...prev, showMA7: event.target.checked }))}
-              className="h-4 w-4 accent-[color:var(--accent)]"
-            />
-            MA 7
-          </label>
+          <MetricCheckbox label="MA 3" checked={settings.showMA3} disabled={!canShowMA3} onChange={(next) => setSettings((prev) => ({ ...prev, showMA3: next }))} title="3-day moving average" />
+
+          <MetricCheckbox label="MA 7" checked={settings.showMA7} disabled={!canShowMA7} onChange={(next) => setSettings((prev) => ({ ...prev, showMA7: next }))} title="7-day moving average" />
         </div>
       </div>
 
@@ -701,10 +763,10 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
           {styleOpen ? (
             <div
               ref={stylePanelRef}
-              className="absolute right-3 top-3 z-20 w-[min(22rem,92vw)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[color:var(--foreground)] shadow-xl"
+              className="absolute right-3 top-3 z-20 w-[min(22rem,92vw)] rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[var(--foreground)] shadow-xl"
             >
               <div className="flex items-center justify-between gap-2">
-                <div className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--muted)]">Chart style</div>
+                <div className="text-[11px] uppercase tracking-[0.35em] text-[var(--foreground-tertiary)]">Chart style</div>
                 <button
                   type="button"
                   className={CHART_BUTTON_CLASSES + " px-2 py-1"}
@@ -715,114 +777,74 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               </div>
 
               <div className="mt-3 grid grid-cols-2 gap-3">
-                <label className="flex flex-col gap-1">
-                  <span className="text-[color:var(--muted)]">Downloads color</span>
-                  <select
-                    value={settings.downloadsColor}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, downloadsColor: e.target.value as PaletteKey }))}
-                    className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                  >
-                    {PALETTE.map((p) => (
-                      <option key={p.key} value={p.key}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <ChartSelect
+                  label="Downloads color"
+                  value={settings.downloadsColor}
+                  onChange={(value) => setSettings((prev) => ({ ...prev, downloadsColor: value as PaletteKey }))}
+                  options={PALETTE.map((p) => ({ label: p.label, value: p.key }))}
+                />
 
-                <label className="flex flex-col gap-1">
-                  <span className="text-[color:var(--muted)]">Downloads line</span>
-                  <select
-                    value={settings.downloadsStyle}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, downloadsStyle: e.target.value as LineStyleKey }))}
-                    className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                  >
-                    <option value="solid">Solid</option>
-                    <option value="dashed">Dashed</option>
-                    <option value="dotted">Dotted</option>
-                  </select>
-                </label>
+                <ChartSelect
+                  label="Downloads line"
+                  value={settings.downloadsStyle}
+                  onChange={(value) => setSettings((prev) => ({ ...prev, downloadsStyle: value as LineStyleKey }))}
+                  options={[
+                    { label: "Solid", value: "solid" },
+                    { label: "Dashed", value: "dashed" },
+                    { label: "Dotted", value: "dotted" },
+                  ]}
+                />
 
-                <label className="flex flex-col gap-1">
-                  <span className="text-[color:var(--muted)]">MA 3 color</span>
-                  <select
-                    value={settings.ma3Color}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, ma3Color: e.target.value as PaletteKey }))}
-                    className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                  >
-                    {PALETTE.map((p) => (
-                      <option key={p.key} value={p.key}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <ChartSelect
+                  label="MA 3 color"
+                  value={settings.ma3Color}
+                  onChange={(value) => setSettings((prev) => ({ ...prev, ma3Color: value as PaletteKey }))}
+                  options={PALETTE.map((p) => ({ label: p.label, value: p.key }))}
+                />
 
-                <label className="flex flex-col gap-1">
-                  <span className="text-[color:var(--muted)]">MA 3 line style</span>
-                  <select
-                    value={settings.ma3Style}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, ma3Style: e.target.value as LineStyleKey }))}
-                    className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                  >
-                    <option value="solid">Solid</option>
-                    <option value="dashed">Dashed</option>
-                    <option value="dotted">Dotted</option>
-                  </select>
-                </label>
+                <ChartSelect
+                  label="MA 3 line style"
+                  value={settings.ma3Style}
+                  onChange={(value) => setSettings((prev) => ({ ...prev, ma3Style: value as LineStyleKey }))}
+                  options={[
+                    { label: "Solid", value: "solid" },
+                    { label: "Dashed", value: "dashed" },
+                    { label: "Dotted", value: "dotted" },
+                  ]}
+                />
 
-                <label className="flex flex-col gap-1">
-                  <span className="text-[color:var(--muted)]">MA 7 color</span>
-                  <select
-                    value={settings.ma7Color}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, ma7Color: e.target.value as PaletteKey }))}
-                    className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                  >
-                    {PALETTE.map((p) => (
-                      <option key={p.key} value={p.key}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <ChartSelect
+                  label="MA 7 color"
+                  value={settings.ma7Color}
+                  onChange={(value) => setSettings((prev) => ({ ...prev, ma7Color: value as PaletteKey }))}
+                  options={PALETTE.map((p) => ({ label: p.label, value: p.key }))}
+                />
 
-                <label className="flex flex-col gap-1">
-                  <span className="text-[color:var(--muted)]">MA 7 line style</span>
-                  <select
-                    value={settings.ma7Style}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, ma7Style: e.target.value as LineStyleKey }))}
-                    className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                  >
-                    <option value="solid">Solid</option>
-                    <option value="dashed">Dashed</option>
-                    <option value="dotted">Dotted</option>
-                  </select>
-                </label>
+                <ChartSelect
+                  label="MA 7 line style"
+                  value={settings.ma7Style}
+                  onChange={(value) => setSettings((prev) => ({ ...prev, ma7Style: value as LineStyleKey }))}
+                  options={[
+                    { label: "Solid", value: "solid" },
+                    { label: "Dashed", value: "dashed" },
+                    { label: "Dotted", value: "dotted" },
+                  ]}
+                />
 
-                <label className="inline-flex items-center gap-2 text-xs text-[color:var(--muted)]">
-                  <input
-                    type="checkbox"
+                <div className="col-span-2">
+                  <MetricCheckbox
+                    label="Outliers"
                     checked={settings.showOutliers}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, showOutliers: e.target.checked }))}
-                    className="h-4 w-4 accent-[color:var(--accent)]"
+                    onChange={(next) => setSettings((prev) => ({ ...prev, showOutliers: next }))}
                   />
-                  Outliers
-                </label>
+                </div>
 
-                <label className="flex flex-col gap-1">
-                  <span className="text-[color:var(--muted)]">Outlier color</span>
-                  <select
-                    value={settings.outlierColor}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, outlierColor: e.target.value as PaletteKey }))}
-                    className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-sm text-[color:var(--foreground)]"
-                  >
-                    {PALETTE.map((p) => (
-                      <option key={p.key} value={p.key}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <ChartSelect
+                  label="Outlier color"
+                  value={settings.outlierColor}
+                  onChange={(value) => setSettings((prev) => ({ ...prev, outlierColor: value as PaletteKey }))}
+                  options={PALETTE.map((p) => ({ label: p.label, value: p.key }))}
+                />
               </div>
             </div>
           ) : null}
@@ -830,43 +852,43 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
           {hovered ? (
             <div ref={tooltipRef} className={tooltipClassName}>
               <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-[color:var(--foreground)]">{hovered.date}</span>
-                <span className="text-[color:var(--muted)]">UTC</span>
+                <span className="font-mono text-[var(--foreground)]">{hovered.date}</span>
+                <span className="text-[var(--foreground-tertiary)]">UTC</span>
               </div>
 
               <div className="mt-2 space-y-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[color:var(--muted)]">Downloads</span>
+                  <span className="text-[var(--foreground-tertiary)]">Downloads</span>
                   <span className="font-mono">{numberFormatter.format(hovered.downloads)}</span>
                 </div>
 
                 {settings.showMA3 && typeof hoveredMA3 === "number" ? (
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[color:var(--muted)]">MA 3</span>
+                    <span className="text-[var(--foreground-tertiary)]">MA 3</span>
                     <span className="font-mono">{hoveredMA3.toFixed(1)}</span>
                   </div>
                 ) : null}
 
                 {settings.showMA7 && typeof hoveredMA7 === "number" ? (
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[color:var(--muted)]">MA 7</span>
+                    <span className="text-[var(--foreground-tertiary)]">MA 7</span>
                     <span className="font-mono">{hoveredMA7.toFixed(1)}</span>
                   </div>
                 ) : null}
 
                 {settings.showOutliers && hoveredOutlier?.is_outlier ? (
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[color:var(--muted)]">Outlier</span>
+                    <span className="text-[var(--foreground-tertiary)]">Outlier</span>
                     <span className="font-mono">{Number(hoveredOutlier.score).toFixed(2)}</span>
                   </div>
                 ) : null}
 
                 {hoveredEvents.length ? (
                   <div className="pt-1">
-                    <div className="text-[10px] uppercase tracking-[0.25em] text-[color:var(--muted)]">Events</div>
+                    <div className="text-[10px] uppercase tracking-[0.25em] text-[var(--foreground-tertiary)]">Events</div>
                     <ul className="mt-1 space-y-0.5">
                       {hoveredEvents.slice(0, 3).map((e, i) => (
-                        <li key={e.id ?? `${hovered.date}-${i}`} className="truncate text-[color:var(--foreground)]">
+                        <li key={e.id ?? `${hovered.date}-${i}`} className="truncate text-[var(--foreground)]">
                           {e.label ?? e.title ?? e.type ?? "Event"}
                         </li>
                       ))}
@@ -880,7 +902,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
 
       <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
         {/* Legend (visual mapping). Never overlays the plot. */}
-        <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-2 text-[11px] text-[color:var(--foreground)] shadow-lg max-w-full">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[11px] text-[var(--foreground)] shadow-lg max-w-full">
           <ul className="space-y-1">
             <li className="flex items-center gap-2">
               <svg width="32" height="8" viewBox="0 0 32 8" aria-hidden>
@@ -895,7 +917,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
                   strokeLinecap="round"
                 />
               </svg>
-              <span className="text-[color:var(--muted)]">Downloads</span>
+              <span className="text-[var(--foreground-tertiary)]">Downloads</span>
             </li>
 
             {settings.showMA3 && canShowMA3 ? (
@@ -912,7 +934,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
                     strokeLinecap="round"
                   />
                 </svg>
-                <span className="text-[color:var(--muted)]">MA 3</span>
+                <span className="text-[var(--foreground-tertiary)]">MA 3</span>
               </li>
             ) : null}
 
@@ -930,7 +952,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
                     strokeLinecap="round"
                   />
                 </svg>
-                <span className="text-[color:var(--muted)]">MA 7</span>
+                <span className="text-[var(--foreground-tertiary)]">MA 7</span>
               </li>
             ) : null}
 
@@ -939,7 +961,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
                 <svg width="32" height="8" viewBox="0 0 32 8" aria-hidden>
                   <circle cx="16" cy="4" r="3" fill={paletteValue(settings.outlierColor)} opacity="0.85" />
                 </svg>
-                <span className="text-[color:var(--muted)]">Outliers</span>
+                <span className="text-[var(--foreground-tertiary)]">Outliers</span>
               </li>
             ) : null}
           </ul>

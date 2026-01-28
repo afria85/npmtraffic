@@ -17,7 +17,7 @@ const EMPTY_SNAPSHOT: string[] = [];
 const getEmptySnapshot = () => EMPTY_SNAPSHOT;
 
 const LIST_REMOVAL_CLASS =
-  "inline-flex shrink-0 items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 py-1.5 text-xs text-slate-100 transition hover:bg-[color:var(--surface-3)]";
+  "inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] pl-3 pr-2 py-1.5 text-xs text-[var(--foreground)] transition hover:bg-[var(--surface-hover)] hover:border-[var(--border-hover)]";
 
 type CompareTrayProps = {
   pathname?: string;
@@ -109,16 +109,17 @@ export default function CompareTray({
   }, [pathname, onNavigateToCompareRoot, onSyncCompareUrl, compareDays]);
 
   const ready = isCompareReady(packages.length);
-  const compareUrl = useMemo(() => (ready ? buildCompareUrl(packages, 30) : null), [ready, packages]);
+  const days = compareDays ?? 30;
+  const compareUrl = useMemo(() => (ready ? buildCompareUrl(packages, days) : null), [ready, packages, days]);
   const label = getCompareButtonLabel(packages.length);
   const selectionLabel = getCompareStatusLabel(packages.length);
 
   return (
     <div ref={trayRef} className="w-full py-3">
       <div className="w-full sm:mx-auto sm:max-w-3xl sm:px-4" data-testid="compare-tray-container">
-        <div className="flex w-full flex-col gap-3 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 shadow-sm shadow-black/20 backdrop-blur">
+        <div className="flex w-full flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-sm shadow-black/20 backdrop-blur">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="text-sm font-semibold text-slate-200">Compare</div>
+            <div className="text-sm font-semibold text-[var(--foreground-secondary)]">Compare</div>
             {packages.length ? (
               <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto pb-1">
                 {packages.map((pkg) => (
@@ -129,8 +130,13 @@ export default function CompareTray({
                     className={LIST_REMOVAL_CLASS}
                     aria-label={`Remove ${pkg} from compare`}
                   >
-                    {pkg}
-                    <span aria-hidden>×</span>
+                    <span className="font-mono">{pkg}</span>
+                    <span 
+                      className="flex h-4 w-4 items-center justify-center rounded bg-[var(--surface-hover)] text-[var(--foreground-secondary)] transition-colors hover:bg-red-500/20 hover:text-red-400"
+                      aria-hidden
+                    >
+                      ×
+                    </span>
                   </button>
                 ))}
               </div>
@@ -140,13 +146,13 @@ export default function CompareTray({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-slate-400">{selectionLabel}</span>
+            <span className="text-sm text-[var(--foreground-tertiary)]">{selectionLabel}</span>
             <div className="ml-auto flex items-center gap-2">
               {packages.length ? (
                 <button
                   type="button"
                   onClick={handleClear}
-                  className={`${ACTION_BUTTON_CLASSES} px-2 sm:px-3 bg-transparent text-[color:var(--muted)] hover:bg-[color:var(--surface-2)]`}
+                  className={`${ACTION_BUTTON_CLASSES} px-2 sm:px-3 bg-transparent text-[var(--foreground-tertiary)] hover:bg-[var(--surface)]`}
                   aria-label="Clear compare selection"
                 >
                   Clear

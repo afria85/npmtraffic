@@ -2,17 +2,20 @@
 
 import SearchBox from "@/components/SearchBox";
 import CompareButton from "@/components/compare/CompareButton";
+import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 type PackageHeaderProps = {
   name: string;
   updatedLabel: string | null;
   updatedLabelCompact: string | null;
+  repoUrl?: string | null;
 };
 
 export default function PackageHeader({
   name,
   updatedLabel,
   updatedLabelCompact,
+  repoUrl,
 }: PackageHeaderProps) {
   return (
     <div className="flex w-full flex-col gap-4">
@@ -45,6 +48,18 @@ export default function PackageHeader({
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <CompareButton name={name} />
+            {repoUrl ? (
+              <a
+                href={repoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={`${ACTION_BUTTON_CLASSES} h-9 px-3 text-xs sm:h-10 sm:text-sm`}
+                title={repoUrl}
+              >
+                <span className="sm:hidden">Repo</span>
+                <span className="hidden sm:inline">GitHub repo</span>
+              </a>
+            ) : null}
           </div>
         </div>
       </div>
