@@ -31,7 +31,10 @@ function buildCsp(options?: { strict?: boolean }) {
 }
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["http://localhost:3000", "http://192.168.0.48:3000"],
+  // Dev origins from env only, not hardcoded IPs
+  ...(process.env.NODE_ENV === 'development' && {
+    allowedDevOrigins: ["http://localhost:3000", "http://127.0.0.1:3000"],
+  }),
   async headers() {
     // Important: Next.js (App Router) emits small inline scripts needed for hydration and RSC.
     // Until we wire nonces end-to-end, the enforced CSP must allow inline scripts.
@@ -57,7 +60,14 @@ const nextConfig: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Frame-Options", value: "DENY" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "X-DNS-Prefetch-Control", value: "off" },
+          { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
+          { key: "Origin-Agent-Cluster", value: "?1" },
+          {
+            key: "Permissions-Policy",
+            value:
+              "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), usb=(), web-share=(), xr-spatial-tracking=()",
+          },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           { key: "Cross-Origin-Resource-Policy", value: "same-site" },
         ],
