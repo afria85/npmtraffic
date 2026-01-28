@@ -183,11 +183,10 @@ export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuPro
     <span className="inline-flex items-center gap-2">
       <Icon />
       {iconOnly ? (
-        <span className={status === "idle" ? "hidden sm:inline" : ""}>{labelText}</span>
+        <span className="hidden sm:inline">{labelText}</span>
       ) : (
         <span>{labelText}</span>
       )}
-      <span className="sr-only" aria-live="polite">{status === "idle" ? "" : labelText}</span>
     </span>
   );
 
