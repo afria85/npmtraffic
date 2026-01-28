@@ -51,24 +51,6 @@ function CheckIcon() {
   );
 }
 
-function CopyIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-5 w-5"
-      aria-hidden
-    >
-      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-    </svg>
-  );
-}
-
 async function copyToClipboard(text: string): Promise<boolean> {
   try {
     if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
@@ -103,13 +85,34 @@ function isAbortError(err: unknown): boolean {
 }
 
 /**
+ * Check Web Share API support at runtime.
+ */
+function canUseNativeShare(title: string, url: string): boolean {
+  if (typeof window === "undefined") return false;
+  if (!window.isSecureContext) return false;
+
+  const nav = navigator as NavigatorWithShare;
+  if (typeof nav.share !== "function") return false;
+
+  if (typeof nav.canShare === "function") {
+    try {
+      return nav.canShare({ title, url });
+    } catch {
+      return true;
+    }
+  }
+
+  return true;
+}
+
+/**
  * ShareMenu - Simplified share button
  * 
  * Behavior:
- * 1. If native share is available → Opens OS share sheet (which already has copy option)
- * 2. If native share NOT available → Copies link directly and shows feedback
+ * 1. Click → Try native share (if available) → Opens OS share sheet
+ * 2. If native share not available or fails → Copy link + show feedback
  * 
- * NO dropdown menu - one click, one action.
+ * Always shows "Share" label - handles fallback gracefully.
  */
 export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuProps) {
   const [status, setStatus] = useState<"idle" | "copied" | "failed" | "shared">("idle");
@@ -118,29 +121,13 @@ export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuPro
     window.setTimeout(() => setStatus("idle"), ms);
   }, []);
 
-  const supportsNativeShare = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    if (!window.isSecureContext) return false;
-
-    const nav = navigator as NavigatorWithShare;
-    if (typeof nav.share !== "function") return false;
-
-    if (typeof nav.canShare === "function") {
-      try {
-        return nav.canShare({ title, url });
-      } catch {
-        return true;
-      }
-    }
-
-    return true;
-  }, [title, url]);
-
   const handleClick = useCallback(async () => {
     const nav = navigator as NavigatorWithShare;
 
-    // Try native share first
-    if (supportsNativeShare && typeof nav.share === "function") {
+    // Check at click-time if native share is available
+    const nativeShareAvailable = canUseNativeShare(title, url);
+    
+    if (nativeShareAvailable && typeof nav.share === "function") {
       try {
         await nav.share({ title, url });
         setStatus("shared");
@@ -157,7 +144,7 @@ export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuPro
     const ok = await copyToClipboard(url);
     setStatus(ok ? "copied" : "failed");
     resetSoon(ok ? 1800 : 2500);
-  }, [supportsNativeShare, title, url, resetSoon]);
+  }, [title, url, resetSoon]);
 
   // Determine button content based on status
   const { labelText, Icon } = useMemo(() => {
@@ -167,15 +154,12 @@ export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuPro
       case "shared":
         return { labelText: "Shared", Icon: CheckIcon };
       case "failed":
-        return { labelText: "Failed", Icon: CopyIcon };
+        return { labelText: "Failed", Icon: ShareIcon };
       default:
-        // Show different icon based on capability
-        return { 
-          labelText: supportsNativeShare ? "Share" : "Copy link", 
-          Icon: supportsNativeShare ? ShareIcon : CopyIcon 
-        };
+        // Always show "Share" - it will either open native sheet or copy
+        return { labelText: "Share", Icon: ShareIcon };
     }
-  }, [status, supportsNativeShare]);
+  }, [status]);
 
   const iconOnly = Boolean(iconOnlyOnMobile);
   
@@ -205,8 +189,8 @@ export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuPro
     <button
       type="button"
       className={`${buttonClassName} ${stateClassName} transition-colors duration-200`}
-      aria-label={supportsNativeShare ? "Share" : "Copy link"}
-      title={supportsNativeShare ? "Share this page" : "Copy link to clipboard"}
+      aria-label="Share"
+      title="Share this page"
       onClick={handleClick}
     >
       {buttonContent}

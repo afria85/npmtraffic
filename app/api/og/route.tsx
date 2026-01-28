@@ -24,7 +24,43 @@ export async function GET(request: Request) {
       .filter((name) => validatePackageName(name).ok)
       .slice(0, 5);
 
-    return buildOgImageResponse({ mode: "compare", pkgs, days });
+    // Fetch stats for each package (best effort)
+    try {
+      const results = await Promise.all(
+        pkgs.map(async (pkg) => {
+          try {
+            const data = await fetchTraffic(pkg, days);
+            const total = data.series.reduce((acc, r) => acc + (r.downloads ?? 0), 0);
+            return { name: pkg, total, dateRange: data.series.length > 0 
+              ? { start: data.series[0]!.date, end: data.series[data.series.length - 1]!.date }
+              : undefined 
+            };
+          } catch {
+            return { name: pkg, total: 0, dateRange: undefined };
+          }
+        })
+      );
+
+      const grandTotal = results.reduce((acc, r) => acc + r.total, 0);
+      const packages = results.map((r) => ({
+        name: r.name,
+        total: r.total,
+        share: grandTotal > 0 ? (r.total / grandTotal) * 100 : 0,
+      }));
+
+      // Use the first package's date range (they should all be the same)
+      const dateRange = results.find((r) => r.dateRange)?.dateRange;
+
+      return buildOgImageResponse({ 
+        mode: "compare", 
+        pkgs, 
+        days,
+        stats: { packages, dateRange },
+      });
+    } catch {
+      // Fallback without stats
+      return buildOgImageResponse({ mode: "compare", pkgs, days });
+    }
   }
 
   const rawPkg = searchParams.get("pkg") ?? "";

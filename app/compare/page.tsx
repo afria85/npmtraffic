@@ -134,15 +134,28 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     description,
     alternates: { canonical },
     openGraph: {
+      type: "website",
+      siteName: "npmtraffic",
       title,
       description,
       url: canonical,
-      images: [{ url: ogImage, alt: "npmtraffic" }],
+      images: [{ 
+        url: ogImage, 
+        alt: `Compare npm downloads: ${pkgs.join(" vs ")}`,
+        width: 1200,
+        height: 630,
+        type: "image/png",
+      }],
     },
     twitter: {
       card: "summary_large_image",
+      site: "@npmtraffic",
       title,
       description,
+      images: [{
+        url: ogImage,
+        alt: `Compare npm downloads: ${pkgs.join(" vs ")}`,
+      }],
     },
   };
 }

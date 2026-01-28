@@ -3,6 +3,8 @@ import { decodePkg } from "@/lib/og-encode";
 import { fetchTraffic } from "@/lib/traffic";
 import type { NextRequest } from "next/server";
 
+export const runtime = "edge";
+
 function parseDays(value: string | undefined) {
   const n = Number(value);
   if (!Number.isFinite(n) || n <= 0) return 30;

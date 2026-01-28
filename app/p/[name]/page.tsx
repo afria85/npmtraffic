@@ -91,16 +91,28 @@ export async function generateMetadata({
       canonical,
     },
     openGraph: {
+      type: "website",
+      siteName: "npmtraffic",
       title,
       description,
       url: canonical,
-      images: [{ url: ogImage, alt: "npmtraffic" }],
+      images: [{ 
+        url: ogImage, 
+        alt: `${name} npm download statistics`,
+        width: 1200,
+        height: 630,
+        type: "image/png",
+      }],
     },
     twitter: {
       card: "summary_large_image",
+      site: "@npmtraffic",
       title,
       description,
-      images: [ogImage],
+      images: [{
+        url: ogImage,
+        alt: `${name} npm download statistics`,
+      }],
     },
   };
 }

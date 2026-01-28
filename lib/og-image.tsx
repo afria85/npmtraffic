@@ -14,6 +14,9 @@ const BORDER = "rgba(255, 255, 255, 0.08)";
 const SUCCESS = "#34d399";
 const DANGER = "#f87171";
 
+// Chart colors for compare mode
+const CHART_COLORS = ["#06b6d4", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444"];
+
 // OG images are marketing; keep cache short-ish.
 const CACHE_CONTROL = "public, s-maxage=900, stale-while-revalidate=86400";
 
@@ -39,10 +42,8 @@ function formatPct(pct: number): string {
 }
 
 function formatShortDate(isoDate: string): string {
-  // isoDate: YYYY-MM-DD
   try {
     const d = new Date(`${isoDate}T00:00:00Z`);
-    // Keep in UTC to match npm reporting.
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
   } catch {
     return isoDate;
@@ -56,15 +57,32 @@ type PkgStats = {
   dateRange?: { start: string; end: string };
 };
 
+type ComparePkgStats = {
+  name: string;
+  total: number;
+  share: number; // percentage of total
+};
+
+type CompareStats = {
+  packages: ComparePkgStats[];
+  dateRange?: { start: string; end: string };
+};
+
 type OgImageOptions =
   | { mode: "pkg"; pkg: string; days: number; stats?: PkgStats }
-  | { mode: "compare"; pkgs: string[]; days: number };
+  | { mode: "compare"; pkgs: string[]; days: number; stats?: CompareStats };
 
+/**
+ * BrandMark - npmtraffic logo
+ * Matches public/brand-mark.svg exactly:
+ * - Left pillar: #06b6d4 (ACCENT)
+ * - Middle diagonal: #22d3ee
+ * - Right pillar: #0891b2
+ */
 function BrandMark({ size = 44 }: { size?: number }) {
-  // Match the app brand mark (no hooks; safe for next/og).
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
-      <rect x="0" y="0" width="14" height="48" rx="3" fill={ACCENT} />
+      <rect x="0" y="0" width="14" height="48" rx="3" fill="#06b6d4" />
       <polygon points="16,0 28,0 32,28 20,28" fill="#22d3ee" />
       <rect x="34" y="0" width="14" height="48" rx="3" fill="#0891b2" />
     </svg>
@@ -150,7 +168,7 @@ function Sparkline({ values }: { values: number[] }) {
   );
 }
 
-function createHeader(days: number) {
+function createHeader(days: number, mode: "pkg" | "compare" = "pkg") {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -173,7 +191,7 @@ function createHeader(days: number) {
           <div style={{ color: MUTED, fontSize: 18 }}>Daily download analytics for npm</div>
         </div>
       </div>
-      <Pill text={`${days} days`} />
+      <Pill text={mode === "compare" ? `Compare · ${days}d` : `${days} days`} />
     </div>
   );
 }
@@ -215,7 +233,7 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats) {
         justifyContent: "space-between",
       }}
     >
-      {createHeader(days)}
+      {createHeader(days, "pkg")}
 
       <div
         style={{
@@ -294,8 +312,13 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats) {
   );
 }
 
-function createCompareLayout(pkgs: string[], days: number) {
-  const title = pkgs.length ? pkgs.join(" vs ") : "Compare npm packages";
+function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats) {
+  const hasStats = stats && stats.packages.length > 0;
+  const dateLabel =
+    stats?.dateRange?.start && stats?.dateRange?.end
+      ? `${formatShortDate(stats.dateRange.start)} – ${formatShortDate(stats.dateRange.end)} UTC`
+      : undefined;
+
   return (
     <div
       style={{
@@ -304,27 +327,116 @@ function createCompareLayout(pkgs: string[], days: number) {
         width: "100%",
         height: "100%",
         background: BG,
-        padding: 72,
+        padding: 56,
         justifyContent: "space-between",
       }}
     >
-      {createHeader(days)}
-      <div style={{ marginTop: 36 }}>
-        <div style={{ color: MUTED, fontSize: 18, letterSpacing: 3, textTransform: "uppercase" }}>Compare</div>
-        <div
-          style={{
-            marginTop: 14,
-            color: FG,
-            fontSize: 64,
-            fontWeight: 800,
-            letterSpacing: -2,
-            lineHeight: 1.05,
-          }}
-        >
-          {clampText(title, 120)}
+      {createHeader(days, "compare")}
+
+      <div
+        style={{
+          marginTop: 28,
+          flex: 1,
+          borderRadius: 24,
+          border: `1px solid ${BORDER}`,
+          background: BG_CARD,
+          padding: 32,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* Package tags */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+          {pkgs.slice(0, 5).map((pkg, i) => (
+            <div
+              key={pkg}
+              style={{
+                padding: "10px 18px",
+                borderRadius: 12,
+                border: `2px solid ${i === 0 ? CHART_COLORS[0] : BORDER}`,
+                background: i === 0 ? `${CHART_COLORS[0]}18` : "rgba(255,255,255,0.03)",
+                color: i === 0 ? CHART_COLORS[0] : FG,
+                fontSize: 26,
+                fontWeight: 700,
+              }}
+            >
+              {clampText(pkg, 25)}
+            </div>
+          ))}
         </div>
-        <div style={{ marginTop: 18, color: MUTED, fontSize: 26 }}>Daily downloads · deltas · export-ready</div>
+
+        {/* Stats grid */}
+        {hasStats ? (
+          <div
+            style={{
+              marginTop: 28,
+              display: "flex",
+              gap: 16,
+              paddingTop: 28,
+              borderTop: `1px solid ${BORDER}`,
+            }}
+          >
+            {stats.packages.slice(0, 4).map((pkg, i) => (
+              <div
+                key={pkg.name}
+                style={{
+                  flex: 1,
+                  padding: "16px 18px",
+                  borderRadius: 16,
+                  border: `1px solid ${BORDER}`,
+                  background: "rgba(255,255,255,0.02)",
+                  borderLeft: `4px solid ${CHART_COLORS[i % CHART_COLORS.length]}`,
+                }}
+              >
+                <div
+                  style={{
+                    color: MUTED,
+                    fontSize: 14,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {clampText(pkg.name, 18)}
+                </div>
+                <div style={{ marginTop: 8, color: FG, fontSize: 32, fontWeight: 800, letterSpacing: -1 }}>
+                  {formatNumber(pkg.total)}
+                </div>
+                <div style={{ marginTop: 6, color: CHART_COLORS[i % CHART_COLORS.length], fontSize: 16, fontWeight: 600 }}>
+                  {pkg.share.toFixed(1)}% share
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            style={{
+              marginTop: 28,
+              paddingTop: 28,
+              borderTop: `1px solid ${BORDER}`,
+              color: MUTED,
+              fontSize: 22,
+            }}
+          >
+            Side-by-side daily downloads · Aligned date ranges · CSV/JSON exports
+          </div>
+        )}
+
+        {/* Date range footer */}
+        {dateLabel && (
+          <div
+            style={{
+              marginTop: "auto",
+              paddingTop: 20,
+              color: MUTED,
+              fontSize: 16,
+            }}
+          >
+            {dateLabel}
+          </div>
+        )}
       </div>
+
       {createFooter()}
     </div>
   );
@@ -333,7 +445,7 @@ function createCompareLayout(pkgs: string[], days: number) {
 export function buildOgImageResponse(options: OgImageOptions) {
   const response = new ImageResponse(
     options.mode === "compare"
-      ? createCompareLayout(options.pkgs, options.days)
+      ? createCompareLayout(options.pkgs, options.days, options.stats)
       : createPackageLayout(options.pkg, options.days, options.stats),
     { width: WIDTH, height: HEIGHT }
   );
