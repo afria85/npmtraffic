@@ -15,6 +15,7 @@ import {
   MORE_SUMMARY_CLASSES,
 } from "@/components/range-selector-styles";
 import type { RangeDropdownProps } from "@/components/RangeDropdown.types";
+import { useDropdownDismiss } from "@/components/ui/useDropdownDismiss";
 
 type MenuPosition = {
   top: number;
@@ -76,26 +77,11 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
     };
   }, [open, updatePosition]);
 
-  useEffect(() => {
-    if (!open || typeof document === "undefined") return undefined;
-    const handlePointerDown = (event: PointerEvent | MouseEvent | TouchEvent) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-      if (containerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
-      close();
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
-    };
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("touchstart", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("touchstart", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open, close]);
+  useDropdownDismiss({
+    open,
+    onDismiss: close,
+    refs: [containerRef, menuRef],
+  });
 
   return (
     <>
@@ -129,7 +115,7 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
             role="menu"
             aria-labelledby={buttonId}
             aria-hidden={!open}
-            className="pointer-events-auto z-50 flex flex-col gap-1 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface)] p-2 text-xs text-[color:var(--foreground)] shadow-lg shadow-black/50"
+            className="pointer-events-auto z-50 flex flex-col gap-1 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 text-xs text-[var(--foreground)] shadow-lg shadow-black/50"
             style={{
               position: "fixed",
               top: menuPosition.top,

@@ -53,3 +53,43 @@ test("dropdown controller closes on Escape", () => {
   controller.handleKeyDown({ key: "Escape" } as KeyboardEvent);
   assert.equal(closed, true);
 });
+
+test("dropdown controller supports multiple containers", () => {
+  let closed = false;
+  const insideA = {} as Node;
+  const insideB = {} as Node;
+  const containerA = { contains: (t: Node) => t === insideA } as unknown as HTMLElement;
+  const containerB = { contains: (t: Node) => t === insideB } as unknown as HTMLElement;
+  const controller = makeDropdownController({
+    containers: [containerA, containerB],
+    onClose: () => {
+      closed = true;
+    },
+  });
+
+  controller.handlePointerDown({ target: insideA } as PointerEvent);
+  assert.equal(closed, false);
+  controller.handlePointerDown({ target: insideB } as PointerEvent);
+  assert.equal(closed, false);
+  controller.handlePointerDown({ target: {} as Node } as PointerEvent);
+  assert.equal(closed, true);
+});
+
+test("dropdown controller supports dynamic getContainers", () => {
+  let closed = false;
+  const inside = {} as Node;
+  let current: HTMLElement | null = { contains: (t: Node) => t === inside } as unknown as HTMLElement;
+  const controller = makeDropdownController({
+    getContainers: () => [current],
+    onClose: () => {
+      closed = true;
+    },
+  });
+
+  controller.handlePointerDown({ target: inside } as PointerEvent);
+  assert.equal(closed, false);
+  // Simulate menu unmounting / ref becoming null
+  current = null;
+  controller.handlePointerDown({ target: inside } as PointerEvent);
+  assert.equal(closed, true);
+});
