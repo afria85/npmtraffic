@@ -184,7 +184,7 @@ body > * { position: relative; z-index: 1; }
 :root[data-theme="dark"] .nt-select,
 :root[data-theme="dark"] .nt-date { color-scheme: dark; -webkit-appearance: none; appearance: none; }
 :root[data-theme="light"] .nt-select,
-:root[data-theme="light"] .nt-date { color-scheme: light; }
+:root[data-theme="light"] .nt-date { color-scheme: light; -webkit-appearance: none; appearance: none; }
 .nt-date::-webkit-calendar-picker-indicator { opacity: 0; cursor: pointer; pointer-events: none;  }
 .nt-date::-webkit-inner-spin-button,
 .nt-date::-webkit-clear-button { display: none; }
