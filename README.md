@@ -62,12 +62,12 @@ npm start
 
 ```
 npmtraffic/
-├── app/                  # Next.js app directory
+├── app/                 # Next.js app directory
 │   ├── p/[pkg]/         # Package detail pages
 │   ├── compare/         # Package comparison
 │   ├── api/             # API routes
 │   └── ...
-├── components/          # React components
+├── components/         # React components
 │   ├── charts/         # Chart components
 │   ├── compare/        # Comparison UI
 │   └── ...

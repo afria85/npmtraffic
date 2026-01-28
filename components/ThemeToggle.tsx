@@ -41,7 +41,10 @@ export default function ThemeToggle() {
 
     const onChange = () => {
       const override = readPersistedTheme();
-      if (override) return;
+      if (override) {
+        applyTheme(override);
+        return;
+      }
       applyTheme(getSystemTheme());
     };
 

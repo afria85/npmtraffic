@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useDropdownDismiss } from "@/components/ui/useDropdownDismiss";
 
 export type ActionMenuItem = {
   key: string;
@@ -20,11 +19,13 @@ type MenuPosition = {
 
 export default function ActionMenu({
   label = "Menu",
+  ariaLabel,
   items,
   className,
   buttonClassName,
 }: {
-  label?: string;
+  label?: ReactNode;
+  ariaLabel?: string;
   items: ActionMenuItem[];
   className?: string;
   buttonClassName?: string;
@@ -47,6 +48,8 @@ export default function ActionMenu({
     root.style.pointerEvents = "none";
     return root;
   });
+
+  const resolvedAriaLabel = ariaLabel ?? (typeof label === "string" ? label : "Menu");
 
   const close = useCallback(() => {
     setOpen(false);
@@ -99,34 +102,45 @@ export default function ActionMenu({
     };
   }, [open, updatePosition]);
 
-  const handleMenuKeyDown = useCallback((event: KeyboardEvent) => {
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      // Basic roving focus for menuitems.
-      const container = menuRef.current;
-      if (!container) return;
-      const items = Array.from(container.querySelectorAll<HTMLElement>('[role="menuitem"]'));
-      if (!items.length) return;
-      event.preventDefault();
-      const active = document.activeElement as HTMLElement | null;
-      const current = active ? items.indexOf(active) : -1;
-      const delta = event.key === "ArrowDown" ? 1 : -1;
-      const next =
-        current === -1
-          ? delta > 0
-            ? 0
-            : items.length - 1
-          : (current + delta + items.length) % items.length;
-      items[next]?.focus();
-    }
-  }, []);
+  // Dismiss on outside click / Esc
+  useEffect(() => {
+    if (!open) return;
 
-  // Dismiss on outside click / Esc (shared controller)
-  useDropdownDismiss({
-    open,
-    onDismiss: close,
-    refs: [triggerRef, menuRef],
-    onKeyDown: handleMenuKeyDown,
-  });
+    const onPointerDown = (event: Event) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (triggerRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      close();
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        close();
+        return;
+      }
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        // Basic roving focus for menuitems.
+        const container = menuRef.current;
+        if (!container) return;
+        const items = Array.from(container.querySelectorAll<HTMLElement>('[role="menuitem"]'));
+        if (!items.length) return;
+        event.preventDefault();
+        const active = document.activeElement as HTMLElement | null;
+        const current = active ? items.indexOf(active) : -1;
+        const delta = event.key === "ArrowDown" ? 1 : -1;
+        const next = current === -1 ? (delta > 0 ? 0 : items.length - 1) : (current + delta + items.length) % items.length;
+        items[next]?.focus();
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, close]);
 
   // When opened, focus the first menu item for predictable keyboard navigation.
   useEffect(() => {
@@ -147,7 +161,7 @@ export default function ActionMenu({
             ref={menuRef}
             id={menuId}
             role="menu"
-            aria-label={label}
+            aria-label={resolvedAriaLabel}
             className="pointer-events-auto fixed z-[9999] min-w-[12rem] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl"
             style={{
               top: Math.round(menuPosition.top),
@@ -206,6 +220,7 @@ export default function ActionMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
+        aria-label={resolvedAriaLabel}
         onClick={() =>
           setOpen((v) => {
             const next = !v;

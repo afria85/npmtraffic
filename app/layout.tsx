@@ -5,11 +5,6 @@ import "./globals.css";
 import { config } from "@/lib/config";
 import { Suspense } from "react";
 
-export const viewport = {
-  width: "device-width",
-  initialScale: 1,
-};
-
 export const metadata: Metadata = {
   title: {
     default: config.site.name,
@@ -53,6 +48,7 @@ const THEME_INIT_SCRIPT = `(() => {
     const theme = (saved === "dark" || saved === "light") ? saved : system;
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
+    document.documentElement.classList.toggle("dark", theme === "dark");
   } catch (e) {
     // ignore
   }

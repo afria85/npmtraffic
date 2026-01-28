@@ -56,6 +56,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
   const [form, setForm] = useState<EventEntry>(DEFAULT_FORM);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<{ text: string; tone: "info" | "warning" } | null>(null);
+  const [shareLinkFallback, setShareLinkFallback] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const searchParams = useSearchParams();
@@ -76,12 +77,42 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
   useEffect(() => {
     if (!statusMessage || typeof window === "undefined") return;
-    const t = window.setTimeout(() => setStatusMessage(null), 3500);
+    const ms = shareLinkFallback ? 12000 : 3500;
+    const t = window.setTimeout(() => setStatusMessage(null), ms);
     return () => window.clearTimeout(t);
-  }, [statusMessage]);
+  }, [statusMessage, shareLinkFallback]);
 
   const showStatus = (text: string, tone: "info" | "warning" = "info") =>
     setStatusMessage({ text, tone });
+
+  const statusContent = (() => {
+    if (!statusMessage && !shareLinkFallback) return null;
+    const isWarning = statusMessage?.tone === "warning" || Boolean(shareLinkFallback);
+
+    return (
+      <div
+        role="status"
+        className={
+          isWarning
+            ? "nt-note-warning"
+            : "rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--foreground)]"
+        }
+      >
+        {statusMessage ? <p>{statusMessage.text}</p> : null}
+        {shareLinkFallback ? (
+          <div className="mt-2 flex flex-col gap-2">
+            <span className="text-[10px] uppercase tracking-[0.3em] text-[var(--foreground-tertiary)]">Timeline link</span>
+            <input
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 font-mono text-xs text-[var(--foreground)]"
+              value={shareLinkFallback}
+              readOnly
+              onFocus={(event) => event.currentTarget.select()}
+            />
+          </div>
+        ) : null}
+      </div>
+    );
+  })();
 
   // Modal a11y: focus management + Escape/Tab handling.
   useEffect(() => {
@@ -281,31 +312,26 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
   };
 
   const handleCopyShareLink = async () => {
-    if (typeof window === "undefined") return;
-
-    if (!events.length) {
-      showStatus("Add at least one event to enable timeline sharing.", "warning");
-      return;
-    }
-
-    const encoded = shareEncoded || (await encodeSharePayloadV2(events));
-    if (!encoded) {
-      showStatus("No timeline link available to copy.", "warning");
-      return;
-    }
-
-    if (encoded.length > SHARE_MAX_LENGTH) {
-      showStatus("Timeline link is too large to copy.", "warning");
+    if (!shareEnabled) {
+      setShareLinkFallback(null);
+      if (shareTooLarge) {
+        showStatus("Timeline link is too large to copy.", "warning");
+      } else if (!shareEncoded) {
+        showStatus("Add events to enable sharing.", "warning");
+      } else {
+        showStatus("No timeline link available to copy.", "warning");
+      }
       return;
     }
 
     const url = new URL(window.location.href);
-    url.searchParams.set("events", encoded);
+    url.searchParams.set("events", shareEncoded);
     const text = url.toString();
 
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
+        setShareLinkFallback(null);
         showStatus("Timeline link copied.");
         return;
       }
@@ -313,9 +339,13 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
       // fall through
     }
 
-    // Fallback for browsers that block programmatic clipboard access.
-    window.prompt("Copy timeline link:", text);
-    showStatus("Copy the timeline link from the prompt.");
+    setShareLinkFallback(text);
+    try {
+      window.prompt("Copy timeline link:", text);
+    } catch {
+      // ignore
+    }
+    showStatus("Copy the timeline link below.", "warning");
   };
 
   const handleImportShared = () => {
@@ -370,6 +400,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
             ) : null}
           </div>
         </div>
+        {statusContent ? <div className="px-4 py-3">{statusContent}</div> : null}
         <ScrollHintContainer className="max-h-[60vh] overflow-auto">
           <table
             className={`w-full text-sm ${showDerived ? "min-w-[760px]" : ""}`}
@@ -674,29 +705,20 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   }}
                 />
 
-                {statusMessage ? (
-                  <div
-                    role="status"
-                    className={
-                      statusMessage.tone === "warning"
-                        ? "nt-note-warning"
-                        : "rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--foreground)]"
-                    }
-                  >
-                    {statusMessage.text}
-                  </div>
-                ) : null}
+                {statusContent ? <div className="mt-3">{statusContent}</div> : null}
 
                 <p className="text-xs text-[var(--foreground-tertiary)]">
-                  Import merges by date. Existing entries stay unless the import fills missing URL or strength.
+                  Conflicts keep existing entries unless the import provides missing URL/strength.
                 </p>
                 <p className="text-xs text-[var(--foreground-tertiary)]">
-                  Timeline sharing encodes events into the URL (?events=...).{" "}
+                  Timeline sharing encodes events into the URL (?events=...). The URL (optional) field is only for linking a source.
+                </p>
+                <p className="text-xs text-[var(--foreground-tertiary)]">
                   {shareTooLarge
-                    ? "Too many events to share in a URL."
+                    ? "Events too large to share."
                     : shareEncoded
-                    ? `Share link encodes ${totalEvents} event${totalEvents === 1 ? "" : "s"} (${shareEncoded.length} chars).`
-                    : "Add an event to enable sharing."}
+                    ? `Share string ${shareEncoded.length} chars long.`
+                    : "Add events to enable sharing."}
                 </p>
 
                 {sharedParam ? (

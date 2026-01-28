@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import ActionMenu from "@/components/ui/ActionMenu";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 type NavigatorWithShare = Navigator & {
@@ -62,7 +63,33 @@ async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuProps) {
-  const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const [status, setStatus] = useState<"idle" | "copied" | "failed" | "shared">("idle");
+
+  const [preferNativeShare, setPreferNativeShare] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const mq = window.matchMedia?.("(pointer: coarse)");
+    return Boolean(mq?.matches);
+  });
+
+  useEffect(() => {
+    const mq = window.matchMedia?.("(pointer: coarse)");
+    if (!mq?.addEventListener) return;
+
+    const onChange = (e: MediaQueryListEvent) => setPreferNativeShare(e.matches);
+
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const resetSoon = useCallback((ms: number) => {
+    window.setTimeout(() => setStatus("idle"), ms);
+  }, []);
+
+  const onCopy = useCallback(async () => {
+    const ok = await copyToClipboard(url);
+    setStatus(ok ? "copied" : "failed");
+    resetSoon(ok ? 1200 : 1800);
+  }, [url, resetSoon]);
 
   const onShare = useCallback(async () => {
     const nav = navigator as NavigatorWithShare;
@@ -70,35 +97,53 @@ export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuPro
     if (nav.share) {
       try {
         await nav.share({ title, url });
-        setStatus("idle");
+        setStatus("shared");
+        resetSoon(1200);
         return;
       } catch {
         // user cancelled or share failed -> fall back to copy
       }
     }
 
-    const ok = await copyToClipboard(url);
-    setStatus(ok ? "copied" : "failed");
-    window.setTimeout(() => setStatus("idle"), 1200);
-  }, [title, url]);
+    await onCopy();
+  }, [title, url, onCopy, resetSoon]);
 
-  const labelText = status === "copied" ? "Copied" : status === "failed" ? "Copy failed" : "Share";
+  const labelText = useMemo(() => {
+    if (status === "copied") return "Copied";
+    if (status === "failed") return "Copy failed";
+    if (status === "shared") return "Shared";
+    return "Share";
+  }, [status]);
+
   const iconOnly = Boolean(iconOnlyOnMobile);
-
-  return (
-    <button
-      type="button"
-      className={
-        iconOnly
-          ? `${ACTION_BUTTON_CLASSES} h-11 w-11 px-0 sm:h-10 sm:w-auto`
-          : `${ACTION_BUTTON_CLASSES} inline-flex items-center gap-2`
-      }
-      aria-label="Share"
-      title="Share"
-      onClick={onShare}
-    >
+  const buttonContent = (
+    <span className="inline-flex items-center gap-2">
       <ShareIcon />
       {iconOnly ? <span className="hidden sm:inline">{labelText}</span> : <span>{labelText}</span>}
-    </button>
+    </span>
+  );
+
+  const buttonClassName = iconOnly
+    ? `${ACTION_BUTTON_CLASSES} h-11 w-11 px-0 sm:h-10 sm:w-auto`
+    : `${ACTION_BUTTON_CLASSES} inline-flex items-center gap-2`;
+
+  if (preferNativeShare) {
+    return (
+      <button type="button" className={buttonClassName} aria-label="Share" title="Share" onClick={onShare}>
+        {buttonContent}
+      </button>
+    );
+  }
+
+  return (
+    <ActionMenu
+      ariaLabel="Share"
+      label={buttonContent}
+      buttonClassName={buttonClassName}
+      items={[
+        { key: "share", label: "Share\u2026", onClick: onShare },
+        { key: "copy", label: "Copy link", onClick: onCopy },
+      ]}
+    />
   );
 }
