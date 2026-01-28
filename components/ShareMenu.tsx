@@ -87,22 +87,13 @@ function isAbortError(err: unknown): boolean {
 /**
  * Check Web Share API support at runtime.
  */
-function canUseNativeShare(title: string, url: string): boolean {
+function canUseNativeShare(_title: string, url: string): boolean {
   if (typeof window === "undefined") return false;
   if (!window.isSecureContext) return false;
+  if (!url) return false;
 
   const nav = navigator as NavigatorWithShare;
-  if (typeof nav.share !== "function") return false;
-
-  if (typeof nav.canShare === "function") {
-    try {
-      return nav.canShare({ title, url });
-    } catch {
-      return true;
-    }
-  }
-
-  return true;
+  return typeof nav.share === "function";
 }
 
 /**

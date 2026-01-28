@@ -35,6 +35,17 @@ export function resolveBaseUrl(options: ResolveBaseUrlOptions = {}) {
     if (trimmedHost.endsWith(".vercel.app") && config.site.url) {
       return normalizeBaseUrl(config.site.url);
     }
+    // Force canonical https + primary domain for the production site, even if the forwarded proto is wrong.
+    try {
+      const configuredHost = new URL(config.site.url).host;
+      const hostNoPort = trimmedHost.replace(/:\d+$/, "");
+      if (hostNoPort === configuredHost || hostNoPort === `www.${configuredHost}`) {
+        return normalizeBaseUrl(config.site.url);
+      }
+    } catch {
+      // ignore
+    }
+
     return normalizeBaseUrl(`${proto}://${trimmedHost}`);
   }
 

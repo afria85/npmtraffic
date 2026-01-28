@@ -71,7 +71,7 @@ export default function PackageHeader({
                 aria-label="View GitHub repository"
               >
                 <GitHubIcon />
-                <span className="hidden sm:inline">Repo</span>
+                <span className="hidden sm:inline">GitHub Repo</span>
               </a>
             ) : null}
           </div>
