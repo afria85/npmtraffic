@@ -32,7 +32,7 @@ npmtraffic helps you track npm package downloads with daily precision. It pulls 
 
 ### Prerequisites
 
-- Node.js 20+ 
+- Node.js 20+
 - npm or pnpm
 
 ### Installation
@@ -62,10 +62,10 @@ npm start
 
 ```
 npmtraffic/
-├── app/                 # Next.js app directory
-│   ├── p/[pkg]/         # Package detail pages
-│   ├── compare/         # Package comparison
-│   ├── api/             # API routes
+├── app/                # Next.js app directory
+│   ├── p/[pkg]/        # Package detail pages
+│   ├── compare/        # Package comparison
+│   ├── api/            # API routes
 │   └── ...
 ├── components/         # React components
 │   ├── charts/         # Chart components
@@ -88,16 +88,16 @@ export const config = {
   site: {
     name: "npmtraffic",
     tagline: "...",
-    url: "https://npmtraffic.com"
+    url: "https://npmtraffic.com",
   },
   cache: {
-    dailyTTLSeconds: 900,        // 15 minutes
-    metadataTTLSeconds: 604800,  // 7 days
+    dailyTTLSeconds: 900, // 15 minutes
+    metadataTTLSeconds: 604800, // 7 days
   },
   limits: {
-    compareMax: 5  // Max packages in comparison
-  }
-}
+    compareMax: 5, // Max packages in comparison
+  },
+};
 ```
 
 ## API
@@ -145,6 +145,7 @@ Found a bug or have a feature request? [Open an issue](https://github.com/afria8
 See [/roadmap](https://npmtraffic.com/roadmap) for planned features and improvements.
 
 Current focus:
+
 - Enhanced event markers with custom categories
 - Historical data exports (>365 days)
 - API rate limiting improvements

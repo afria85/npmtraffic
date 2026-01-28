@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import ActionMenu from "@/components/ui/ActionMenu";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 type NavigatorWithShare = Navigator & {
   share?: (data: ShareData) => Promise<void>;
+  canShare?: (data?: ShareData) => boolean;
 };
 
 export type ShareMenuProps = {
@@ -62,28 +63,40 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
+function isAbortError(err: unknown): boolean {
+  if (typeof err !== "object" || err === null) return false;
+  const maybe = err as { name?: unknown };
+  return maybe.name === "AbortError";
+}
+
 export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuProps) {
+  // Keep this small/simple: visible label feedback without surprising fallbacks.
   const [status, setStatus] = useState<"idle" | "copied" | "failed" | "shared">("idle");
-
-  const [preferNativeShare, setPreferNativeShare] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const mq = window.matchMedia?.("(pointer: coarse)");
-    return Boolean(mq?.matches);
-  });
-
-  useEffect(() => {
-    const mq = window.matchMedia?.("(pointer: coarse)");
-    if (!mq?.addEventListener) return;
-
-    const onChange = (e: MediaQueryListEvent) => setPreferNativeShare(e.matches);
-
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
 
   const resetSoon = useCallback((ms: number) => {
     window.setTimeout(() => setStatus("idle"), ms);
   }, []);
+
+  const supportsNativeShare = useMemo(() => {
+    if (typeof window === "undefined") return false;
+
+    // Web Share is generally gated to secure contexts.
+    if (!window.isSecureContext) return false;
+
+    const nav = navigator as NavigatorWithShare;
+    if (typeof nav.share !== "function") return false;
+
+    if (typeof nav.canShare === "function") {
+      try {
+        // Some implementations validate inputs in canShare().
+        return nav.canShare({ title, url });
+      } catch {
+        return true;
+      }
+    }
+
+    return true;
+  }, [title, url]);
 
   const onCopy = useCallback(async () => {
     const ok = await copyToClipboard(url);
@@ -94,24 +107,29 @@ export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuPro
   const onShare = useCallback(async () => {
     const nav = navigator as NavigatorWithShare;
 
-    if (nav.share) {
-      try {
-        await nav.share({ title, url });
-        setStatus("shared");
-        resetSoon(1200);
-        return;
-      } catch {
-        // user cancelled or share failed -> fall back to copy
-      }
+    if (!supportsNativeShare || typeof nav.share !== "function") {
+      // Do not silently fall back to copy here; keep copy as an explicit action.
+      setStatus("failed");
+      resetSoon(1800);
+      return;
     }
 
-    await onCopy();
-  }, [title, url, onCopy, resetSoon]);
+    try {
+      await nav.share({ title, url });
+      setStatus("shared");
+      resetSoon(1200);
+    } catch (err) {
+      // User cancellation should not look like a failure.
+      if (isAbortError(err)) return;
+      setStatus("failed");
+      resetSoon(1800);
+    }
+  }, [supportsNativeShare, title, url, resetSoon]);
 
   const labelText = useMemo(() => {
     if (status === "copied") return "Copied";
-    if (status === "failed") return "Copy failed";
     if (status === "shared") return "Shared";
+    if (status === "failed") return "Failed";
     return "Share";
   }, [status]);
 
@@ -127,7 +145,9 @@ export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuPro
     ? `${ACTION_BUTTON_CLASSES} h-11 w-11 px-0 sm:h-10 sm:w-auto`
     : `${ACTION_BUTTON_CLASSES} inline-flex items-center gap-2`;
 
-  if (preferNativeShare) {
+  // Preferred UX: if the platform supports native share (mobile + some desktops),
+  // clicking Share should open the OS share sheet directly.
+  if (supportsNativeShare) {
     return (
       <button type="button" className={buttonClassName} aria-label="Share" title="Share" onClick={onShare}>
         {buttonContent}
@@ -135,6 +155,7 @@ export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuPro
     );
   }
 
+  // Fallback UX: internal menu with explicit actions.
   return (
     <ActionMenu
       ariaLabel="Share"
