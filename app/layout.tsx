@@ -5,6 +5,11 @@ import "./globals.css";
 import { config } from "@/lib/config";
 import { Suspense } from "react";
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   title: {
     default: config.site.name,

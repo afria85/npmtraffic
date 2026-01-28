@@ -1,165 +1,283 @@
 @import "tailwindcss";
 
 :root {
-  /* iOS safe-area inset helper used by client overlays. */
   --sab: env(safe-area-inset-bottom, 0px);
 
-  /* Theme tokens used by the app chrome */
-  --background: #0b0f14;
-  --foreground: #e6edf3;
-  --muted: #9aa4b2;
-  --surface: #0f1621;
-  --border: #1f2a37;
-  --accent: #60a5fa;
-  --accent-foreground: #06121f;
-  --ring: rgba(96, 165, 250, 0.32);
-  --surface-2: rgba(255,255,255,0.06);
-  --surface-3: rgba(255,255,255,0.09);
+  /* Premium Brand Colors - Refined Cyan System */
+  --brand-50: #ecfeff;
+  --brand-100: #cffafe;
+  --brand-200: #a5f3fc;
+  --brand-300: #67e8f9;
+  --brand-400: #22d3ee;
+  --brand-500: #06b6d4;
+  --brand-600: #0891b2;
+  --brand-700: #0e7490;
+  --brand-800: #155e75;
+  --brand-900: #164e63;
 
-  /* Chart tokens (theme-aware defaults) */
-  --chart-grid: rgba(255, 255, 255, 0.15);
-  --chart-axis: rgba(230, 237, 243, 0.78);
-  --chart-tooltip-bg: rgba(0, 0, 0, 0.82);
-  --chart-tooltip-border: rgba(255, 255, 255, 0.10);
-
-  --chart-palette-accent: rgba(96, 165, 250, 0.95);
-  --chart-palette-slate: rgba(230, 237, 243, 0.70);
-  --chart-palette-blue: rgba(96, 165, 250, 0.90);
-  --chart-palette-emerald: rgba(52, 211, 153, 0.90);
-  --chart-palette-violet: rgba(167, 139, 250, 0.90);
-  --chart-palette-amber: rgba(251, 191, 36, 0.92);
-  --chart-palette-orange: rgba(251, 146, 60, 0.92);
-  --chart-palette-pink: rgba(244, 114, 182, 0.92);
-  --chart-palette-cyan: rgba(34, 211, 238, 0.92);
-
-  /* Semantic text colors used by UI elements (theme-aware). */
-  --danger: #fda4af; /* rose-300 */
-  --signed-pos: #6ee7b7; /* emerald-300 */
-  --signed-neg: #fda4af; /* rose-300 */
-
-  /* Warning/notice text (theme-safe). */
-  --warning: #fde68a; /* amber-200 */
-
-  /* Status pill tokens (YES/NO) used for Outlier. */
+  /* Dark Theme - Premium */
+  --background: #0a0d11;
+  --surface: #111418;
+  --surface-elevated: #1a1f26;
+  --surface-hover: #222831;
+  
+  --foreground: #f0f4f8;
+  --foreground-secondary: #b8c5d6;
+  --foreground-tertiary: #8b98ab;
+  
+  --border: #1f2937;
+  --border-subtle: #161b22;
+  --border-hover: #2d3748;
+  
+  --accent: var(--brand-500);
+  --accent-hover: var(--brand-400);
+  --accent-muted: rgba(6, 182, 212, 0.12);
+  
+  --muted: var(--foreground-tertiary);
+  
+  /* Legacy compatibility */
+  --surface-2: rgba(255,255,255,0.04);
+  --surface-3: rgba(255,255,255,0.06);
+  
+  /* Chart System */
+  --chart-grid: rgba(255, 255, 255, 0.04);
+  --chart-axis: rgba(240, 244, 248, 0.4);
+  --chart-tooltip-bg: rgba(17, 20, 24, 0.95);
+  --chart-tooltip-border: rgba(255, 255, 255, 0.1);
+  --chart-palette-accent: rgba(6, 182, 212, 0.9);
+  --chart-palette-slate: rgba(184, 197, 214, 0.7);
+  --chart-palette-blue: rgba(59, 130, 246, 0.85);
+  --chart-palette-emerald: rgba(52, 211, 153, 0.85);
+  --chart-palette-violet: rgba(167, 139, 250, 0.85);
+  --chart-palette-amber: rgba(251, 191, 36, 0.9);
+  --chart-palette-orange: rgba(251, 146, 60, 0.9);
+  --chart-palette-pink: rgba(244, 114, 182, 0.9);
+  --chart-palette-cyan: rgba(6, 182, 212, 0.9);
+  
+  /* Semantic Colors */
+  --danger: #fda4af;
+  --signed-pos: #6ee7b7;
+  --signed-neg: #fda4af;
+  --warning: #fde68a;
+  --note-warning-bg: rgba(245, 158, 11, 0.15);
+  --note-warning-border: rgba(245, 158, 11, 0.35);
+  --note-warning-text: #fef9c3;
+  
+  /* Pills */
   --pill-yes-bg: rgba(251, 191, 36, 0.12);
   --pill-yes-border: rgba(251, 191, 36, 0.28);
-  --pill-yes-fg: #fde68a; /* amber-200 */
-
+  --pill-yes-fg: #fde68a;
   --pill-no-bg: rgba(255, 255, 255, 0.06);
   --pill-no-border: rgba(255, 255, 255, 0.10);
-  --pill-no-fg: #94a3b8; /* slate-400 */
+  --pill-no-fg: #94a3b8;
 }
 
-/* Light theme overrides */
+/* Light Theme - Premium */
 :root[data-theme="light"] {
-  --background: #f6f8fb;
-  --foreground: #0b1220;
-  --muted: #526179;
-  --surface: #ffffff;
-  --border: rgba(11, 18, 32, 0.12);
-  --accent: #2563eb;
-  --accent-foreground: #ffffff;
-  --ring: rgba(37, 99, 235, 0.28);
-  --surface-2: rgba(15, 23, 42, 0.06);
-  --surface-3: rgba(15, 23, 42, 0.09);
-
-  /* Chart tokens tuned for light backgrounds */
-  --chart-grid: rgba(11, 18, 32, 0.18);
-  --chart-axis: rgba(11, 18, 32, 0.78);
-  --chart-tooltip-bg: rgba(255, 255, 255, 0.94);
-  --chart-tooltip-border: rgba(11, 18, 32, 0.12);
-
-  /* Palette stays within the app's look but remains legible in light mode */
-  --chart-palette-accent: rgba(37, 99, 235, 0.95);
-  --chart-palette-slate: rgba(11, 18, 32, 0.78);
-  --chart-palette-blue: rgba(29, 78, 216, 0.92);
-  --chart-palette-emerald: rgba(5, 150, 105, 0.92);
-  --chart-palette-violet: rgba(109, 40, 217, 0.90);
-  --chart-palette-amber: rgba(217, 119, 6, 0.92);
-  --chart-palette-orange: rgba(234, 88, 12, 0.92);
-  --chart-palette-pink: rgba(219, 39, 119, 0.92);
-  --chart-palette-cyan: rgba(8, 145, 178, 0.92);
-
-  /* Darker accents for readability on light backgrounds. */
-  --danger: #9f1239; /* rose-800 */
-  --signed-pos: #047857; /* emerald-700 */
-  --signed-neg: #9f1239; /* rose-800 */
-
-  --warning: #92400e; /* amber-800 */
-
-  --pill-yes-bg: #fef3c7; /* amber-100 */
-  --pill-yes-border: rgba(245, 158, 11, 0.65); /* amber-500 */
-  --pill-yes-fg: #78350f; /* amber-900 */
-
-  --pill-no-bg: rgba(15, 23, 42, 0.06);
-  --pill-no-border: rgba(11, 18, 32, 0.14);
-  --pill-no-fg: #334155; /* slate-700 */
+  --background: #ffffff;
+  --surface: #f8fafc;
+  --surface-elevated: #ffffff;
+  --surface-hover: #f1f5f9;
+  
+  --foreground: #0f172a;
+  --foreground-secondary: #475569;
+  --foreground-tertiary: #64748b;
+  
+  --border: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --border-hover: #cbd5e1;
+  
+  --accent: var(--brand-600);
+  --accent-hover: var(--brand-700);
+  --accent-muted: rgba(6, 182, 212, 0.08);
+  
+  --muted: var(--foreground-tertiary);
+  
+  --surface-2: rgba(15, 23, 42, 0.03);
+  --surface-3: rgba(15, 23, 42, 0.05);
+  
+  --chart-grid: rgba(15, 23, 42, 0.04);
+  --chart-axis: rgba(15, 23, 42, 0.3);
+  --chart-tooltip-bg: rgba(255, 255, 255, 0.98);
+  --chart-tooltip-border: rgba(15, 23, 42, 0.08);
+  --chart-palette-accent: rgba(6, 182, 212, 0.9);
+  --chart-palette-slate: rgba(71, 85, 105, 0.7);
+  --chart-palette-blue: rgba(37, 99, 235, 0.85);
+  --chart-palette-emerald: rgba(16, 185, 129, 0.85);
+  --chart-palette-violet: rgba(124, 58, 237, 0.8);
+  --chart-palette-amber: rgba(245, 158, 11, 0.85);
+  --chart-palette-orange: rgba(249, 115, 22, 0.85);
+  --chart-palette-pink: rgba(236, 72, 153, 0.85);
+  --chart-palette-cyan: rgba(6, 182, 212, 0.85);
+  
+  --danger: #be123c;
+  --signed-pos: #059669;
+  --signed-neg: #be123c;
+  --warning: #92400e;
+  --note-warning-bg: #fef3c7;
+  --note-warning-border: #fcd34d;
+  --note-warning-text: #92400e;
+  
+  --pill-yes-bg: #fef3c7;
+  --pill-yes-border: rgba(245, 158, 11, 0.5);
+  --pill-yes-fg: #78350f;
+  --pill-no-bg: rgba(15, 23, 42, 0.04);
+  --pill-no-border: rgba(15, 23, 42, 0.12);
+  --pill-no-fg: #475569;
 }
 
+/* Premium Fonts */
 :root {
-  /* System font stack (no network fetch). */
-  --app-font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans",
-    sans-serif;
-  --app-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", 
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", "Cascadia Code", "Fira Code", "Roboto Mono", 
+    Menlo, Monaco, Consolas, monospace;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--app-font-sans);
-  --font-mono: var(--app-font-mono);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+/* Base Styles */
+* {
+  border-color: var(--border);
 }
 
 body {
-  /* Default to supporting both schemes; the explicit theme overrides below keep
-     native form controls (date picker, select menus) aligned with the toggle. */
   color-scheme: light dark;
-  background:
-    radial-gradient(1200px 600px at 90% -10%, rgba(59, 130, 246, 0.18), transparent 60%),
-    radial-gradient(900px 500px at -10% 10%, rgba(16, 185, 129, 0.14), transparent 55%),
-    var(--background);
+  background: var(--background);
   color: var(--foreground);
-  font-family: var(--app-font-sans);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "kern" 1, "liga" 1;
 }
 
-/* Ensure the browser uses the chosen theme for native controls. */
-:root[data-theme="dark"] {
-  color-scheme: dark;
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+
+/* Background Gradient */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, rgba(59, 130, 246, 0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-:root[data-theme="light"] {
-  color-scheme: light;
+:root[data-theme="light"] body::before {
+  background: 
+    radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, rgba(59, 130, 246, 0.02) 0%, transparent 50%);
 }
 
-/*
-  Native form controls (select/date) can render their popovers using browser/OS UI.
-  Force the scheme per toggle to avoid unreadable combinations (e.g. white menu + white text).
-*/
+body > * { position: relative; z-index: 1; }
+
+/* Form Controls */
 :root[data-theme="dark"] .nt-select,
-:root[data-theme="dark"] .nt-date {
-  color-scheme: dark;
-}
-
+:root[data-theme="dark"] .nt-date { color-scheme: dark; -webkit-appearance: none; appearance: none; }
 :root[data-theme="light"] .nt-select,
-:root[data-theme="light"] .nt-date {
-  color-scheme: light;
+:root[data-theme="light"] .nt-date { color-scheme: light; -webkit-appearance: none; appearance: none; }
+.nt-date::-webkit-calendar-picker-indicator { opacity: 0; cursor: pointer; pointer-events: none;  }
+.nt-date::-webkit-inner-spin-button,
+.nt-date::-webkit-clear-button { display: none; }
+
+/* Theme Toggle */
+.theme-icon-sun { display: inline; }
+.theme-icon-moon { display: none; }
+:root[data-theme="light"] .theme-icon-sun { display: none; }
+:root[data-theme="light"] .theme-icon-moon { display: inline; }
+.theme-toggle { transition-property: opacity, transform !important; }
+
+/* Details */
+details summary { list-style: none; }
+details summary::-webkit-details-marker { display: none; }
+details summary::marker { display: none; }
+
+/* Selection */
+::selection {
+  background: var(--accent-muted);
+  color: var(--accent);
 }
 
-/* Hide WebKit's date picker indicator and render our own icon for consistent placement across themes. */
-.nt-date::-webkit-calendar-picker-indicator {
-  opacity: 0;
+/* Focus */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
-:root[data-theme="light"] body {
-  background:
-    radial-gradient(900px 520px at 85% -10%, rgba(37, 99, 235, 0.14), transparent 60%),
-    radial-gradient(780px 460px at -10% 8%, rgba(16, 185, 129, 0.10), transparent 55%),
-    var(--background);
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { 
+  background: var(--border-hover); 
+  border-radius: 4px; 
+}
+::-webkit-scrollbar-thumb:hover { background: var(--foreground-tertiary); }
+
+/* Text Gradient Utility */
+.text-gradient {
+  background: linear-gradient(135deg, var(--brand-400) 0%, var(--brand-600) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/*
-  Light-theme compatibility for legacy Tailwind slate text utilities.
-*/
+.nt-note-warning {
+  border-radius: 1rem;
+  border: 1px solid var(--note-warning-border);
+  background: var(--note-warning-bg);
+  color: var(--note-warning-text);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.5; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-slide-in {
+  animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Hover Effects */
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* Legacy slate text utilities */
 :root[data-theme="light"] .text-slate-50,
 :root[data-theme="light"] .text-slate-100,
 :root[data-theme="light"] .text-slate-200,
@@ -171,43 +289,4 @@ body {
 :root[data-theme="light"] .text-slate-500,
 :root[data-theme="light"] .text-slate-600 {
   color: var(--muted);
-}
-
-/*
-  Theme toggle icons are controlled by CSS (not React state) to avoid hydration mismatches.
-  - In dark mode we show a sun (switch to light).
-  - In light mode we show a moon (switch to dark).
-*/
-.theme-icon-sun {
-  display: inline;
-}
-
-.theme-icon-moon {
-  display: none;
-}
-
-:root[data-theme="light"] .theme-icon-sun {
-  display: none;
-}
-
-:root[data-theme="light"] .theme-icon-moon {
-  display: inline;
-}
-
-
-
-/* Reduce paint-heavy animations on the theme toggle (helps Lighthouse's "non-composited animations"). */
-.theme-toggle {
-  transition-property: opacity, transform !important;
-}
-details summary {
-  list-style: none;
-}
-
-details summary::-webkit-details-marker {
-  display: none;
-}
-
-details summary::marker {
-  display: none;
 }
