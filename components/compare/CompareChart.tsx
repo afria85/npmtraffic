@@ -360,8 +360,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
 
   const xTicks = useMemo(() => {
     const maxTicks = isMobile ? 4 : 6;
-    const yearMode = isMobile ? "always" : "first-or-change";
-    return buildMonthTicks(series.map((row) => row.date), maxTicks, yearMode, true);
+    return buildMonthTicks(series.map((row) => row.date), maxTicks, "first-or-change", isMobile);
   }, [isMobile, series]);
 
   const hovered = hoverIndex == null ? null : series[hoverIndex];

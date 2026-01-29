@@ -6,60 +6,69 @@ import type { NextRequest } from "next/server";
 export const runtime = "edge";
 
 function parseDays(value: string | undefined) {
-  const cleaned = (value ?? "").trim().toLowerCase().replace(/\.png$/, "");
-  const n = Number(cleaned);
+  const n = Number(value);
   if (!Number.isFinite(n) || n <= 0) return 30;
-  return Math.max(1, Math.min(365, Math.round(n)));
+  return Math.max(1, Math.min(365, Math.floor(n)));
 }
 
-// Some scrapers issue HEAD requests to validate og:image URLs.
-// Provide a lightweight, cacheable response without doing upstream fetches.
-export async function HEAD() {
-  return new Response(null, {
-    headers: {
-      "content-type": "image/png",
-      "cache-control": "public, max-age=0, s-maxage=900, stale-while-revalidate=86400",
-    },
-  });
+function arrayBufferToBase64(buf: ArrayBuffer): string {
+  // Node (dev) fallback
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  if (typeof Buffer !== "undefined") return Buffer.from(buf).toString("base64");
+
+  // Edge/web runtime
+  let binary = "";
+  const bytes = new Uint8Array(buf);
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function getLogoDataUri(origin: string): Promise<string | undefined> {
+  try {
+    const res = await fetch(`${origin}/icon.png`, { cache: "force-cache" });
+    if (!res.ok) return undefined;
+    const buf = await res.arrayBuffer();
+    const b64 = arrayBufferToBase64(buf);
+    return `data:image/png;base64,${b64}`;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function GET(
-  _request: NextRequest,
-  context: { params: Promise<{ encoded: string; days: string }> }
+  request: NextRequest,
+  { params }: { params: Promise<{ encoded: string; days: string }> }
 ) {
-  const params = await context.params;
-  const pkgName = decodePkg(params.encoded);
-  if (!pkgName) {
-    return new Response("Invalid encoded package name", { status: 400 });
-  }
+  const { encoded, days: daysParam } = await params;
+  const pkg = decodePkg(encoded) || "";
+  const days = parseDays(daysParam);
 
-  const days = parseDays(params.days);
-
-  // Best-effort live stats for world-class OG previews.
+  let stats: { total: number; percentChange: number | null; sparkline: number[]; dateRange: { start: string; end: string } } | undefined;
+  
   try {
-    const compareDays = Math.min(365, days * 2);
-    const data = await fetchTraffic(pkgName, compareDays);
-    const series = data.series;
-    const last = series.slice(-days);
-    const prev = series.slice(-(days * 2), -days);
-
-    const sum = (rows: typeof last) => rows.reduce((acc, r) => acc + (r.downloads ?? 0), 0);
-    const total = sum(last);
-    const prevTotal = prev.length === days ? sum(prev) : null;
-    const percentChange = prevTotal && prevTotal > 0 ? ((total - prevTotal) / prevTotal) * 100 : null;
-
-    const sparkline = last.slice(-Math.min(14, last.length)).map((r) => r.downloads ?? 0);
-    const dateRange = last.length
-      ? { start: last[0]!.date, end: last[last.length - 1]!.date }
-      : undefined;
-
-    return buildOgImageResponse({
-      mode: "pkg",
-      pkg: pkgName,
-      days,
-      stats: { total, percentChange, sparkline, dateRange },
-    });
+    const traffic = await fetchTraffic(pkg, days);
+    // Map TrafficResponse to PkgStats format expected by buildOgImageResponse
+    stats = {
+      total: traffic.totals.sum,
+      percentChange: null,
+      sparkline: traffic.series.map((row) => row.downloads),
+      dateRange: { start: traffic.range.startDate, end: traffic.range.endDate },
+    };
   } catch {
-    return buildOgImageResponse({ mode: "pkg", pkg: pkgName, days });
+    stats = undefined;
   }
+
+  const logoSrc = await getLogoDataUri(new URL(request.url).origin);
+
+  return buildOgImageResponse({
+    mode: "pkg",
+    pkg,
+    days,
+    stats,
+    logoSrc,
+  });
 }

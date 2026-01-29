@@ -1,99 +1,248 @@
 import { buildOgImageResponse } from "@/lib/og-image";
-import { fetchTraffic } from "@/lib/traffic";
-import { validatePackageName } from "@/lib/package-name";
+import type { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
-function parseDays(value: string | null) {
-  const n = Number(value);
-  if (!Number.isFinite(n) || n <= 0) return 30;
-  return Math.max(1, Math.min(365, Math.round(n)));
+type OgMode = "pkg" | "compare";
+
+type OgDateRange = { start: string; end: string };
+type OgPkgStats = {
+  total: number;
+  percentChange: number;
+  dateRange: OgDateRange;
+  sparkline?: number[];
+};
+type OgCompareStats = OgPkgStats & { packages: string[] };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const mode = (searchParams.get("mode") ?? "pkg").toLowerCase();
-  const days = parseDays(searchParams.get("days"));
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  // Node runtimes: Buffer exists. Edge runtimes: prefer btoa.
+  const maybeBuffer = (globalThis as unknown as { Buffer?: { from: (b: ArrayBuffer) => { toString: (enc: string) => string } } })
+    .Buffer;
 
-  if (mode === "compare") {
-    const raw = searchParams.get("pkgs") ?? "";
-    const pkgs = raw
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .filter((name) => validatePackageName(name).ok)
-      .slice(0, 5);
+  if (maybeBuffer?.from) return maybeBuffer.from(buffer).toString("base64");
 
-    // Fetch stats for each package (best effort)
-    try {
-      const results = await Promise.all(
-        pkgs.map(async (pkg) => {
-          try {
-            const data = await fetchTraffic(pkg, days);
-            const total = data.series.reduce((acc, r) => acc + (r.downloads ?? 0), 0);
-            return { name: pkg, total, dateRange: data.series.length > 0 
-              ? { start: data.series[0]!.date, end: data.series[data.series.length - 1]!.date }
-              : undefined 
-            };
-          } catch {
-            return { name: pkg, total: 0, dateRange: undefined };
-          }
-        })
-      );
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  const btoaFn = (globalThis as unknown as { btoa?: (s: string) => string }).btoa;
+  if (!btoaFn) throw new Error("btoa is not available");
+  return btoaFn(binary);
+}
 
-      const grandTotal = results.reduce((acc, r) => acc + r.total, 0);
-      const packages = results.map((r) => ({
-        name: r.name,
-        total: r.total,
-        share: grandTotal > 0 ? (r.total / grandTotal) * 100 : 0,
-      }));
+function pickSparkline(data: unknown): number[] | null {
+  // Accept either { days: [{downloads}], ... } or { series: [{downloads}], ... } shapes.
+  if (!isRecord(data)) return null;
 
-      // Use the first package's date range (they should all be the same)
-      const dateRange = results.find((r) => r.dateRange)?.dateRange;
+  const maybeDays = data.days;
+  const maybeSeries = data.series;
+  const arr = Array.isArray(maybeDays) ? maybeDays : Array.isArray(maybeSeries) ? maybeSeries : null;
+  if (!arr) return null;
 
-      return buildOgImageResponse({ 
-        mode: "compare", 
-        pkgs, 
-        days,
-        stats: { packages, dateRange },
-      });
-    } catch {
-      // Fallback without stats
-      return buildOgImageResponse({ mode: "compare", pkgs, days });
+  const out: number[] = [];
+  for (const item of arr) {
+    if (!isRecord(item)) continue;
+    const v = item.downloads;
+    if (typeof v === "number" && Number.isFinite(v)) out.push(v);
+  }
+  return out.length ? out : null;
+}
+
+function pickTotal(data: unknown): number | null {
+  if (!isRecord(data)) return null;
+  const direct = data.total;
+  if (typeof direct === "number" && Number.isFinite(direct)) return direct;
+  const totals = data.totals;
+  if (isRecord(totals)) {
+    const downloads = totals.downloads;
+    if (typeof downloads === "number" && Number.isFinite(downloads)) return downloads;
+  }
+
+  const spark = pickSparkline(data);
+  if (!spark) return null;
+  return spark.reduce((acc, v) => acc + v, 0);
+}
+
+function pickPercentChange(data: unknown): number | null {
+  if (!isRecord(data)) return null;
+  const candidates = [
+    data.percentChange,
+    data.pctChange,
+    data.changePct,
+    data.deltaPct,
+    data.percent_delta,
+  ];
+  for (const c of candidates) {
+    if (typeof c === "number" && Number.isFinite(c)) return c;
+  }
+  return null;
+}
+
+function pickDateRange(data: unknown): { start: string; end: string } | null {
+  if (!isRecord(data)) return null;
+  const candidates = [data.dateRange, data.range, data.window];
+  for (const c of candidates) {
+    if (!isRecord(c)) continue;
+    const start = c.start;
+    const end = c.end;
+    if (typeof start === "string" && typeof end === "string" && start && end) {
+      return { start, end };
     }
   }
 
-  const rawPkg = searchParams.get("pkg") ?? "";
-  const pkg = validatePackageName(rawPkg).ok ? rawPkg : "";
+  const maybeDays = data.days;
+  const maybeSeries = data.series;
+  const arr = Array.isArray(maybeDays) ? maybeDays : Array.isArray(maybeSeries) ? maybeSeries : null;
+  if (!arr || arr.length === 0) return null;
 
-  // Enrich OG for package mode with lightweight stats (best effort).
-  try {
-    if (!pkg) return buildOgImageResponse({ mode: "pkg", pkg, days });
-
-    const compareDays = Math.min(365, days * 2);
-    const data = await fetchTraffic(pkg, compareDays);
-    const series = data.series;
-    const last = series.slice(-days);
-    const prev = series.slice(-(days * 2), -days);
-
-    const sum = (rows: typeof last) => rows.reduce((acc, r) => acc + (r.downloads ?? 0), 0);
-    const total = sum(last);
-    const prevTotal = prev.length === days ? sum(prev) : null;
-    const percentChange = prevTotal && prevTotal > 0 ? ((total - prevTotal) / prevTotal) * 100 : null;
-
-    const sparkline = last.slice(-Math.min(14, last.length)).map((r) => r.downloads ?? 0);
-    const dateRange = last.length
-      ? { start: last[0]!.date, end: last[last.length - 1]!.date }
-      : undefined;
-
-    return buildOgImageResponse({
-      mode: "pkg",
-      pkg,
-      days,
-      stats: { total, percentChange, sparkline, dateRange },
-    });
-  } catch {
-    // If anything fails (upstream/caching), fall back to the basic OG.
-    return buildOgImageResponse({ mode: "pkg", pkg, days });
+  let first: string | null = null;
+  let last: string | null = null;
+  for (const item of arr) {
+    if (!isRecord(item)) continue;
+    const date = item.date ?? item.day;
+    if (typeof date !== "string") continue;
+    if (!first) first = date;
+    last = date;
   }
+  if (first && last) return { start: first, end: last };
+  return null;
+}
+
+function safeInt(value: string | null, fallback: number): number {
+  const n = value ? Number.parseInt(value, 10) : NaN;
+  return Number.isFinite(n) ? n : fallback;
+}
+
+export async function GET(request: NextRequest) {
+  const url = new URL(request.url);
+
+  const modeParam = (url.searchParams.get("mode") || "").toLowerCase();
+  const mode: OgMode = modeParam === "compare" ? "compare" : "pkg";
+
+  const pkg = url.searchParams.get("pkg") || url.searchParams.get("name") || "react";
+  const days = safeInt(url.searchParams.get("days"), 30);
+
+  const packages = pkg.split(",").map((s) => s.trim()).filter(Boolean);
+
+  // Prefer your actual logo from public/icon.png.
+  let logoSrc: string | undefined;
+  try {
+    const iconUrl = new URL("/icon.png", url.origin);
+    const resp = await fetch(iconUrl.toString(), { cache: "no-store" });
+    if (resp.ok) {
+      const contentType = resp.headers.get("content-type") || "image/png";
+      const buf = await resp.arrayBuffer();
+      const base64 = arrayBufferToBase64(buf);
+      logoSrc = `data:${contentType};base64,${base64}`;
+    }
+  } catch {
+    logoSrc = undefined;
+  }
+
+  // Build best-effort stats for the OG renderer. If the upstream fetch fails,
+  // we still render a valid OG image with just the title/subtitle framing.
+  let stats: OgPkgStats | OgCompareStats | undefined;
+  try {
+    if (mode === "compare") {
+      const compareUrl = new URL("/api/v1/compare", url.origin);
+      // The backend logs use `package=...` (comma-separated). Keep aliases compatible.
+      compareUrl.searchParams.set("package", packages.join(","));
+      compareUrl.searchParams.set("days", String(days));
+      const resp = await fetch(compareUrl.toString(), { cache: "no-store" });
+      const json = (await resp.json()) as unknown;
+      const dateRange = pickDateRange(json);
+      const total = pickTotal(json);
+      const percentChange = pickPercentChange(json);
+
+      if (dateRange && typeof total === "number" && typeof percentChange === "number") {
+        stats = {
+          packages,
+          total,
+          percentChange,
+          dateRange,
+          sparkline: pickSparkline(json) ?? undefined,
+        };
+      } else {
+        stats = undefined;
+      }
+    } else {
+      const name = packages[0] || "react";
+      const dailyUrl = new URL(`/api/v1/package/${encodeURIComponent(name)}/daily`, url.origin);
+      dailyUrl.searchParams.set("days", String(days));
+      const resp = await fetch(dailyUrl.toString(), { cache: "no-store" });
+      const json = (await resp.json()) as unknown;
+      const dateRange = pickDateRange(json);
+      const total = pickTotal(json);
+      const percentChange = pickPercentChange(json);
+
+      if (dateRange && typeof total === "number" && typeof percentChange === "number") {
+        stats = {
+          total,
+          percentChange,
+          dateRange,
+          sparkline: pickSparkline(json) ?? undefined,
+        };
+      } else {
+        stats = undefined;
+      }
+    }
+  } catch {
+    stats = undefined;
+  }
+
+  type ComparePkgStats = { name: string; total: number; share: number };
+  type CompareStats = { dateRange?: { start: string; end: string }; packages: ComparePkgStats[] };
+
+  function normalizeCompareStats(raw: unknown): CompareStats | undefined {
+    if (!raw || typeof raw !== "object") return undefined;
+    const r = raw as Record<string, unknown>;
+    const pkgsRaw = r["packages"];
+    if (!Array.isArray(pkgsRaw)) return undefined;
+
+    const packages: ComparePkgStats[] = pkgsRaw
+      .map((p): ComparePkgStats | null => {
+        if (typeof p === "string") return { name: p, total: 0, share: 0 };
+        if (!p || typeof p !== "object") return null;
+        const pr = p as Record<string, unknown>;
+        const name = typeof pr["name"] === "string" ? pr["name"] : "";
+        const totalRaw = pr["total"];
+        const shareRaw = pr["share"];
+        const total = typeof totalRaw === "number" ? totalRaw : Number(totalRaw);
+        const share = typeof shareRaw === "number" ? shareRaw : Number(shareRaw);
+        return {
+          name,
+          total: Number.isFinite(total) ? total : 0,
+          share: Number.isFinite(share) ? share : 0,
+        };
+      })
+      .filter((p): p is ComparePkgStats => Boolean(p && p.name));
+
+    const dr = r["dateRange"];
+    let start = "";
+    let end = "";
+    if (dr && typeof dr === "object") {
+      const drr = dr as Record<string, unknown>;
+      start = typeof drr["start"] === "string" ? (drr["start"] as string) : typeof drr["from"] === "string" ? (drr["from"] as string) : "";
+      end = typeof drr["end"] === "string" ? (drr["end"] as string) : typeof drr["to"] === "string" ? (drr["to"] as string) : "";
+    }
+
+    if (!packages.length) return undefined;
+    return { dateRange: { start, end }, packages };
+  }
+
+  if (mode === "compare") {
+    const compareStats = normalizeCompareStats(stats);
+    return buildOgImageResponse({ mode: "compare", days, pkgs: packages, logoSrc, stats: compareStats });
+  }
+
+
+  const pkgName = packages[0] || pkg;
+  const pkgStats = stats && !("packages" in stats) ? (stats as OgPkgStats) : undefined;
+  return buildOgImageResponse({ mode: "pkg", days, pkg: pkgName, logoSrc, stats: pkgStats });
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { ImageResponse } from "next/og";
 
 const WIDTH = 1200;
@@ -69,30 +70,22 @@ type CompareStats = {
 };
 
 type OgImageOptions =
-  | { mode: "pkg"; pkg: string; days: number; stats?: PkgStats }
-  | { mode: "compare"; pkgs: string[]; days: number; stats?: CompareStats };
+  | { mode: "pkg"; pkg: string; days: number; stats?: PkgStats; logoSrc?: string }
+  | { mode: "compare"; pkgs: string[]; days: number; stats?: CompareStats; logoSrc?: string };
 
 /**
- * BrandMark - npmtraffic logo (OG-safe)
- *
- * Use the same geometry as the in-app mark (components/BrandMark.tsx), but keep fills solid
- * to stay compatible with OG renderers.
+ * BrandMark - npmtraffic logo
+ * Matches public/brand-mark.svg exactly:
+ * - Left pillar: #06b6d4 (ACCENT)
+ * - Middle diagonal: #22d3ee
+ * - Right pillar: #0891b2
  */
 function BrandMark({ size = 44 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 256 256"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{ display: "block" }}
-      aria-label="npmtraffic"
-    >
-      <rect rx="24" width="256" height="256" fill="#07090d" />
-      <rect x="5.5" y="5.5" width="245" height="245" rx="20" fill="#07090d" stroke="#1a2230" strokeWidth="11" />
-      <rect x="67.5" y="61.5" width="64" height="130" rx="32" transform="rotate(20 67.5 61.5)" fill="#6d34ff" />
-      <polygon points="87,172 137,130 160,145 110,187" fill="#e11d48" />
-      <rect x="125.5" y="71.5" width="64" height="130" rx="32" transform="rotate(20 125.5 71.5)" fill="#6d34ff" opacity="0.95" />
+    <svg width={size} height={size} viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style={{ display: "block" }}>
+      <rect x="0" y="0" width="14" height="48" rx="3" fill="#06b6d4" />
+      <polygon points="16,0 28,0 32,28 20,28" fill="#22d3ee" />
+      <rect x="34" y="0" width="14" height="48" rx="3" fill="#0891b2" />
     </svg>
   );
 }
@@ -176,7 +169,7 @@ function Sparkline({ values }: { values: number[] }) {
   );
 }
 
-function createHeader(days: number, mode: "pkg" | "compare" = "pkg") {
+function createHeader(days: number, mode: "pkg" | "compare" = "pkg", logoSrc?: string) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -192,7 +185,7 @@ function createHeader(days: number, mode: "pkg" | "compare" = "pkg") {
             justifyContent: "center",
           }}
         >
-          <BrandMark size={40} />
+          {logoSrc ? <img alt="" src={logoSrc} width={40} height={40} style={{ display: "block", borderRadius: 12 }} /> : <BrandMark size={40} />}
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={{ color: FG, fontSize: 30, fontWeight: 900, letterSpacing: -0.8 }}>npmtraffic</div>
@@ -213,7 +206,7 @@ function createFooter() {
   );
 }
 
-function createPackageLayout(pkg: string, days: number, stats?: PkgStats) {
+function createPackageLayout(pkg: string, days: number, stats?: PkgStats, logoSrc?: string) {
   const safePkg = clampText(pkg || "npm package", 60);
 
   const dateLabel =
@@ -241,7 +234,7 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats) {
         justifyContent: "space-between",
       }}
     >
-      {createHeader(days, "pkg")}
+      {createHeader(days, "pkg", logoSrc)}
 
       <div
         style={{
@@ -320,7 +313,7 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats) {
   );
 }
 
-function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats) {
+function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats, logoSrc?: string) {
   const hasStats = stats && stats.packages.length > 0;
   const dateLabel =
     stats?.dateRange?.start && stats?.dateRange?.end
@@ -339,7 +332,7 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats)
         justifyContent: "space-between",
       }}
     >
-      {createHeader(days, "compare")}
+      {createHeader(days, "compare", logoSrc)}
 
       <div
         style={{
@@ -453,8 +446,8 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats)
 export function buildOgImageResponse(options: OgImageOptions) {
   const response = new ImageResponse(
     options.mode === "compare"
-      ? createCompareLayout(options.pkgs, options.days, options.stats)
-      : createPackageLayout(options.pkg, options.days, options.stats),
+      ? createCompareLayout(options.pkgs, options.days, options.stats, options.logoSrc)
+      : createPackageLayout(options.pkg, options.days, options.stats, options.logoSrc),
     { width: WIDTH, height: HEIGHT }
   );
   response.headers.set("Content-Type", "image/png");
