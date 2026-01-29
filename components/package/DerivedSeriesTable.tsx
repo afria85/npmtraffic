@@ -34,6 +34,17 @@ type Props = {
   days: number;
 };
 
+type DateSortDir = "asc" | "desc";
+
+function DateSortIcon({ dir }: { dir: DateSortDir }) {
+  const d = dir === "asc" ? "M6 12l4-4 4 4" : "M6 8l4 4 4-4";
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-3 w-3 opacity-80">
+      <path d={d} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 const DEFAULT_FORM: EventEntry = {
   date_utc: "",
   event_type: EVENT_TYPES[0],
@@ -49,6 +60,7 @@ const formatDerived = (value: number | null) => (value == null ? "-" : value.toF
 export default function DerivedSeriesTable({ series, derived, pkgName, days }: Props) {
   const [showDerived, setShowDerived] = useState(false);
   const [showEventsList, setShowEventsList] = useState(false);
+  const [dateSortDir, setDateSortDir] = useState<DateSortDir>("desc");
   const modalRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const importFileRef = useRef<HTMLInputElement | null>(null);
@@ -213,8 +225,12 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
       ma7: derived?.ma7?.[index]?.value ?? null,
       outlier: derived?.outliers?.[index] ?? null,
     }));
-    return rows.slice().reverse();
-  }, [series, deltas, derived]);
+    rows.sort((a, b) => {
+      if (a.row.date === b.row.date) return 0;
+      return dateSortDir === "asc" ? a.row.date.localeCompare(b.row.date) : b.row.date.localeCompare(a.row.date);
+    });
+    return rows;
+  }, [series, deltas, derived, dateSortDir]);
 
   const [shareEncoded, setShareEncoded] = useState("");
 
@@ -429,7 +445,15 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
             <thead className="sticky top-0 z-20 bg-[var(--surface)] text-xs uppercase tracking-normal text-[var(--foreground-secondary)] backdrop-blur">
                 <tr>
                   <th className="px-2 py-2 text-left font-semibold whitespace-nowrap sm:px-3" title="Date (UTC)">
-                    Date
+                    <button
+                      type="button"
+                      onClick={() => setDateSortDir((prev) => (prev === "desc" ? "asc" : "desc"))}
+                      className="inline-flex items-center gap-1"
+                      aria-label={`Sort by date (${dateSortDir === "desc" ? "newest first" : "oldest first"})`}
+                    >
+                      <span>Date</span>
+                      <DateSortIcon dir={dateSortDir} />
+                    </button>
                   </th>
                   <th className="px-2 py-2 text-right font-semibold whitespace-nowrap sm:px-3" title="Downloads for the day">
                     Downloads

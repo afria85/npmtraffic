@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Fragment } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
@@ -14,13 +13,13 @@ import ShareMenu from "@/components/ShareMenu";
 import SearchBox from "@/components/SearchBox";
 import CompareChart from "@/components/compare/CompareChartClient";
 import CompareAddBar from "@/components/compare/CompareAddBar";
+import CompareSeriesTable from "@/components/compare/CompareSeriesTable";
 import { buildExportFilename } from "@/lib/export-filename";
 import RetryButton from "@/components/ui/RetryButton";
 import {
   COMPARE_ACTION_CONTAINER_CLASSES,
   COMPARE_TABLE_WRAPPER_CLASSES,
 } from "@/components/compare/compare-classes";
-import SignedValue from "@/components/ui/SignedValue";
 import ScrollHintContainer from "@/components/ScrollHintContainer";
 import CompareUrlSync from "@/components/compare/CompareUrlSync";
 
@@ -41,58 +40,6 @@ type CompareResponse = {
     fetchedAt: string;
   };
 };
-
-type CompareTableHeaderProps = {
-  packageNames: string[];
-};
-
-export function CompareTableHeader({ packageNames }: CompareTableHeaderProps) {
-  return (
-    <thead className="sticky top-0 z-20 bg-[var(--surface)] text-xs uppercase tracking-wide text-[var(--foreground-secondary)] backdrop-blur">
-      <tr>
-        <th
-          rowSpan={2}
-          className="px-2 py-2 text-left font-semibold whitespace-nowrap sm:px-3"
-          title="Date (UTC)"
-        >
-          Date
-        </th>
-	        {packageNames.map((pkg) => (
-	          <th
-	            key={`${pkg}-group`}
-	            colSpan={2}
- 	            className="px-2 py-2 text-center font-semibold whitespace-nowrap sm:px-3"
-	          >
-	            <div className="mx-auto max-w-[180px] truncate" title={pkg}>
-	              {pkg}
-	            </div>
-	          </th>
-	        ))}
-      </tr>
-      <tr>
-        {packageNames.map((pkg) => (
-          <Fragment key={`${pkg}-metrics`}>
-            <th
-              scope="col"
-              className="px-2 py-2 text-right font-semibold whitespace-nowrap sm:px-3"
-              title="Downloads for the day"
-            >
-              Downloads
-            </th>
-	            <th
-	              scope="col"
-	              className="px-2 py-2 text-right font-semibold whitespace-nowrap sm:px-3"
-	              title="&Delta; vs previous day"
-	            >
-	              <span className="hidden sm:inline">&Delta; vs prev day</span>
-	              <span className="sm:hidden">&Delta; vs prev day</span>
-            </th>
-          </Fragment>
-        ))}
-      </tr>
-    </thead>
-  );
-}
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 
@@ -385,38 +332,8 @@ export default async function ComparePage({ searchParams }: Props) {
           <span className="text-sm font-semibold">Daily downloads ({days}d)</span>
         </div>
 	        <ScrollHintContainer className={COMPARE_TABLE_WRAPPER_CLASSES}>
-	          <table className="min-w-[760px] w-max table-fixed text-sm sm:w-full">
-	            <colgroup>
-	              <col className="w-[120px]" />
-	              {tablePackageNames.map((pkg) => (
-	                <Fragment key={`cols-${pkg}`}>
-	                  <col className="w-[120px]" />
-	                  <col className="w-[140px]" />
-	                </Fragment>
-	              ))}
-	            </colgroup>
-            <CompareTableHeader packageNames={tablePackageNames} />
-            <tbody className="divide-y divide-white/10">
-              {data.series.map((row) => (
-                <tr key={row.date} className="text-[var(--foreground)]">
-                  <td className="px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-[var(--foreground-tertiary)] whitespace-nowrap sm:px-3 sm:text-xs">
-                    {row.date}
-                  </td>
-                  {data.packages.map((pkg) => (
-                    <Fragment key={`${row.date}-${pkg.name}-pair`}>
-                  <td className="px-2 py-2 text-right font-mono tabular-nums sm:px-3">
-                    {formatNumber(row.values[pkg.name]?.downloads ?? null)}
-                  </td>
-                  <td className="px-2 py-2 text-right tabular-nums sm:px-3">
-                    <SignedValue value={row.values[pkg.name]?.delta ?? null} showArrow emphasis="primary" />
-                  </td>
-                    </Fragment>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </ScrollHintContainer>
+	          <CompareSeriesTable series={data.series} packageNames={tablePackageNames} />
+	        </ScrollHintContainer>
         <p className="px-3 py-2 text-xs text-[var(--foreground-tertiary)]">
           &Delta; vs previous day = downloads today - downloads yesterday
         </p>
