@@ -125,7 +125,15 @@ export async function GET(request: NextRequest) {
   const modeParam = (url.searchParams.get("mode") || "").toLowerCase();
   const mode: OgMode = modeParam === "compare" ? "compare" : "pkg";
 
-  const pkg = url.searchParams.get("pkg") || url.searchParams.get("name") || "react";
+  // Accept a few aliases so callers can be flexible.
+  // - pkg/name: single package name OR comma-separated list for compare
+  // - pkgs/packages: compare list alias
+  const pkg =
+    url.searchParams.get("pkg") ||
+    url.searchParams.get("name") ||
+    url.searchParams.get("pkgs") ||
+    url.searchParams.get("packages") ||
+    "react";
   const days = safeInt(url.searchParams.get("days"), 30);
 
   const packages = pkg.split(",").map((s) => s.trim()).filter(Boolean);
@@ -148,6 +156,8 @@ export async function GET(request: NextRequest) {
   // Build best-effort stats for the OG renderer. If the upstream fetch fails,
   // we still render a valid OG image with just the title/subtitle framing.
   let stats: OgPkgStats | OgCompareStats | undefined;
+  // For compare mode, keep the raw backend payload to preserve per-package totals/shares.
+  let rawCompare: unknown | undefined;
   try {
     if (mode === "compare") {
       const compareUrl = new URL("/api/v1/compare", url.origin);
@@ -156,20 +166,13 @@ export async function GET(request: NextRequest) {
       compareUrl.searchParams.set("days", String(days));
       const resp = await fetch(compareUrl.toString(), { cache: "no-store" });
       const json = (await resp.json()) as unknown;
+      rawCompare = json;
+      // Keep a minimal rollup in case normalization fails.
       const dateRange = pickDateRange(json);
       const total = pickTotal(json);
       const percentChange = pickPercentChange(json);
-
       if (dateRange && typeof total === "number" && typeof percentChange === "number") {
-        stats = {
-          packages,
-          total,
-          percentChange,
-          dateRange,
-          sparkline: pickSparkline(json) ?? undefined,
-        };
-      } else {
-        stats = undefined;
+        stats = { packages, total, percentChange, dateRange, sparkline: pickSparkline(json) ?? undefined };
       }
     } else {
       const name = packages[0] || "react";
@@ -237,7 +240,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (mode === "compare") {
-    const compareStats = normalizeCompareStats(stats);
+    const compareStats = normalizeCompareStats(rawCompare) ?? normalizeCompareStats(stats);
     return buildOgImageResponse({ mode: "compare", days, pkgs: packages, logoSrc, stats: compareStats });
   }
 

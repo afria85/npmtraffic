@@ -20,8 +20,8 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ encoded
   const origin = url.origin;
 
   const og = new URL("/api/og", origin);
-  og.searchParams.set("mode", "pkg");
-  og.searchParams.set("pkg", decoded);
+  og.searchParams.set("mode", "compare");
+  og.searchParams.set("pkgs", decoded);
   og.searchParams.set("days", String(days));
 
   // Forward cache-busting params (e.g. ?v=0.3.8) if present.

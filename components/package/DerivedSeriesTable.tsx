@@ -419,24 +419,23 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
         {statusContent ? <div className="px-4 py-3">{statusContent}</div> : null}
         <ScrollHintContainer className="max-h-[60vh] overflow-auto">
           <table
-            className={`w-full text-sm ${showDerived ? "min-w-[760px]" : ""}`}
-            style={{ tableLayout: showDerived ? "auto" : "fixed" }}
+            className={`w-full text-sm ${showDerived ? "min-w-[760px] md:min-w-0 table-auto md:table-fixed" : "table-fixed"}`}
           >
             <colgroup>
               {/* Date */}
-              <col className={showDerived ? "w-[86px] sm:w-[140px]" : "w-[34%] sm:w-[140px]"} />
+              <col className={showDerived ? "w-[86px] sm:w-[140px] md:w-[104px]" : "w-[34%] sm:w-[140px]"} />
               {/* Downloads */}
-              <col className={showDerived ? "w-[86px] sm:w-[160px]" : "w-[33%] sm:w-[160px]"} />
+              <col className={showDerived ? "w-[86px] sm:w-[160px] md:w-[120px]" : "w-[33%] sm:w-[160px]"} />
               {/* Delta */}
-              <col className={showDerived ? "w-[86px] sm:w-[180px]" : "w-[33%] sm:w-[180px]"} />
+              <col className={showDerived ? "w-[86px] sm:w-[180px] md:w-[132px]" : "w-[33%] sm:w-[180px]"} />
               {showDerived ? (
                 <>
                   {/* MA 3 */}
-                  <col className="w-[86px]" />
+                  <col className="w-[86px] md:w-[72px]" />
                   {/* MA 7 */}
-                  <col className="w-[86px]" />
+                  <col className="w-[86px] md:w-[72px]" />
                   {/* Outlier */}
-                  <col className="w-[80px]" />
+                  <col className="w-[80px] md:w-[68px]" />
                   {/* Score */}
                   <col className="w-[60px]" />
                 </>

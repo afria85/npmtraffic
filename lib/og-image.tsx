@@ -1,12 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
 import { ImageResponse } from "next/og";
+import type { ReactNode } from "react";
 
 const WIDTH = 1200;
 const HEIGHT = 630;
 
 // Brand palette (aligned with globals.css: --brand-500)
 const ACCENT = "#06b6d4";
-const ACCENT_SOFT = "rgba(6, 182, 212, 0.14)";
 const BG = "#0a0d11";
 const BG_CARD = "#111418";
 const FG = "#f0f4f8";
@@ -108,41 +108,72 @@ function Pill({ text }: { text: string }) {
   );
 }
 
-function StatBox({
+function StatCell({
   label,
   value,
   sub,
   accent,
+  children,
 }: {
   label: string;
   value: string;
   sub?: string;
   accent?: string;
+  children?: ReactNode;
 }) {
   return (
     <div
       style={{
         flex: 1,
         padding: "18px 18px",
-        borderRadius: 16,
+        borderRadius: 18,
         border: `1px solid ${BORDER}`,
         background: "rgba(255,255,255,0.02)",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        minWidth: 0,
       }}
     >
-      <div style={{ color: MUTED, fontSize: 16, letterSpacing: 1.2, textTransform: "uppercase" }}>{label}</div>
-      <div style={{ marginTop: 8, color: accent ?? FG, fontSize: 34, fontWeight: 800, letterSpacing: -1.2 }}>
-        {value}
+      <div>
+        <div style={{ color: MUTED, fontSize: 14, letterSpacing: 2.2, textTransform: "uppercase" }}>{label}</div>
+        <div
+          style={{
+            marginTop: 10,
+            color: accent ?? FG,
+            fontSize: 42,
+            fontWeight: 900,
+            letterSpacing: -1.6,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {value}
+        </div>
+        {sub ? (
+          <div
+            style={{
+              marginTop: 8,
+              color: MUTED,
+              fontSize: 16,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {sub}
+          </div>
+        ) : null}
       </div>
-      {sub ? <div style={{ marginTop: 6, color: MUTED, fontSize: 18 }}>{sub}</div> : null}
+      {children ? <div style={{ marginTop: 14 }}>{children}</div> : null}
     </div>
   );
 }
 
-function Sparkline({ values }: { values: number[] }) {
+function Sparkline({ values, w = 520, h = 90 }: { values: number[]; w?: number; h?: number }) {
   const max = Math.max(1, ...values);
   const min = Math.min(...values);
-  const w = 520;
-  const h = 90;
   const pad = 8;
 
   const points = values
@@ -221,6 +252,12 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats, logoSr
   const pctSub = pctIsValid ? "vs previous period" : "previous period unavailable";
 
   const spark = stats?.sparkline && stats.sparkline.length >= 2 ? stats.sparkline : undefined;
+  const rangeText =
+    stats?.dateRange?.start && stats?.dateRange?.end
+      ? `${formatShortDate(stats.dateRange.start)} – ${formatShortDate(stats.dateRange.end)}`
+      : "—";
+  const trendText = pctIsValid ? (pct >= 0 ? "Up" : "Down") : "Trend";
+  const trendArrow = pctIsValid ? (pct >= 0 ? "↗" : "↘") : "→";
 
   return (
     <div
@@ -239,72 +276,40 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats, logoSr
       <div
         style={{
           marginTop: 34,
-          borderRadius: 24,
+          borderRadius: 28,
           border: `1px solid ${BORDER}`,
           background: BG_CARD,
-          padding: 34,
+          padding: 36,
         }}
       >
-        <div style={{ color: MUTED, fontSize: 18, letterSpacing: 3, textTransform: "uppercase" }}>Daily downloads</div>
+        <div style={{ color: MUTED, fontSize: 16, letterSpacing: 3, textTransform: "uppercase" }}>Daily downloads</div>
         <div
           style={{
-            marginTop: 12,
+            marginTop: 10,
             color: FG,
-            fontSize: 70,
-            fontWeight: 900,
+            fontSize: 68,
+            fontWeight: 950,
             letterSpacing: -2.2,
-            lineHeight: 1.03,
+            lineHeight: 1.02,
           }}
         >
           {safePkg}
         </div>
-        <div style={{ marginTop: 12, color: MUTED, fontSize: 22 }}>
-          Table · chart · local event markers · reproducible exports
-        </div>
+        <div style={{ marginTop: 10, color: MUTED, fontSize: 20 }}>{dateLabel ?? `${days} day window (UTC)`}</div>
 
-        <div style={{ marginTop: 26, display: "flex", gap: 16 }}>
-          <StatBox label="Total downloads" value={formatNumber(stats?.total ?? NaN)} sub={dateLabel} />
-          <StatBox label="Delta" value={pctText} sub={pctSub} accent={pctAccent} />
-        </div>
-
-        <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 18 }}>
-          <div
-            style={{
-              height: 90,
-              width: 90,
-              borderRadius: 18,
-              background: ACCENT_SOFT,
-              border: `1px solid ${BORDER}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: ACCENT,
-              fontSize: 38,
-              fontWeight: 900,
-            }}
+        {/* 4-up stat grid (matches share-preview style) */}
+        <div style={{ marginTop: 24, display: "flex", gap: 14 }}>
+          <StatCell label="Total downloads" value={formatNumber(stats?.total ?? NaN)} sub="sum over range" />
+          <StatCell label="Vs previous period" value={pctText} sub={pctSub} accent={pctAccent} />
+          <StatCell label="Date range" value={rangeText} sub="UTC" />
+          <StatCell
+            label="Trend"
+            value={`${trendArrow} ${trendText}`}
+            sub={spark ? "daily downloads" : "sparkline unavailable"}
+            accent={pctIsValid ? (pct >= 0 ? SUCCESS : DANGER) : FG}
           >
-            ↗
-          </div>
-          {spark ? (
-            <Sparkline values={spark} />
-          ) : (
-            <div
-              style={{
-                flex: 1,
-                height: 90,
-                borderRadius: 16,
-                border: `1px solid ${BORDER}`,
-                background: "rgba(255,255,255,0.02)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: MUTED,
-                fontSize: 18,
-              }}
-            >
-              Trend sparkline (last days)
-            </div>
-          )}
+            {spark ? <Sparkline values={spark} w={240} h={64} /> : null}
+          </StatCell>
         </div>
       </div>
 
@@ -319,6 +324,8 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
     stats?.dateRange?.start && stats?.dateRange?.end
       ? `${formatShortDate(stats.dateRange.start)} – ${formatShortDate(stats.dateRange.end)} UTC`
       : undefined;
+
+  const tabs = pkgs.slice(0, 5);
 
   return (
     <div
@@ -346,22 +353,34 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
           flexDirection: "column",
         }}
       >
-        {/* Package tags */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-          {pkgs.slice(0, 5).map((pkg, i) => (
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ color: MUTED, fontSize: 16, letterSpacing: 3, textTransform: "uppercase" }}>Compare</div>
+            <div style={{ marginTop: 10, color: FG, fontSize: 52, fontWeight: 950, letterSpacing: -1.8 }}>Daily downloads</div>
+          </div>
+          {dateLabel ? <div style={{ color: MUTED, fontSize: 16 }}>{dateLabel}</div> : null}
+        </div>
+
+        {/* Tab-style package pills (share-preview friendly) */}
+        <div style={{ marginTop: 18, display: "flex", flexWrap: "wrap", gap: 10 }}>
+          {tabs.map((pkg, i) => (
             <div
               key={pkg}
               style={{
-                padding: "10px 18px",
-                borderRadius: 12,
-                border: `2px solid ${i === 0 ? CHART_COLORS[0] : BORDER}`,
-                background: i === 0 ? `${CHART_COLORS[0]}18` : "rgba(255,255,255,0.03)",
+                padding: "10px 16px",
+                borderRadius: 999,
+                border: `1px solid ${i === 0 ? CHART_COLORS[0] : BORDER}`,
+                background: i === 0 ? `${CHART_COLORS[0]}1f` : "rgba(255,255,255,0.03)",
                 color: i === 0 ? CHART_COLORS[0] : FG,
-                fontSize: 26,
-                fontWeight: 700,
+                fontSize: 22,
+                fontWeight: 800,
+                maxWidth: 320,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
               }}
             >
-              {clampText(pkg, 25)}
+              {clampText(pkg, 28)}
             </div>
           ))}
         </div>
@@ -370,11 +389,11 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
         {hasStats ? (
           <div
             style={{
-              marginTop: 28,
-              display: "flex",
-              gap: 16,
-              paddingTop: 28,
+              marginTop: 22,
+              paddingTop: 22,
               borderTop: `1px solid ${BORDER}`,
+              display: "flex",
+              gap: 14,
             }}
           >
             {stats.packages.slice(0, 4).map((pkg, i) => (
@@ -382,28 +401,32 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
                 key={pkg.name}
                 style={{
                   flex: 1,
-                  padding: "16px 18px",
-                  borderRadius: 16,
+                  padding: "18px 18px",
+                  borderRadius: 18,
                   border: `1px solid ${BORDER}`,
                   background: "rgba(255,255,255,0.02)",
-                  borderLeft: `4px solid ${CHART_COLORS[i % CHART_COLORS.length]}`,
+                  borderTop: `4px solid ${CHART_COLORS[i % CHART_COLORS.length]}`,
+                  minWidth: 0,
                 }}
               >
                 <div
                   style={{
                     color: MUTED,
                     fontSize: 14,
+                    letterSpacing: 2.0,
+                    textTransform: "uppercase",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {clampText(pkg.name, 18)}
+                  {clampText(pkg.name, 26)}
                 </div>
-                <div style={{ marginTop: 8, color: FG, fontSize: 32, fontWeight: 800, letterSpacing: -1 }}>
+                <div style={{ marginTop: 10, color: FG, fontSize: 44, fontWeight: 950, letterSpacing: -1.6 }}>
                   {formatNumber(pkg.total)}
                 </div>
-                <div style={{ marginTop: 6, color: CHART_COLORS[i % CHART_COLORS.length], fontSize: 16, fontWeight: 600 }}>
+                <div style={{ marginTop: 10, color: MUTED, fontSize: 16 }}>total downloads</div>
+                <div style={{ marginTop: 10, color: CHART_COLORS[i % CHART_COLORS.length], fontSize: 16, fontWeight: 800 }}>
                   {pkg.share.toFixed(1)}% share
                 </div>
               </div>
@@ -412,28 +435,14 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
         ) : (
           <div
             style={{
-              marginTop: 28,
-              paddingTop: 28,
+              marginTop: 22,
+              paddingTop: 22,
               borderTop: `1px solid ${BORDER}`,
               color: MUTED,
-              fontSize: 22,
+              fontSize: 20,
             }}
           >
-            Side-by-side daily downloads · Aligned date ranges · CSV/JSON exports
-          </div>
-        )}
-
-        {/* Date range footer */}
-        {dateLabel && (
-          <div
-            style={{
-              marginTop: "auto",
-              paddingTop: 20,
-              color: MUTED,
-              fontSize: 16,
-            }}
-          >
-            {dateLabel}
+            Side-by-side daily downloads · Aligned date ranges · Reproducible exports
           </div>
         )}
       </div>
