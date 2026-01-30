@@ -398,7 +398,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
 
   const width = 1000;
   const height = 260;
-  const axisFontSize = isMobile ? 14 : 12;
+  const axisFontSize = isMobile ? 14 : 13;
   const yLabelOffset = isMobile ? 10 : 8;
   const leftPad = useMemo(() => computeLeftPad(numberFormatter.format(maxValue), axisFontSize), [maxValue, axisFontSize]);
   const pad = { l: leftPad, r: 20, t: 16, b: isMobile ? 48 : 40 };
@@ -458,9 +458,8 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
 
   const xTicks = useMemo(() => {
     const maxTicks = isMobile ? 4 : 6;
-    const raw = buildMonthTicks(series.map((row) => row.date), maxTicks, "first-or-change", isMobile);
-    return adjustMonthTicksForOverlap(raw, { seriesLength: series.length, innerW, axisFontSize });
-  }, [axisFontSize, innerW, isMobile, series]);
+    return adjustMonthTicksForOverlap(series.map((row) => row.date), buildMonthTicks(series.map((row) => row.date), maxTicks, "first-or-change", isMobile), { minIndexGap: isMobile ? 2 : 2 });
+  }, [isMobile, series]);
 
   const hovered = hoverIndex == null ? null : series[hoverIndex];
   const hoverPoint = hoverIndex == null ? null : downloadsPoints[hoverIndex] ?? null;

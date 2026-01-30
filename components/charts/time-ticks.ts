@@ -51,6 +51,24 @@ function parseYMDLike(s: string): Date | null {
   return null;
 }
 
+type ParsedIsoDate = { year: number; monthIndex: number; day: number };
+
+function parseIsoDate(s: string): ParsedIsoDate | null {
+  // Accept ISO-like strings: YYYY-MM-DD (optionally with time suffix)
+  const m = /^\s*(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (!m) return null;
+
+  const year = Number(m[1]);
+  const monthIndex = Number(m[2]) - 1;
+  const day = Number(m[3]);
+
+  if (!Number.isFinite(year) || !Number.isFinite(monthIndex) || !Number.isFinite(day)) return null;
+  if (monthIndex < 0 || monthIndex > 11) return null;
+  if (day < 1 || day > 31) return null;
+
+  return { year, monthIndex, day };
+}
+
 function toUTCDate(dateLike: unknown): Date {
   if (dateLike instanceof Date) return dateLike;
   if (typeof dateLike === "number") return new Date(dateLike);
@@ -194,116 +212,49 @@ export function buildMonthTicks(
     .filter((t): t is MonthTick => Boolean(t));
 }
 
-
-function parseMonthYearLabel(label: string): { month: string; year: string } | null {
-  const m = /^([A-Za-z]{3})\s+(\d{4})$/.exec(label.trim());
-  if (m) return { month: m[1]!, year: m[2]! };
-
-  const m2 = /^([A-Za-z]{3})\s+[’'](\d{2})$/.exec(label.trim());
-  if (m2) return { month: m2[1]!, year: `20${m2[2]!}` };
-
-  return null;
-}
-
-function compactYearLabel(label: string): string {
-  const parsed = parseMonthYearLabel(label);
-  if (!parsed) return label;
-  const yy = parsed.year.slice(-2);
-  return `${parsed.month} ’${yy}`;
-}
-
-function dropYear(label: string): string {
-  const parsed = parseMonthYearLabel(label);
-  if (!parsed) return label;
-  return parsed.month;
-}
-
-function estimateTextWidth(label: string, fontSize: number): number {
-  // Heuristic width estimate in SVG user units:
-  // average glyph width ~0.56em for typical UI sans fonts.
-  return label.length * fontSize * 0.56;
-}
-
-function anchorExtents(width: number, anchor: "start" | "middle" | "end") {
-  if (anchor === "start") return { left: 0, right: width };
-  if (anchor === "end") return { left: width, right: 0 };
-  return { left: width / 2, right: width / 2 };
-}
-
-function overlaps(a: { x: number; w: number; anchor: "start" | "middle" | "end" }, b: { x: number; w: number; anchor: "start" | "middle" | "end" }, padding: number) {
-  const ea = anchorExtents(a.w, a.anchor);
-  const eb = anchorExtents(b.w, b.anchor);
-  return a.x + ea.right + padding > b.x - eb.left;
+function labelHasYear(label: string): boolean {
+  return /\b(19|20)\d{2}\b/.test(label);
 }
 
 /**
- * Adjust x-axis month tick labels to avoid obvious overlaps.
+ * adjustMonthTicksForOverlap
  *
- * Strategy (in order):
- * 1) Compact any "Mon YYYY" label -> "Mon ’YY"
- * 2) If still overlapping, drop the year on the left label (e.g., "Dec" vs "Jan ’26")
- * 3) As a last resort, blank a non-edge label.
+ * Lightweight overlap mitigation for tight ranges (e.g. Dec 31 → Jan 01).
+ * It keeps buildMonthTicks deterministic, and only blanks labels that are too close.
  *
- * This is intentionally heuristic (no DOM measurement) but works well with the
- * fixed-viewBox SVG charts used in npmtraffic.
+ * Strategy:
+ * - If two adjacent ticks are within `minIndexGap`, blank the earlier tick's label.
+ * - If we blank a label that carried the year, we promote the next label to include the year
+ *   (so the axis still communicates the context).
  */
 export function adjustMonthTicksForOverlap(
+  dates: string[],
   ticks: MonthTick[],
-  opts: { seriesLength: number; innerW: number; axisFontSize: number; padding?: number },
+  opts?: { minIndexGap?: number; promoteYear?: boolean },
 ): MonthTick[] {
-  const { seriesLength, innerW, axisFontSize } = opts;
-  const padding = opts.padding ?? 8;
+  const minIndexGap = Math.max(1, opts?.minIndexGap ?? 2);
+  const promoteYear = opts?.promoteYear ?? true;
 
-  if (ticks.length < 2 || seriesLength <= 1 || innerW <= 0) return ticks;
+  if (!Array.isArray(ticks) || ticks.length < 2) return ticks;
 
-  // Clone to avoid mutating callers.
   const out = ticks.map((t) => ({ ...t }));
+  for (let i = 0; i < out.length - 1; i += 1) {
+    const a = out[i];
+    const b = out[i + 1];
+    if (!a || !b) continue;
+    const gap = (b.index ?? 0) - (a.index ?? 0);
+    if (!Number.isFinite(gap) || gap >= minIndexGap) continue;
 
-  const getX = (index: number) => innerW * (out[index]!.index / (seriesLength - 1));
-  const getAnchor = (index: number): "start" | "middle" | "end" =>
-    index === 0 ? "start" : index === out.length - 1 ? "end" : "middle";
+    const aHadYear = typeof a.label === "string" && labelHasYear(a.label);
+    a.label = "";
 
-  const widthAt = (index: number) => estimateTextWidth(out[index]!.label ?? "", axisFontSize);
-
-  for (let i = 0; i < out.length - 1; i++) {
-    // Skip if either label is already blank.
-    if (!out[i]!.label || !out[i + 1]!.label) continue;
-
-    const a = { x: getX(i), w: widthAt(i), anchor: getAnchor(i) };
-    const b = { x: getX(i + 1), w: widthAt(i + 1), anchor: getAnchor(i + 1) };
-
-    if (!overlaps(a, b, padding)) continue;
-
-    // 1) Compact both labels (if they have years).
-    out[i]!.label = compactYearLabel(out[i]!.label);
-    out[i + 1]!.label = compactYearLabel(out[i + 1]!.label);
-
-    const a1 = { x: a.x, w: widthAt(i), anchor: a.anchor };
-    const b1 = { x: b.x, w: widthAt(i + 1), anchor: b.anchor };
-    if (!overlaps(a1, b1, padding)) continue;
-
-    // 2) Drop year on the left label (prefer keeping context on the right).
-    out[i]!.label = dropYear(out[i]!.label);
-
-    const a2 = { x: a.x, w: widthAt(i), anchor: a.anchor };
-    const b2 = { x: b.x, w: widthAt(i + 1), anchor: b.anchor };
-    if (!overlaps(a2, b2, padding)) continue;
-
-    // 3) Last resort: blank the less-informative label.
-    // - If the overlap happens right at the left edge, keep the later tick and blank the first label.
-    // - Otherwise, prefer blanking a non-edge label to preserve context on the extremes.
-    if (i === 0 && out.length >= 3) {
-      out[i]!.label = "";
-      continue;
-    }
-    if (i !== 0 && i !== out.length - 1) {
-      out[i]!.label = "";
-      continue;
-    }
-    if (i + 1 !== 0 && i + 1 !== out.length - 1) {
-      out[i + 1]!.label = "";
+    if (promoteYear && aHadYear && typeof b.label === "string" && !labelHasYear(b.label)) {
+      const date = dates?.[b.index];
+      const parsed = date ? parseIsoDate(date) : null;
+      if (parsed) {
+        b.label = formatMonthLabel(parsed.year, parsed.monthIndex, true);
+      }
     }
   }
-
   return out;
 }

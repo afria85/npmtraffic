@@ -322,7 +322,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     return Math.max(1, ...values);
   }, [series, packageNames]);
 
-  const axisFontSize = isMobile ? 13 : 11;
+  const axisFontSize = isMobile ? 13 : 12;
   const yLabelOffset = isMobile ? 10 : 8;
   const leftPad = useMemo(
     () => computeLeftPad(numberFormatter.format(maxValue), axisFontSize),
@@ -360,9 +360,8 @@ export default function CompareChart({ series, packageNames, days }: Props) {
 
   const xTicks = useMemo(() => {
     const maxTicks = isMobile ? 4 : 6;
-    const raw = buildMonthTicks(series.map((row) => row.date), maxTicks, "first-or-change", isMobile);
-    return adjustMonthTicksForOverlap(raw, { seriesLength: series.length, innerW, axisFontSize });
-  }, [axisFontSize, innerW, isMobile, series]);
+    return adjustMonthTicksForOverlap(series.map((row) => row.date), buildMonthTicks(series.map((row) => row.date), maxTicks, "first-or-change", isMobile), { minIndexGap: isMobile ? 2 : 2 });
+  }, [isMobile, series]);
 
   const hovered = hoverIndex == null ? null : series[hoverIndex];
 

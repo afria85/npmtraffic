@@ -18,7 +18,6 @@ const DEFAULT_LOGO_PATHS = [
   "/icon.png", // your canonical brand mark
   "/brand-mark.png",
   "/favicon-32.png",
-  "/og.png",
 ] as const;
 
 /**
