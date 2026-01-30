@@ -9,6 +9,7 @@ export type ActionMenuItem = {
   onClick?: () => void;
   href?: string;
   downloadName?: string;
+  disabled?: boolean;
 };
 
 type MenuPosition = {
@@ -176,6 +177,18 @@ export default function ActionMenu({
                   "w-full rounded-xl px-3 py-2 text-left text-sm text-[var(--foreground)] hover:bg-[var(--surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]";
 
                 if (isLink) {
+                  if (item.disabled) {
+                    return (
+                      <span
+                        key={item.key}
+                        role="menuitem"
+                        aria-disabled="true"
+                        className={common + " block cursor-not-allowed opacity-50"}
+                      >
+                        {item.label}
+                      </span>
+                    );
+                  }
                   return (
                     <a
                       key={item.key}
@@ -195,11 +208,14 @@ export default function ActionMenu({
                     key={item.key}
                     type="button"
                     role="menuitem"
-                    className={common}
+                    className={`${common}${item.disabled ? " cursor-not-allowed opacity-50" : ""}`}
                     onClick={() => {
+                      if (item.disabled) return;
                       close();
                       item.onClick?.();
                     }}
+                    disabled={item.disabled}
+                    aria-disabled={item.disabled}
                   >
                     {item.label}
                   </button>

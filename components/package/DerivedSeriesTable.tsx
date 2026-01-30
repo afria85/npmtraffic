@@ -245,21 +245,28 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
   }, [series, deltas, derived, dateSortDir]);
 
   const [shareEncoded, setShareEncoded] = useState("");
+  const [shareStatus, setShareStatus] = useState<
+    "idle" | "preparing" | "ready" | "copied" | "too_large" | "error"
+  >("idle");
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       if (!events.length) {
         setShareEncoded("");
+        setShareStatus("idle");
         return;
       }
+      setShareStatus("preparing");
       try {
         const encoded = await encodeSharePayloadV2(events);
         if (cancelled) return;
         setShareEncoded(encoded);
+        setShareStatus(encoded.length > SHARE_MAX_LENGTH ? "too_large" : "ready");
       } catch {
         if (cancelled) return;
         setShareEncoded("");
+        setShareStatus("error");
       }
     })();
     return () => {
@@ -268,8 +275,23 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
   }, [events]);
 
   const hasEvents = events.length > 0;
-  const shareTooLarge = shareEncoded.length > SHARE_MAX_LENGTH;
-  const shareEnabled = hasEvents && !shareTooLarge;
+  const shareEnabled = shareStatus === "ready";
+
+  useEffect(() => {
+    if (shareStatus !== "copied") return;
+    const t = window.setTimeout(() => {
+      if (!events.length) {
+        setShareStatus("idle");
+        return;
+      }
+      if (!shareEncoded) {
+        setShareStatus("preparing");
+        return;
+      }
+      setShareStatus(shareEncoded.length > SHARE_MAX_LENGTH ? "too_large" : "ready");
+    }, 2200);
+    return () => window.clearTimeout(t);
+  }, [shareStatus, events.length, shareEncoded]);
 
   const refresh = () => setRefreshKey((prev) => prev + 1);
 
@@ -351,19 +373,35 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
       showStatus("Add events to enable sharing.", "warning");
       return;
     }
+    if (shareStatus === "preparing") {
+      showStatus("Share link is still preparing.", "warning");
+      return;
+    }
+    if (shareStatus === "too_large") {
+      showStatus("Timeline link is too large to copy.", "warning");
+      return;
+    }
+    if (shareStatus === "error") {
+      showStatus("Unable to build a share link for these events.", "warning");
+      return;
+    }
 
     let encoded = shareEncoded;
     if (!encoded) {
+      setShareStatus("preparing");
       try {
         encoded = await encodeSharePayloadV2(events);
         setShareEncoded(encoded);
+        setShareStatus(encoded.length > SHARE_MAX_LENGTH ? "too_large" : "ready");
       } catch {
+        setShareStatus("error");
         showStatus("Unable to build a share link for these events.", "warning");
         return;
       }
     }
 
     if (encoded.length > SHARE_MAX_LENGTH) {
+      setShareStatus("too_large");
       showStatus("Timeline link is too large to copy.", "warning");
       return;
     }
@@ -376,6 +414,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
     if (ok) {
       setShareLinkFallback(null);
       showStatus("Timeline link copied.");
+      setShareStatus("copied");
       return;
     }
 
@@ -681,7 +720,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                           importFileRef.current?.click();
                         },
                       },
-                      { key: "share", label: "Copy timeline link", onClick: handleCopyShareLink },
+                      { key: "share", label: "Copy timeline link", onClick: handleCopyShareLink, disabled: !shareEnabled },
                     ]}
                   />
                 </div>
@@ -756,12 +795,16 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   Timeline sharing encodes events into the URL (?events=...). The URL (optional) field is only for linking a source.
                 </p>
                 <p className="text-xs text-[var(--foreground-tertiary)]">
-                  {shareTooLarge
-                    ? "Events too large to share."
-                    : shareEncoded
-                    ? `Share string ${shareEncoded.length} chars long.`
-                    : hasEvents
+                  {shareStatus === "copied"
+                    ? "Share link copied."
+                    : shareStatus === "ready"
+                    ? "Share link ready."
+                    : shareStatus === "preparing"
                     ? "Preparing share link..."
+                    : shareStatus === "too_large"
+                    ? "Events too large to share."
+                    : shareStatus === "error"
+                    ? "Unable to build share link."
                     : "Add events to enable sharing."}
                 </p>
 
