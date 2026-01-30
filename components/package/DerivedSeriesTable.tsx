@@ -253,17 +253,23 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
         setShareEncoded("");
         return;
       }
-      const encoded = await encodeSharePayloadV2(events);
-      if (cancelled) return;
-      setShareEncoded(encoded);
+      try {
+        const encoded = await encodeSharePayloadV2(events);
+        if (cancelled) return;
+        setShareEncoded(encoded);
+      } catch {
+        if (cancelled) return;
+        setShareEncoded("");
+      }
     })();
     return () => {
       cancelled = true;
     };
   }, [events]);
 
+  const hasEvents = events.length > 0;
   const shareTooLarge = shareEncoded.length > SHARE_MAX_LENGTH;
-  const shareEnabled = Boolean(shareEncoded) && !shareTooLarge;
+  const shareEnabled = hasEvents && !shareTooLarge;
 
   const refresh = () => setRefreshKey((prev) => prev + 1);
 
@@ -340,20 +346,30 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
   };
 
   const handleCopyShareLink = async () => {
-    if (!shareEnabled) {
+    if (!hasEvents) {
       setShareLinkFallback(null);
-      if (shareTooLarge) {
-        showStatus("Timeline link is too large to copy.", "warning");
-      } else if (!shareEncoded) {
-        showStatus("Add events to enable sharing.", "warning");
-      } else {
-        showStatus("No timeline link available to copy.", "warning");
+      showStatus("Add events to enable sharing.", "warning");
+      return;
+    }
+
+    let encoded = shareEncoded;
+    if (!encoded) {
+      try {
+        encoded = await encodeSharePayloadV2(events);
+        setShareEncoded(encoded);
+      } catch {
+        showStatus("Unable to build a share link for these events.", "warning");
+        return;
       }
+    }
+
+    if (encoded.length > SHARE_MAX_LENGTH) {
+      showStatus("Timeline link is too large to copy.", "warning");
       return;
     }
 
     const url = new URL(window.location.href);
-    url.searchParams.set("events", shareEncoded);
+    url.searchParams.set("events", encoded);
     const text = url.toString();
 
     const ok = await copyToClipboard(text);
@@ -744,6 +760,8 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                     ? "Events too large to share."
                     : shareEncoded
                     ? `Share string ${shareEncoded.length} chars long.`
+                    : hasEvents
+                    ? "Preparing share link..."
                     : "Add events to enable sharing."}
                 </p>
 
