@@ -69,9 +69,9 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
   const [form, setForm] = useState<EventEntry>(DEFAULT_FORM);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<{ text: string; tone: "info" | "warning" } | null>(null);
-  const [shareLinkFallback, setShareLinkFallback] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const shareLinkInputRef = useRef<HTMLInputElement | null>(null);
+  const [shareToast, setShareToast] = useState<"preparing" | "copied" | "failed" | null>(null);
+  const shareToastTimeoutRef = useRef<number | null>(null);
 
   const searchParams = useSearchParams();
   const sharedParam = searchParams?.get("events") ?? "";
@@ -91,26 +91,38 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
   useEffect(() => {
     if (!statusMessage || typeof window === "undefined") return;
-    const ms = shareLinkFallback ? 12000 : 3500;
-    const t = window.setTimeout(() => setStatusMessage(null), ms);
+    const t = window.setTimeout(() => setStatusMessage(null), 3500);
     return () => window.clearTimeout(t);
-  }, [statusMessage, shareLinkFallback]);
+  }, [statusMessage]);
 
   useEffect(() => {
-    if (!shareLinkFallback) return;
-    const raf = requestAnimationFrame(() => {
-      shareLinkInputRef.current?.focus();
-      shareLinkInputRef.current?.select();
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [shareLinkFallback]);
+    return () => {
+      if (shareToastTimeoutRef.current) {
+        window.clearTimeout(shareToastTimeoutRef.current);
+        shareToastTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  const showShareToast = (state: "preparing" | "copied" | "failed", durationMs?: number) => {
+    if (shareToastTimeoutRef.current) {
+      window.clearTimeout(shareToastTimeoutRef.current);
+      shareToastTimeoutRef.current = null;
+    }
+    setShareToast(state);
+    if (durationMs && typeof window !== "undefined") {
+      shareToastTimeoutRef.current = window.setTimeout(() => {
+        setShareToast(null);
+      }, durationMs);
+    }
+  };
 
   const showStatus = (text: string, tone: "info" | "warning" = "info") =>
     setStatusMessage({ text, tone });
 
   const statusContent = (() => {
-    if (!statusMessage && !shareLinkFallback) return null;
-    const isWarning = statusMessage?.tone === "warning" || Boolean(shareLinkFallback);
+    if (!statusMessage) return null;
+    const isWarning = statusMessage?.tone === "warning";
 
     return (
       <div
@@ -122,18 +134,6 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
         }
       >
         {statusMessage ? <p>{statusMessage.text}</p> : null}
-        {shareLinkFallback ? (
-          <div className="mt-2 flex flex-col gap-2">
-            <span className="text-[10px] uppercase tracking-[0.3em] text-[var(--foreground-tertiary)]">Timeline link</span>
-            <input
-              ref={shareLinkInputRef}
-              className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 font-mono text-xs text-[var(--foreground)]"
-              value={shareLinkFallback}
-              readOnly
-              onFocus={(event) => event.currentTarget.select()}
-            />
-          </div>
-        ) : null}
       </div>
     );
   })();
@@ -245,9 +245,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
   }, [series, deltas, derived, dateSortDir]);
 
   const [shareEncoded, setShareEncoded] = useState("");
-  const [shareStatus, setShareStatus] = useState<
-    "idle" | "preparing" | "ready" | "copied" | "too_large" | "error"
-  >("idle");
+  const [shareStatus, setShareStatus] = useState<"idle" | "preparing" | "ready" | "too_large" | "error">("idle");
 
   useEffect(() => {
     let cancelled = false;
@@ -276,22 +274,6 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
   const hasEvents = events.length > 0;
   const shareEnabled = shareStatus === "ready";
-
-  useEffect(() => {
-    if (shareStatus !== "copied") return;
-    const t = window.setTimeout(() => {
-      if (!events.length) {
-        setShareStatus("idle");
-        return;
-      }
-      if (!shareEncoded) {
-        setShareStatus("preparing");
-        return;
-      }
-      setShareStatus(shareEncoded.length > SHARE_MAX_LENGTH ? "too_large" : "ready");
-    }, 2200);
-    return () => window.clearTimeout(t);
-  }, [shareStatus, events.length, shareEncoded]);
 
   const refresh = () => setRefreshKey((prev) => prev + 1);
 
@@ -369,40 +351,40 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
   const handleCopyShareLink = async () => {
     if (!hasEvents) {
-      setShareLinkFallback(null);
       showStatus("Add events to enable sharing.", "warning");
       return;
     }
     if (shareStatus === "preparing") {
-      showStatus("Share link is still preparing.", "warning");
+      showShareToast("preparing");
       return;
     }
     if (shareStatus === "too_large") {
-      showStatus("Timeline link is too large to copy.", "warning");
+      showShareToast("failed", 2200);
       return;
     }
     if (shareStatus === "error") {
-      showStatus("Unable to build a share link for these events.", "warning");
+      showShareToast("failed", 2200);
       return;
     }
 
     let encoded = shareEncoded;
     if (!encoded) {
       setShareStatus("preparing");
+      showShareToast("preparing");
       try {
         encoded = await encodeSharePayloadV2(events);
         setShareEncoded(encoded);
         setShareStatus(encoded.length > SHARE_MAX_LENGTH ? "too_large" : "ready");
       } catch {
         setShareStatus("error");
-        showStatus("Unable to build a share link for these events.", "warning");
+        showShareToast("failed", 2200);
         return;
       }
     }
 
     if (encoded.length > SHARE_MAX_LENGTH) {
       setShareStatus("too_large");
-      showStatus("Timeline link is too large to copy.", "warning");
+      showShareToast("failed", 2200);
       return;
     }
 
@@ -410,16 +392,14 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
     url.searchParams.set("events", encoded);
     const text = url.toString();
 
+    showShareToast("preparing");
     const ok = await copyToClipboard(text);
     if (ok) {
-      setShareLinkFallback(null);
-      showStatus("Timeline link copied.");
-      setShareStatus("copied");
+      showShareToast("copied", 2200);
       return;
     }
 
-    setShareLinkFallback(text);
-    showStatus("Copy the timeline link below.", "warning");
+    showShareToast("failed", 2200);
   };
 
   const handleImportShared = () => {
@@ -611,7 +591,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
             role="dialog"
             aria-modal="true"
             aria-label="Package timeline"
-            className="flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl shadow-black/40 max-h-[calc(100dvh-2rem)]"
+            className="relative flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl shadow-black/40 max-h-[calc(100dvh-2rem)]"
           >
             <div className="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--surface)]/95 px-6 py-5 backdrop-blur">
               <div className="flex items-center justify-between gap-4">
@@ -794,20 +774,6 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                 <p className="text-xs text-[var(--foreground-tertiary)]">
                   Timeline sharing encodes events into the URL (?events=...). The URL (optional) field is only for linking a source.
                 </p>
-                <p className="text-xs text-[var(--foreground-tertiary)]">
-                  {shareStatus === "copied"
-                    ? "Share link copied."
-                    : shareStatus === "ready"
-                    ? "Share link ready."
-                    : shareStatus === "preparing"
-                    ? "Preparing share link..."
-                    : shareStatus === "too_large"
-                    ? "Events too large to share."
-                    : shareStatus === "error"
-                    ? "Unable to build share link."
-                    : "Add events to enable sharing."}
-                </p>
-
                 {sharedParam ? (
                   <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-xs text-[var(--foreground)]">
                     <p className="text-xs uppercase tracking-[0.3em] text-[var(--foreground-tertiary)]">Shared events</p>
@@ -845,6 +811,37 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                 )}
               </div>
             </div>
+            {shareToast ? (
+              <div className="pointer-events-none absolute bottom-4 left-4 right-4 z-20 flex justify-center sm:justify-start">
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)]/95 px-3 py-2 text-xs text-[var(--foreground)] shadow-lg shadow-black/20"
+                >
+                  {shareToast === "preparing" ? (
+                    <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--foreground-tertiary)]">
+                      <svg viewBox="0 0 24 24" className="h-4 w-4 animate-spin" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.25" fill="none" />
+                        <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2" fill="none" />
+                      </svg>
+                    </span>
+                  ) : (
+                    <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--accent)]">
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+                        <path d="M4.5 10.5 8.2 14 15.5 6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  )}
+                  {shareToast === "preparing" ? (
+                    <span>Preparing link…</span>
+                  ) : shareToast === "copied" ? (
+                    <span>Share link copied</span>
+                  ) : (
+                    <span>Copy failed — try again</span>
+                  )}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
