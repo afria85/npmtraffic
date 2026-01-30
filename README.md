@@ -154,7 +154,7 @@ Current focus:
 ## Privacy & Data
 
 - **No user profiling** &ndash; No accounts, no user-level tracking; analytics are aggregate only
-- **No cookies** &ndash; Except theme preference (localStorage)
+- **No tracking cookies** &ndash; Theme preference uses a first-party cookie plus localStorage
 - **Minimal analytics** &ndash; Aggregate usage + performance metrics via Vercel (no ad pixels, no user profiling)
 - **GDPR compliant** &ndash; No external font loading, no tracking scripts
 

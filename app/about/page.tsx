@@ -141,7 +141,7 @@ export default function AboutPage() {
           <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
             <h3 className="font-semibold text-[var(--foreground)]">Privacy</h3>
             <p className="text-sm text-[var(--foreground-secondary)]">
-              Privacy-preserving analytics (Vercel Web Analytics) for basic site usage. No cookies. No user profiles. No cross-site tracking.
+              Privacy-preserving analytics (Vercel Web Analytics) for basic site usage. No tracking cookies. Theme preference uses a first-party cookie. No user profiles. No cross-site tracking.
             </p>
           </div>
         </section>

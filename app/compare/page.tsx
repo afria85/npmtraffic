@@ -107,7 +107,6 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     },
     twitter: {
       card: "summary_large_image",
-      site: "@npmtraffic",
       title,
       description,
       images: [

@@ -1,9 +1,13 @@
+import crypto from "node:crypto";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { POPULAR_PACKAGES } from "@/lib/constants";
 import { getBaseUrl } from "@/lib/base-url";
 import { config } from "@/lib/config";
 import { homepageJsonLd } from "@/lib/jsonld";
+import { buildExportCommentHeader, buildExportMeta } from "@/lib/export";
+import { buildExportFilename } from "@/lib/export-filename";
+import { rangeForDays } from "@/lib/query";
 import SearchBox from "@/components/SearchBox";
 import { Button } from "@/components/ui/Button";
 
@@ -40,7 +44,6 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      site: "@npmtraffic",
       title: "npmtraffic",
       description: config.site.tagline,
       images: [{
@@ -57,6 +60,24 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function Home() {
   const baseUrl = await getBaseUrl();
   const jsonLd = homepageJsonLd(baseUrl);
+  const exampleDays = 30;
+  const examplePackage = "react";
+  const exampleRange = rangeForDays(exampleDays);
+  const exportFilename = buildExportFilename({
+    packages: [examplePackage],
+    days: exampleDays,
+    range: exampleRange,
+    format: "csv",
+  });
+  const exportMeta = buildExportMeta(
+    exampleRange,
+    new Date().toISOString(),
+    crypto.randomUUID(),
+    "HIT",
+    false,
+    null
+  );
+  const exportHeaderLines = buildExportCommentHeader(exportMeta).split("\n");
 
   return (
     <main className="relative min-h-screen">
@@ -140,11 +161,14 @@ export default async function Home() {
                 Date ranges end at yesterday UTC, matching npm&rsquo;s official reporting window. No time zone confusion.
               </p>
               <div className="rounded-lg bg-[var(--background)] p-3 font-mono text-xs text-[var(--foreground-secondary)]">
-                <div className="border-b border-[var(--border)] pb-1">
-                  <span>2025-01-25 (UTC)</span>
+                <div className="text-[10px] uppercase tracking-widest text-[var(--foreground-tertiary)]">
+                  Example row (format)
                 </div>
-                <div className="mt-1 text-[var(--foreground)]">Downloads: 143,291</div>
-                <div>Delta: +2,103 ↑</div>
+                <div className="mt-2 border-b border-[var(--border)] pb-1">
+                  <span>{exampleRange.endDate} (UTC)</span>
+                </div>
+                <div className="mt-1 text-[var(--foreground)]">Downloads: 123,456</div>
+                <div>Delta: +1,234</div>
               </div>
             </div>
 
@@ -162,15 +186,14 @@ export default async function Home() {
                 CSV/JSON with traceable metadata (cache status, generated_at, request_id) embedded in the file header. Filenames include the UTC date range.
               </p>
               <div className="rounded-lg bg-[var(--background)] p-3 font-mono text-xs text-[var(--foreground-secondary)]">
-                <div className="text-[var(--accent)]">npmtraffic__react__30d__2025-01-01-2025-01-25__utc.csv</div>
-                <div className="mt-2 text-[var(--foreground)]"># Header metadata:</div>
-                <div># from=2025-01-01</div>
-                <div># to=2025-01-25</div>
-                <div># timezone=UTC</div>
-                <div># generated_at=2025-01-26T03:14:22Z</div>
-                <div># cache_status=HIT</div>
-                <div># is_stale=false</div>
-                <div># request_id=&lt;uuid&gt;</div>
+                <div className="text-[10px] uppercase tracking-widest text-[var(--foreground-tertiary)]">
+                  Example output (format)
+                </div>
+                <div className="mt-2 text-[var(--accent)]">{exportFilename}</div>
+                <div className="mt-2 text-[var(--foreground)]">Header metadata</div>
+                {exportHeaderLines.map((line) => (
+                  <div key={line}>{line}</div>
+                ))}
               </div>
             </div>
 
