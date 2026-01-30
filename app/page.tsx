@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getBaseUrl();
   const ogImage = `${baseUrl}/og.png`;
+  const fallbackOgImage = `${baseUrl}/og-fallback.png`;
 
   return {
     title: "npmtraffic",
@@ -29,6 +30,12 @@ export async function generateMetadata(): Promise<Metadata> {
         width: 1200,
         height: 630,
         type: "image/png",
+      }, {
+        url: fallbackOgImage,
+        alt: "npmtraffic",
+        width: 1200,
+        height: 630,
+        type: "image/png",
       }],
     },
     twitter: {
@@ -39,6 +46,9 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [{
         url: ogImage,
         alt: "npmtraffic - Daily npm download analytics",
+      }, {
+        url: fallbackOgImage,
+        alt: "npmtraffic",
       }],
     },
   };

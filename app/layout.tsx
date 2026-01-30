@@ -24,11 +24,17 @@ export const metadata: Metadata = {
         height: 630,
         alt: "npmtraffic logo",
       },
+      {
+        url: `${config.site.url}/og-fallback.png`,
+        width: 1200,
+        height: 630,
+        alt: "npmtraffic",
+      },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/og.png"],
+    images: ["/og.png", "/og-fallback.png"],
     title: config.site.name,
     description: config.site.tagline,
   },

@@ -26,6 +26,7 @@ const ideas = [
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getBaseUrl();
   const ogImage = `${baseUrl}/og.png`;
+  const fallbackOgImage = `${baseUrl}/og-fallback.png`;
   return {
     title: "Roadmap | npmtraffic",
     description: "Roadmap for npmtraffic features and infrastructure.",
@@ -36,12 +37,19 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "Roadmap | npmtraffic",
       description: "Roadmap for npmtraffic features and infrastructure.",
       url: `${baseUrl}/roadmap`,
-      images: [{ url: ogImage, alt: "npmtraffic roadmap" }],
+      images: [
+        { url: ogImage, alt: "npmtraffic roadmap" },
+        { url: fallbackOgImage, alt: "npmtraffic" },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: "Roadmap | npmtraffic",
       description: "Roadmap for npmtraffic features and infrastructure.",
+      images: [
+        { url: ogImage, alt: "npmtraffic roadmap" },
+        { url: fallbackOgImage, alt: "npmtraffic" },
+      ],
     },
   };
 }

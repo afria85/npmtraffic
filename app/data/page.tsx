@@ -5,6 +5,7 @@ import { getBaseUrl } from "@/lib/base-url";
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getBaseUrl();
   const ogImage = `${baseUrl}/og.png`;
+  const fallbackOgImage = `${baseUrl}/og-fallback.png`;
   return {
     title: "Data | npmtraffic",
     description: "How npmtraffic sources and caches npm download data.",
@@ -15,12 +16,19 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "Data | npmtraffic",
       description: "How npmtraffic sources and caches npm download data.",
       url: `${baseUrl}/data`,
-      images: [{ url: ogImage, alt: "npmtraffic data" }],
+      images: [
+        { url: ogImage, alt: "npmtraffic data" },
+        { url: fallbackOgImage, alt: "npmtraffic" },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: "Data | npmtraffic",
       description: "How npmtraffic sources and caches npm download data.",
+      images: [
+        { url: ogImage, alt: "npmtraffic data" },
+        { url: fallbackOgImage, alt: "npmtraffic" },
+      ],
     },
   };
 }

@@ -7,6 +7,7 @@ const CACHE_TTL_SUMMARY = "Cache TTL: <=30d ranges refresh every 15m; longer win
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getBaseUrl();
   const ogImage = `${baseUrl}/og.png`;
+  const fallbackOgImage = `${baseUrl}/og-fallback.png`;
   return {
     title: "Status | npmtraffic",
     description: "Operational status and recent health for npmtraffic.",
@@ -17,12 +18,19 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "Status | npmtraffic",
       description: "Operational status and recent health for npmtraffic.",
       url: `${baseUrl}/status`,
-      images: [{ url: ogImage, alt: "npmtraffic status" }],
+      images: [
+        { url: ogImage, alt: "npmtraffic status" },
+        { url: fallbackOgImage, alt: "npmtraffic" },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: "Status | npmtraffic",
       description: "Operational status and recent health for npmtraffic.",
+      images: [
+        { url: ogImage, alt: "npmtraffic status" },
+        { url: fallbackOgImage, alt: "npmtraffic" },
+      ],
     },
   };
 }
