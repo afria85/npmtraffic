@@ -75,3 +75,8 @@ export async function GET(request: NextRequest) {
 
   return new Response(buf, { status: 200, headers });
 }
+
+export async function HEAD(request: NextRequest) {
+  const res = await GET(request);
+  return new Response(null, { status: res.status, headers: res.headers });
+}

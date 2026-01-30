@@ -22,6 +22,7 @@ import {
 } from "@/components/compare/compare-classes";
 import ScrollHintContainer from "@/components/ScrollHintContainer";
 import CompareUrlSync from "@/components/compare/CompareUrlSync";
+import { encodePkg } from "@/lib/og-encode";
 
 type Props = {
   searchParams?: Promise<{ packages?: string; pkgs?: string; days?: string }>;
@@ -73,8 +74,9 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const canonical = buildCompareCanonical(baseUrl, pkgs, days);
   const title = `Compare npm downloads (${days} days) | npmtraffic`;
   const description = `Compare npm download history for ${pkgs.join(", ")}.`;
-  const ogPkgs = pkgs.map((p) => encodeURIComponent(p)).join(',');
-  const ogImage = `${baseUrl}/og.png?type=compare&pkgs=${ogPkgs}&days=${days}`;
+  const encodedPkgs = encodePkg(pkgs.join(","));
+  const ogImage = `${baseUrl}/og/compare/${encodedPkgs}/${days}.png`;
+  const fallbackOgImage = `${baseUrl}/og-fallback.png`;
 
   return {
     title,
@@ -86,23 +88,38 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       title,
       description,
       url: canonical,
-      images: [{ 
-        url: ogImage, 
-        alt: `Compare npm downloads: ${pkgs.join(" vs ")}`,
-        width: 1200,
-        height: 630,
-        type: "image/png",
-      }],
+      images: [
+        {
+          url: ogImage,
+          alt: `Compare npm downloads: ${pkgs.join(" vs ")}`,
+          width: 1200,
+          height: 630,
+          type: "image/png",
+        },
+        {
+          url: fallbackOgImage,
+          alt: "npmtraffic",
+          width: 1200,
+          height: 630,
+          type: "image/png",
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       site: "@npmtraffic",
       title,
       description,
-      images: [{
-        url: ogImage,
-        alt: `Compare npm downloads: ${pkgs.join(" vs ")}`,
-      }],
+      images: [
+        {
+          url: ogImage,
+          alt: `Compare npm downloads: ${pkgs.join(" vs ")}`,
+        },
+        {
+          url: fallbackOgImage,
+          alt: "npmtraffic",
+        },
+      ],
     },
   };
 }
