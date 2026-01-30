@@ -5,6 +5,7 @@ import { assertValidPackageName, normalizePackageInput } from "@/lib/package-nam
 import { config } from "@/lib/config";
 import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
+import { USER_AGENT } from "@/lib/version";
 
 async function fetchPackageExists(name: string) {
   const controller = new AbortController();
@@ -17,7 +18,7 @@ async function fetchPackageExists(name: string) {
       method: "GET",
       headers: {
         accept: "application/json",
-        "user-agent": "npmtraffic/0.2.6 (https://npmtraffic.com)",
+        "user-agent": USER_AGENT,
       },
       signal: controller.signal,
     });
