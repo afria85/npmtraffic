@@ -1,5 +1,4 @@
 /* eslint-disable @next/next/no-img-element */
-import { ImageResponse } from "next/og";
 import type { ReactNode } from "react";
 
 const WIDTH = 1200;
@@ -545,7 +544,7 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
   );
 }
 
-export function buildOgImageResponse(options: OgImageOptions) {
+export async function buildOgImageResponse(options: OgImageOptions) {
   const element =
     options.mode === "home"
       ? createHomeLayout(options.logoSrc)
@@ -553,6 +552,7 @@ export function buildOgImageResponse(options: OgImageOptions) {
         ? createCompareLayout(options.pkgs, options.days, options.stats, options.logoSrc)
         : createPackageLayout(options.pkg, options.days, options.stats, options.logoSrc);
 
+  const { ImageResponse } = await import("next/og");
   return new ImageResponse(element, {
     width: WIDTH,
     height: HEIGHT,

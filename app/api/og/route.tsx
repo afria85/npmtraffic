@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
     // If nothing is specified, treat it as the homepage OG.
     if (!modeParam && !hasPkgishParam) {
       const logoSrc = await loadOgLogoDataUrl(url.origin);
-      return bufferImageResponse(buildOgImageResponse({ mode: "home", logoSrc }));
+      return bufferImageResponse(await buildOgImageResponse({ mode: "home", logoSrc }));
     }
 
     const mode: Exclude<OgMode, "home"> = requestedMode === "compare" ? "compare" : "pkg";
@@ -245,13 +245,13 @@ export async function GET(request: NextRequest) {
     if (mode === "compare") {
       const compareStats = normalizeCompareStats(rawCompare) ?? normalizeCompareStats(stats);
       return bufferImageResponse(
-        buildOgImageResponse({ mode: "compare", days, pkgs: packages, logoSrc, stats: compareStats })
+        await buildOgImageResponse({ mode: "compare", days, pkgs: packages, logoSrc, stats: compareStats })
       );
     }
 
     const pkgName = packages[0] || pkg;
     const pkgStats = stats && !("packages" in stats) ? (stats as OgPkgStats) : undefined;
-    return bufferImageResponse(buildOgImageResponse({ mode: "pkg", days, pkg: pkgName, logoSrc, stats: pkgStats }));
+    return bufferImageResponse(await buildOgImageResponse({ mode: "pkg", days, pkg: pkgName, logoSrc, stats: pkgStats }));
   } catch (error) {
     console.error("OG render failed", error);
     const url = new URL(request.url);
