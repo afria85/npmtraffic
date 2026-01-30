@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 const WIDTH = 1200;
 const HEIGHT = 630;
@@ -115,12 +115,14 @@ function StatCell({
   sub,
   accent,
   children,
+  valueStyle,
 }: {
   label: string;
   value: string;
   sub?: string;
   accent?: string;
   children?: ReactNode;
+  valueStyle?: CSSProperties;
 }) {
   return (
     <div
@@ -148,6 +150,7 @@ function StatCell({
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            ...valueStyle,
           }}
         >
           {value}
@@ -289,10 +292,11 @@ function createHomeLayout(logoSrc?: string) {
               lineHeight: 0.98,
               display: "flex",
               alignItems: "baseline",
+              gap: 8,
             }}
           >
             <span style={{ color: ACCENT }}>npm</span>
-            <span> download analytics.</span>
+            <span>download analytics.</span>
           </div>
           <div style={{ color: ACCENT, fontSize: 60, fontWeight: 950, letterSpacing: -2.2, lineHeight: 0.98 }}>
             Daily data, full metadata.
@@ -381,14 +385,19 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats, logoSr
         <div style={{ marginTop: 24, display: "flex", gap: 14 }}>
           <StatCell label="Total downloads" value={formatNumber(stats?.total ?? NaN)} sub="sum over range" />
           <StatCell label="Vs previous period" value={pctText} sub={pctSub} accent={pctAccent} />
-          <StatCell label="Date range" value={rangeText} sub="UTC" />
+          <StatCell
+            label="Date range"
+            value={rangeText}
+            sub="UTC"
+            valueStyle={{ fontSize: 32, letterSpacing: -1.1 }}
+          />
           <StatCell
             label="Trend"
             value={`${trendArrow} ${trendText}`}
             sub={spark ? "daily downloads" : "sparkline unavailable"}
             accent={pctIsValid ? (pct >= 0 ? SUCCESS : DANGER) : FG}
           >
-            {spark ? <Sparkline values={spark} w={240} h={64} /> : null}
+            {spark ? <Sparkline values={spark} w={200} h={58} /> : null}
           </StatCell>
         </div>
       </div>
@@ -415,44 +424,44 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
         width: "100%",
         height: "100%",
         background: BG,
-        padding: 56,
+        padding: 48,
         justifyContent: "space-between",
       }}
     >
       {createHeader({ mode: "compare", days }, logoSrc)}
 
-      <div
-        style={{
-          marginTop: 28,
-          flex: 1,
-          borderRadius: 24,
-          border: `1px solid ${BORDER}`,
-          background: BG_CARD,
-          padding: 32,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+        <div
+          style={{
+            marginTop: 20,
+            flex: 1,
+            borderRadius: 24,
+            border: `1px solid ${BORDER}`,
+            background: BG_CARD,
+            padding: 26,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ color: MUTED, fontSize: 16, letterSpacing: 3, textTransform: "uppercase" }}>Compare</div>
-            <div style={{ marginTop: 10, color: FG, fontSize: 52, fontWeight: 950, letterSpacing: -1.8 }}>Daily downloads</div>
+            <div style={{ marginTop: 8, color: FG, fontSize: 46, fontWeight: 950, letterSpacing: -1.6 }}>Daily downloads</div>
           </div>
           {dateLabel ? <div style={{ color: MUTED, fontSize: 16 }}>{dateLabel}</div> : null}
         </div>
 
         {/* Tab-style package pills (share-preview friendly) */}
-        <div style={{ marginTop: 18, display: "flex", flexWrap: "wrap", gap: 10 }}>
+        <div style={{ marginTop: 14, display: "flex", flexWrap: "wrap", gap: 10 }}>
           {tabs.map((pkg, i) => (
             <div
               key={pkg}
               style={{
-                padding: "10px 16px",
+                padding: "8px 14px",
                 borderRadius: 999,
                 border: `1px solid ${i === 0 ? CHART_COLORS[0] : BORDER}`,
                 background: i === 0 ? `${CHART_COLORS[0]}1f` : "rgba(255,255,255,0.03)",
                 color: i === 0 ? CHART_COLORS[0] : FG,
-                fontSize: 22,
+                fontSize: 20,
                 fontWeight: 800,
                 maxWidth: 320,
                 overflow: "hidden",
@@ -469,8 +478,8 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
         {hasStats ? (
           <div
             style={{
-              marginTop: 22,
-              paddingTop: 22,
+              marginTop: 16,
+              paddingTop: 16,
               borderTop: `1px solid ${BORDER}`,
               display: "flex",
               gap: 14,
@@ -481,7 +490,7 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
                 key={pkg.name}
                 style={{
                   flex: 1,
-                  padding: "18px 18px",
+                  padding: "16px 16px",
                   borderRadius: 18,
                   border: `1px solid ${BORDER}`,
                   background: "rgba(255,255,255,0.02)",
@@ -504,11 +513,11 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
                 >
                   {clampText(pkg.name, 26)}
                 </div>
-                <div style={{ marginTop: 10, color: FG, fontSize: 44, fontWeight: 950, letterSpacing: -1.6 }}>
+                <div style={{ marginTop: 8, color: FG, fontSize: 40, fontWeight: 950, letterSpacing: -1.5 }}>
                   {formatNumber(pkg.total)}
                 </div>
-                <div style={{ marginTop: 10, color: MUTED, fontSize: 16 }}>total downloads</div>
-                <div style={{ marginTop: 10, color: CHART_COLORS[i % CHART_COLORS.length], fontSize: 16, fontWeight: 800 }}>
+                <div style={{ marginTop: 8, color: MUTED, fontSize: 16 }}>total downloads</div>
+                <div style={{ marginTop: 8, color: CHART_COLORS[i % CHART_COLORS.length], fontSize: 16, fontWeight: 800 }}>
                   {`${pkg.share.toFixed(1)}% share`}
                 </div>
               </div>
@@ -519,7 +528,7 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
                 key="_more"
                 style={{
                   flex: 1,
-                  padding: "18px 18px",
+                  padding: "16px 16px",
                   borderRadius: 18,
                   border: `1px solid ${BORDER}`,
                   background: "rgba(255,255,255,0.02)",
@@ -533,11 +542,11 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
                 <div style={{ color: MUTED, fontSize: 14, letterSpacing: 2.0, textTransform: "uppercase" }}>
                   also compared
                 </div>
-                <div style={{ marginTop: 10, color: FG, fontSize: 56, fontWeight: 950, letterSpacing: -2.0 }}>
+                <div style={{ marginTop: 8, color: FG, fontSize: 50, fontWeight: 950, letterSpacing: -1.8 }}>
                   {`+${stats.packages.length - 3}`}
                 </div>
-                <div style={{ marginTop: 10, color: MUTED, fontSize: 18 }}>more packages</div>
-                <div style={{ marginTop: 10, color: ACCENT, fontSize: 16, fontWeight: 800 }}>up to 5 total</div>
+                <div style={{ marginTop: 8, color: MUTED, fontSize: 18 }}>more packages</div>
+                <div style={{ marginTop: 8, color: ACCENT, fontSize: 16, fontWeight: 800 }}>up to 5 total</div>
               </div>
             )}
           </div>

@@ -417,25 +417,25 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
           </div>
         </div>
         {statusContent ? <div className="px-4 py-3">{statusContent}</div> : null}
-        <ScrollHintContainer className="max-h-[60vh] overflow-auto">
+        <ScrollHintContainer className="max-h-[60vh] overflow-auto pt-px">
           <table
-            className={`w-full text-sm ${showDerived ? "min-w-[760px] md:min-w-0 table-auto md:table-fixed" : "table-fixed"}`}
+            className={`w-full text-sm ${showDerived ? "min-w-[700px] md:min-w-0 table-auto md:table-fixed" : "table-fixed"}`}
           >
             <colgroup>
               {/* Date */}
-              <col className={showDerived ? "w-[86px] sm:w-[140px] md:w-[104px]" : "w-[34%] sm:w-[140px]"} />
+              <col className={showDerived ? "w-[74px] sm:w-[120px] md:w-[96px]" : "w-[34%] sm:w-[140px]"} />
               {/* Downloads */}
-              <col className={showDerived ? "w-[86px] sm:w-[160px] md:w-[120px]" : "w-[33%] sm:w-[160px]"} />
+              <col className={showDerived ? "w-[88px] sm:w-[150px] md:w-[110px]" : "w-[33%] sm:w-[160px]"} />
               {/* Delta */}
-              <col className={showDerived ? "w-[86px] sm:w-[180px] md:w-[132px]" : "w-[33%] sm:w-[180px]"} />
+              <col className={showDerived ? "w-[88px] sm:w-[170px] md:w-[120px]" : "w-[33%] sm:w-[180px]"} />
               {showDerived ? (
                 <>
                   {/* MA 3 */}
-                  <col className="w-[86px] md:w-[72px]" />
+                  <col className="w-[90px] md:w-[86px]" />
                   {/* MA 7 */}
-                  <col className="w-[86px] md:w-[72px]" />
+                  <col className="w-[90px] md:w-[86px]" />
                   {/* Outlier */}
-                  <col className="w-[80px] md:w-[68px]" />
+                  <col className="w-[70px] md:w-[70px]" />
                   {/* Score */}
                   <col className="w-[60px]" />
                 </>
@@ -464,12 +464,12 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                     &Delta; vs prev day
                   </th>
                   {showDerived ? (
-                    <th className="px-2 py-2 text-right font-semibold whitespace-nowrap sm:px-3" title="3-day moving average">
+                    <th className="px-2 py-2 text-right font-semibold whitespace-nowrap sm:px-4" title="3-day moving average">
                       MA 3
                     </th>
                   ) : null}
                   {showDerived ? (
-                    <th className="px-2 py-2 text-right font-semibold whitespace-nowrap sm:px-3" title="7-day moving average">
+                    <th className="px-2 py-2 text-right font-semibold whitespace-nowrap sm:px-4" title="7-day moving average">
                       MA 7
                     </th>
                   ) : null}
@@ -513,10 +513,10 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                         <SignedValue value={delta} showArrow emphasis="primary" />
                       </td>
                       {showDerived ? (
-                        <td className="px-2 py-2 text-right font-mono tabular-nums whitespace-nowrap sm:px-3">{formatDerived(ma3)}</td>
+                        <td className="px-2 py-2 text-right font-mono tabular-nums whitespace-nowrap sm:px-4">{formatDerived(ma3)}</td>
                       ) : null}
                       {showDerived ? (
-                        <td className="px-2 py-2 text-right font-mono tabular-nums whitespace-nowrap sm:px-3">{formatDerived(ma7)}</td>
+                        <td className="px-2 py-2 text-right font-mono tabular-nums whitespace-nowrap sm:px-4">{formatDerived(ma7)}</td>
                       ) : null}
                       {showDerived ? (
                         <td className="px-2 py-2 text-center whitespace-nowrap sm:px-3">
