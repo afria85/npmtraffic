@@ -2,7 +2,7 @@ import { buildOgImageResponse } from "@/lib/og-image";
 import { loadOgLogoDataUrl } from "@/lib/og-logo";
 import type { NextRequest } from "next/server";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 type OgMode = "home" | "pkg" | "compare";
 
