@@ -8,7 +8,7 @@ import { groupEventsByDate, loadEvents } from "@/lib/events";
 import ActionMenu from "@/components/ui/ActionMenu";
 import { IconChevronDown } from "@/components/ui/icons";
 import { computeLeftPad } from "@/components/charts/axis-padding";
-import { buildMonthTicks } from "@/components/charts/time-ticks";
+import { buildMonthTicks, adjustMonthTicksForOverlap } from "@/components/charts/time-ticks";
 function MetricCheckbox({
   label,
   checked,
@@ -458,8 +458,9 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
 
   const xTicks = useMemo(() => {
     const maxTicks = isMobile ? 4 : 6;
-    return buildMonthTicks(series.map((row) => row.date), maxTicks, "first-or-change", isMobile);
-  }, [isMobile, series]);
+    const raw = buildMonthTicks(series.map((row) => row.date), maxTicks, "first-or-change", isMobile);
+    return adjustMonthTicksForOverlap(raw, { seriesLength: series.length, innerW, axisFontSize });
+  }, [axisFontSize, innerW, isMobile, series]);
 
   const hovered = hoverIndex == null ? null : series[hoverIndex];
   const hoverPoint = hoverIndex == null ? null : downloadsPoints[hoverIndex] ?? null;

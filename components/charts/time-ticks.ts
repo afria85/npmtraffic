@@ -193,3 +193,117 @@ export function buildMonthTicks(
     })
     .filter((t): t is MonthTick => Boolean(t));
 }
+
+
+function parseMonthYearLabel(label: string): { month: string; year: string } | null {
+  const m = /^([A-Za-z]{3})\s+(\d{4})$/.exec(label.trim());
+  if (m) return { month: m[1]!, year: m[2]! };
+
+  const m2 = /^([A-Za-z]{3})\s+[’'](\d{2})$/.exec(label.trim());
+  if (m2) return { month: m2[1]!, year: `20${m2[2]!}` };
+
+  return null;
+}
+
+function compactYearLabel(label: string): string {
+  const parsed = parseMonthYearLabel(label);
+  if (!parsed) return label;
+  const yy = parsed.year.slice(-2);
+  return `${parsed.month} ’${yy}`;
+}
+
+function dropYear(label: string): string {
+  const parsed = parseMonthYearLabel(label);
+  if (!parsed) return label;
+  return parsed.month;
+}
+
+function estimateTextWidth(label: string, fontSize: number): number {
+  // Heuristic width estimate in SVG user units:
+  // average glyph width ~0.56em for typical UI sans fonts.
+  return label.length * fontSize * 0.56;
+}
+
+function anchorExtents(width: number, anchor: "start" | "middle" | "end") {
+  if (anchor === "start") return { left: 0, right: width };
+  if (anchor === "end") return { left: width, right: 0 };
+  return { left: width / 2, right: width / 2 };
+}
+
+function overlaps(a: { x: number; w: number; anchor: "start" | "middle" | "end" }, b: { x: number; w: number; anchor: "start" | "middle" | "end" }, padding: number) {
+  const ea = anchorExtents(a.w, a.anchor);
+  const eb = anchorExtents(b.w, b.anchor);
+  return a.x + ea.right + padding > b.x - eb.left;
+}
+
+/**
+ * Adjust x-axis month tick labels to avoid obvious overlaps.
+ *
+ * Strategy (in order):
+ * 1) Compact any "Mon YYYY" label -> "Mon ’YY"
+ * 2) If still overlapping, drop the year on the left label (e.g., "Dec" vs "Jan ’26")
+ * 3) As a last resort, blank a non-edge label.
+ *
+ * This is intentionally heuristic (no DOM measurement) but works well with the
+ * fixed-viewBox SVG charts used in npmtraffic.
+ */
+export function adjustMonthTicksForOverlap(
+  ticks: MonthTick[],
+  opts: { seriesLength: number; innerW: number; axisFontSize: number; padding?: number },
+): MonthTick[] {
+  const { seriesLength, innerW, axisFontSize } = opts;
+  const padding = opts.padding ?? 8;
+
+  if (ticks.length < 2 || seriesLength <= 1 || innerW <= 0) return ticks;
+
+  // Clone to avoid mutating callers.
+  const out = ticks.map((t) => ({ ...t }));
+
+  const getX = (index: number) => innerW * (out[index]!.index / (seriesLength - 1));
+  const getAnchor = (index: number): "start" | "middle" | "end" =>
+    index === 0 ? "start" : index === out.length - 1 ? "end" : "middle";
+
+  const widthAt = (index: number) => estimateTextWidth(out[index]!.label ?? "", axisFontSize);
+
+  for (let i = 0; i < out.length - 1; i++) {
+    // Skip if either label is already blank.
+    if (!out[i]!.label || !out[i + 1]!.label) continue;
+
+    const a = { x: getX(i), w: widthAt(i), anchor: getAnchor(i) };
+    const b = { x: getX(i + 1), w: widthAt(i + 1), anchor: getAnchor(i + 1) };
+
+    if (!overlaps(a, b, padding)) continue;
+
+    // 1) Compact both labels (if they have years).
+    out[i]!.label = compactYearLabel(out[i]!.label);
+    out[i + 1]!.label = compactYearLabel(out[i + 1]!.label);
+
+    const a1 = { x: a.x, w: widthAt(i), anchor: a.anchor };
+    const b1 = { x: b.x, w: widthAt(i + 1), anchor: b.anchor };
+    if (!overlaps(a1, b1, padding)) continue;
+
+    // 2) Drop year on the left label (prefer keeping context on the right).
+    out[i]!.label = dropYear(out[i]!.label);
+
+    const a2 = { x: a.x, w: widthAt(i), anchor: a.anchor };
+    const b2 = { x: b.x, w: widthAt(i + 1), anchor: b.anchor };
+    if (!overlaps(a2, b2, padding)) continue;
+
+    // 3) Last resort: blank the less-informative label.
+    // - If the overlap happens right at the left edge, keep the later tick and blank the first label.
+    // - Otherwise, prefer blanking a non-edge label to preserve context on the extremes.
+    if (i === 0 && out.length >= 3) {
+      out[i]!.label = "";
+      continue;
+    }
+    if (i !== 0 && i !== out.length - 1) {
+      out[i]!.label = "";
+      continue;
+    }
+    if (i + 1 !== 0 && i + 1 !== out.length - 1) {
+      out[i + 1]!.label = "";
+    }
+  }
+
+  return out;
+}

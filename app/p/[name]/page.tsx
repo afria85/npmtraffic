@@ -13,7 +13,6 @@ import { buildExportFilename } from "@/lib/export-filename";
 import EventsPanel from "@/components/events/EventsPanel";
 import TrafficChart from "@/components/package/TrafficChartClient";
 import RetryButton from "@/components/ui/RetryButton";
-import { encodePkg } from "@/lib/og-encode";
 import { getPackageGithubRepo } from "@/lib/npm-repo";
 
 type Props = {
@@ -84,7 +83,7 @@ export async function generateMetadata({
   const description = `Daily npm download history for ${name} in a GitHub-style table`;
   // Some scrapers (notably WhatsApp) are more reliable when og:image URLs end with an image extension.
   // The /og/p route supports both "{days}" and "{days}.png".
-  const ogImage = `${baseUrl}/og.png?type=package&pkg=${encodePkg(name)}&days=${days}`;
+  const ogImage = `${baseUrl}/og.png?type=package&pkg=${encodeURIComponent(name)}&days=${days}`;
   const fallbackOgImage = `${baseUrl}/og.png`;
 
   return {

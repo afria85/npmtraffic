@@ -5,7 +5,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import ActionMenu from "@/components/ui/ActionMenu";
 import { IconChevronDown } from "@/components/ui/icons";
 import { computeLeftPad } from "@/components/charts/axis-padding";
-import { buildMonthTicks } from "@/components/charts/time-ticks";
+import { buildMonthTicks, adjustMonthTicksForOverlap } from "@/components/charts/time-ticks";
 
 const CHART_BUTTON_CLASSES = "inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold leading-none text-[var(--foreground)] transition-colors hover:bg-[var(--surface-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]";
 
@@ -360,8 +360,9 @@ export default function CompareChart({ series, packageNames, days }: Props) {
 
   const xTicks = useMemo(() => {
     const maxTicks = isMobile ? 4 : 6;
-    return buildMonthTicks(series.map((row) => row.date), maxTicks, "first-or-change", isMobile);
-  }, [isMobile, series]);
+    const raw = buildMonthTicks(series.map((row) => row.date), maxTicks, "first-or-change", isMobile);
+    return adjustMonthTicksForOverlap(raw, { seriesLength: series.length, innerW, axisFontSize });
+  }, [axisFontSize, innerW, isMobile, series]);
 
   const hovered = hoverIndex == null ? null : series[hoverIndex];
 
