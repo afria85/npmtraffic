@@ -1,5 +1,8 @@
 import { buildOgImageResponse } from "@/lib/og-image";
 import { loadOgLogoDataUrl } from "@/lib/og-logo";
+import { fetchDailyDownloadsRange } from "@/lib/npm-client";
+import { canonicalizePackages, parsePackageList } from "@/lib/query";
+import { toYYYYMMDD } from "@/lib/dates";
 import type { NextRequest } from "next/server";
 
 export const runtime = "edge";
@@ -9,7 +12,7 @@ type OgMode = "home" | "pkg" | "compare";
 type OgDateRange = { start: string; end: string };
 type OgPkgStats = {
   total: number;
-  percentChange: number;
+  percentChange: number | null;
   dateRange: OgDateRange;
   sparkline?: number[];
 };
@@ -43,6 +46,8 @@ function pickTotal(data: unknown): number | null {
   if (typeof direct === "number" && Number.isFinite(direct)) return direct;
   const totals = data.totals;
   if (isRecord(totals)) {
+    const sum = totals.sum;
+    if (typeof sum === "number" && Number.isFinite(sum)) return sum;
     const downloads = totals.downloads;
     if (typeof downloads === "number" && Number.isFinite(downloads)) return downloads;
   }
@@ -72,8 +77,8 @@ function pickDateRange(data: unknown): { start: string; end: string } | null {
   const candidates = [data.dateRange, data.range, data.window];
   for (const c of candidates) {
     if (!isRecord(c)) continue;
-    const start = c.start;
-    const end = c.end;
+    const start = c.start ?? c.startDate;
+    const end = c.end ?? c.endDate;
     if (typeof start === "string" && typeof end === "string" && start && end) {
       return { start, end };
     }
@@ -100,6 +105,33 @@ function pickDateRange(data: unknown): { start: string; end: string } | null {
 function safeInt(value: string | null, fallback: number): number {
   const n = value ? Number.parseInt(value, 10) : NaN;
   return Number.isFinite(n) ? n : fallback;
+}
+
+function parseIsoDate(value: string): Date | null {
+  const [year, month, day] = value.split("-").map((segment) => Number(segment));
+  if (!year || !month || !day) return null;
+  const d = new Date(Date.UTC(year, month - 1, day));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function addDaysUtc(isoDate: string, deltaDays: number): string | null {
+  const base = parseIsoDate(isoDate);
+  if (!base) return null;
+  base.setUTCDate(base.getUTCDate() + deltaDays);
+  return toYYYYMMDD(base);
+}
+
+function sumDownloads(rows: Array<{ downloads?: number | null }> | null): number {
+  if (!rows || rows.length === 0) return 0;
+  return rows.reduce((acc, row) => acc + (typeof row.downloads === "number" ? row.downloads : 0), 0);
+}
+
+async function computePreviousPeriodTotal(pkg: string, startDate: string, days: number): Promise<number | null> {
+  const prevEnd = addDaysUtc(startDate, -1);
+  const prevStart = addDaysUtc(startDate, -days);
+  if (!prevEnd || !prevStart) return null;
+  const prev = await fetchDailyDownloadsRange(pkg, { start: prevStart, end: prevEnd });
+  return sumDownloads(prev.downloads);
 }
 
 async function bufferImageResponse(resp: Response) {
@@ -133,7 +165,7 @@ export async function GET(request: NextRequest) {
     // Accept a few aliases so callers can be flexible.
     // - pkg/name: single package name OR comma-separated list for compare
     // - pkgs/packages: compare list alias
-    const pkg =
+    const pkgParam =
       url.searchParams.get("pkg") ||
       url.searchParams.get("name") ||
       url.searchParams.get("pkgs") ||
@@ -141,7 +173,9 @@ export async function GET(request: NextRequest) {
       "react";
     const days = safeInt(url.searchParams.get("days"), 30);
 
-    const packages = pkg.split(",").map((s) => s.trim()).filter(Boolean);
+    const parsedPackages = parsePackageList(pkgParam);
+    const packages =
+      mode === "compare" ? canonicalizePackages(parsedPackages) : parsedPackages.length ? parsedPackages : ["react"];
 
     // Prefer your actual logo from public/icon.png.
     const logoSrc = await loadOgLogoDataUrl(url.origin);
@@ -155,7 +189,7 @@ export async function GET(request: NextRequest) {
       if (mode === "compare") {
         const compareUrl = new URL("/api/v1/compare", url.origin);
         // The backend logs use `package=...` (comma-separated). Keep aliases compatible.
-        compareUrl.searchParams.set("package", packages.join(","));
+        compareUrl.searchParams.set("packages", packages.join(","));
         compareUrl.searchParams.set("days", String(days));
         const resp = await fetch(compareUrl.toString(), { cache: "no-store" });
         const json = (await resp.json()) as unknown;
@@ -164,8 +198,14 @@ export async function GET(request: NextRequest) {
         const dateRange = pickDateRange(json);
         const total = pickTotal(json);
         const percentChange = pickPercentChange(json);
-        if (dateRange && typeof total === "number" && typeof percentChange === "number") {
-          stats = { packages, total, percentChange, dateRange, sparkline: pickSparkline(json) ?? undefined };
+        if (dateRange && typeof total === "number") {
+          stats = {
+            packages,
+            total,
+            percentChange: typeof percentChange === "number" ? percentChange : null,
+            dateRange,
+            sparkline: pickSparkline(json) ?? undefined,
+          };
         }
       } else {
         const name = packages[0] || "react";
@@ -175,12 +215,24 @@ export async function GET(request: NextRequest) {
         const json = (await resp.json()) as unknown;
         const dateRange = pickDateRange(json);
         const total = pickTotal(json);
-        const percentChange = pickPercentChange(json);
+        let percentChange = pickPercentChange(json);
+        if (typeof percentChange !== "number" && dateRange && typeof total === "number") {
+          try {
+            const prevTotal = await computePreviousPeriodTotal(name, dateRange.start, days);
+            if (typeof prevTotal === "number" && prevTotal > 0) {
+              percentChange = ((total - prevTotal) / prevTotal) * 100;
+            } else {
+              percentChange = null;
+            }
+          } catch {
+            percentChange = null;
+          }
+        }
 
-        if (dateRange && typeof total === "number" && typeof percentChange === "number") {
+        if (dateRange && typeof total === "number") {
           stats = {
             total,
-            percentChange,
+            percentChange: typeof percentChange === "number" ? percentChange : null,
             dateRange,
             sparkline: pickSparkline(json) ?? undefined,
           };
@@ -219,7 +271,7 @@ export async function GET(request: NextRequest) {
         })
         .filter((p): p is ComparePkgStats => Boolean(p && p.name));
 
-      const dr = r["dateRange"];
+      const dr = r["dateRange"] ?? r["range"];
       let start = "";
       let end = "";
       if (dr && typeof dr === "object") {
@@ -227,15 +279,19 @@ export async function GET(request: NextRequest) {
         start =
           typeof drr["start"] === "string"
             ? (drr["start"] as string)
-            : typeof drr["from"] === "string"
-              ? (drr["from"] as string)
-              : "";
+            : typeof drr["startDate"] === "string"
+              ? (drr["startDate"] as string)
+              : typeof drr["from"] === "string"
+                ? (drr["from"] as string)
+                : "";
         end =
           typeof drr["end"] === "string"
             ? (drr["end"] as string)
-            : typeof drr["to"] === "string"
-              ? (drr["to"] as string)
-              : "";
+            : typeof drr["endDate"] === "string"
+              ? (drr["endDate"] as string)
+              : typeof drr["to"] === "string"
+                ? (drr["to"] as string)
+                : "";
       }
 
       if (!packages.length) return undefined;
@@ -244,12 +300,13 @@ export async function GET(request: NextRequest) {
 
     if (mode === "compare") {
       const compareStats = normalizeCompareStats(rawCompare) ?? normalizeCompareStats(stats);
+      const comparePkgs = compareStats?.packages.map((pkg) => pkg.name) ?? packages;
       return bufferImageResponse(
-        await buildOgImageResponse({ mode: "compare", days, pkgs: packages, logoSrc, stats: compareStats })
+        await buildOgImageResponse({ mode: "compare", days, pkgs: comparePkgs, logoSrc, stats: compareStats })
       );
     }
 
-    const pkgName = packages[0] || pkg;
+    const pkgName = packages[0] || pkgParam;
     const pkgStats = stats && !("packages" in stats) ? (stats as OgPkgStats) : undefined;
     return bufferImageResponse(await buildOgImageResponse({ mode: "pkg", days, pkg: pkgName, logoSrc, stats: pkgStats }));
   } catch (error) {

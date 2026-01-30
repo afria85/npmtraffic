@@ -1,5 +1,5 @@
 import Link from "next/link";
-import ThemeToggleLazy from "@/components/ThemeToggleLazy";
+import ThemeToggle from "@/components/ThemeToggle";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
 
@@ -36,7 +36,7 @@ export default function Header() {
               <span className="hidden sm:inline">GitHub</span>
             </Button>
           </a>
-          <ThemeToggleLazy />
+          <ThemeToggle />
         </nav>
       </div>
     </header>

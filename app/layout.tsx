@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { config } from "@/lib/config";
 import { Suspense } from "react";
+import { cookies } from "next/headers";
 
 export const metadata: Metadata = {
   title: {
@@ -47,22 +48,42 @@ import Header from "@/components/Header";
 const THEME_INIT_SCRIPT = `(() => {
   try {
     const key = "npmtraffic_theme";
+    const match = document.cookie.match(new RegExp('(?:^|; )' + key + '=([^;]+)'));
+    const cookie = match ? decodeURIComponent(match[1]) : null;
     const saved = localStorage.getItem(key);
     const system = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
       : "light";
-    const theme = (saved === "dark" || saved === "light") ? saved : system;
+    const theme = (cookie === "dark" || cookie === "light")
+      ? cookie
+      : (saved === "dark" || saved === "light")
+        ? saved
+        : system;
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
     document.documentElement.classList.toggle("dark", theme === "dark");
+    if (!cookie && (saved === "dark" || saved === "light")) {
+      const maxAge = 60 * 60 * 24 * 365;
+      document.cookie = key + "=" + encodeURIComponent(saved) + "; Path=/; Max-Age=" + maxAge + "; SameSite=Lax";
+    }
   } catch (e) {
     // ignore
   }
 })();`;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const themeCookie = cookieStore.get("npmtraffic_theme")?.value;
+  const theme = themeCookie === "dark" || themeCookie === "light" ? themeCookie : "light";
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      data-theme={theme}
+      className={theme === "dark" ? "dark" : undefined}
+      style={{ colorScheme: theme }}
+    >
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />

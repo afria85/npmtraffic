@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 
 const STORAGE_KEY = "npmtraffic_theme";
+const COOKIE_KEY = "npmtraffic_theme";
 
 type Theme = "dark" | "light";
 
@@ -11,6 +12,14 @@ function readPersistedTheme(): Theme | null {
   if (typeof window === "undefined") return null;
   const saved = window.localStorage.getItem(STORAGE_KEY);
   return saved === "dark" || saved === "light" ? saved : null;
+}
+
+function readCookieTheme(): Theme | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]+)`));
+  if (!match) return null;
+  const value = decodeURIComponent(match[1]);
+  return value === "dark" || value === "light" ? value : null;
 }
 
 function getSystemTheme(): Theme {
@@ -32,6 +41,17 @@ function applyTheme(theme: Theme) {
   root.classList.toggle("dark", theme === "dark");
 }
 
+function persistTheme(theme: Theme) {
+  if (typeof document === "undefined") return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, theme);
+  } catch {
+    // ignore
+  }
+  const maxAge = 60 * 60 * 24 * 365;
+  document.cookie = `${COOKIE_KEY}=${encodeURIComponent(theme)}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
+}
+
 export default function ThemeToggle() {
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -40,9 +60,14 @@ export default function ThemeToggle() {
     if (!mq) return;
 
     const onChange = () => {
-      const override = readPersistedTheme();
+      const cookieTheme = readCookieTheme();
+      const storedTheme = readPersistedTheme();
+      const override = cookieTheme ?? storedTheme;
       if (override) {
         applyTheme(override);
+        if (!cookieTheme && storedTheme) {
+          persistTheme(storedTheme);
+        }
         return;
       }
       applyTheme(getSystemTheme());
@@ -70,11 +95,7 @@ export default function ThemeToggle() {
         const current = getActiveTheme();
         const next: Theme = current === "dark" ? "light" : "dark";
         applyTheme(next);
-        try {
-          window.localStorage.setItem(STORAGE_KEY, next);
-        } catch {
-          // ignore
-        }
+        persistTheme(next);
       }}
     >
       <span className="flex h-5 w-5 items-center justify-center">
