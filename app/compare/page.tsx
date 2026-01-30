@@ -74,7 +74,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const title = `Compare npm downloads (${days} days) | npmtraffic`;
   const description = `Compare npm download history for ${pkgs.join(", ")}.`;
   const ogPkgs = pkgs.map((p) => encodeURIComponent(p)).join(',');
-  const ogImage = `${baseUrl}/api/og?mode=compare&pkgs=${ogPkgs}&days=${days}`;
+  const ogImage = `${baseUrl}/og.png?type=compare&pkgs=${ogPkgs}&days=${days}`;
 
   return {
     title,

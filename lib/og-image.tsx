@@ -70,6 +70,7 @@ type CompareStats = {
 };
 
 type OgImageOptions =
+  | { mode: "home"; logoSrc?: string }
   | { mode: "pkg"; pkg: string; days: number; stats?: PkgStats; logoSrc?: string }
   | { mode: "compare"; pkgs: string[]; days: number; stats?: CompareStats; logoSrc?: string };
 
@@ -200,7 +201,18 @@ function Sparkline({ values, w = 520, h = 90 }: { values: number[]; w?: number; 
   );
 }
 
-function createHeader(days: number, mode: "pkg" | "compare" = "pkg", logoSrc?: string) {
+function Wordmark({ size = 30 }: { size?: number }) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", fontSize: size, fontWeight: 900, letterSpacing: -0.8 }}>
+      <span style={{ color: ACCENT }}>npm</span>
+      <span style={{ color: FG }}>traffic</span>
+    </div>
+  );
+}
+
+function createHeader(opts: { mode: "home" } | { mode: "pkg" | "compare"; days: number }, logoSrc?: string) {
+  const pillText =
+    opts.mode === "home" ? "Open Source" : opts.mode === "compare" ? `Compare · ${opts.days}d` : `${opts.days}d`;
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -216,14 +228,18 @@ function createHeader(days: number, mode: "pkg" | "compare" = "pkg", logoSrc?: s
             justifyContent: "center",
           }}
         >
-          {logoSrc ? <img alt="" src={logoSrc} width={40} height={40} style={{ display: "block", borderRadius: 12 }} /> : <BrandMark size={40} />}
+          {logoSrc ? (
+            <img alt="" src={logoSrc} width={40} height={40} style={{ display: "block", borderRadius: 12 }} />
+          ) : (
+            <BrandMark size={40} />
+          )}
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ color: FG, fontSize: 30, fontWeight: 900, letterSpacing: -0.8 }}>npmtraffic</div>
-          <div style={{ color: MUTED, fontSize: 18 }}>Daily download analytics for npm</div>
+          <Wordmark size={30} />
+          <div style={{ color: MUTED, fontSize: 18 }}>Download analytics for npm</div>
         </div>
       </div>
-      <Pill text={mode === "compare" ? `Compare · ${days}d` : `${days} days`} />
+      <Pill text={pillText} />
     </div>
   );
 }
@@ -233,6 +249,55 @@ function createFooter() {
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: MUTED, fontSize: 18 }}>
       <div>npmtraffic.com</div>
       <div>Not affiliated with npm, Inc.</div>
+    </div>
+  );
+}
+
+function createHomeLayout(logoSrc?: string) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        height: "100%",
+        background: BG,
+        padding: 72,
+        justifyContent: "space-between",
+      }}
+    >
+      {createHeader({ mode: "home" }, logoSrc)}
+
+      <div
+        style={{
+          marginTop: 30,
+          borderRadius: 28,
+          border: `1px solid ${BORDER}`,
+          background: BG_CARD,
+          padding: 44,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ color: FG, fontSize: 70, fontWeight: 950, letterSpacing: -2.4, lineHeight: 0.98 }}>
+            <span style={{ color: ACCENT }}>npm</span> download analytics.
+          </div>
+          <div style={{ color: ACCENT, fontSize: 60, fontWeight: 950, letterSpacing: -2.2, lineHeight: 0.98 }}>
+            Daily data, full metadata.
+          </div>
+          <div style={{ marginTop: 10, color: MUTED, fontSize: 22, lineHeight: 1.35, maxWidth: 900 }}>
+            UTC-anchored daily tables. Deterministic exports with traceable metadata. Event markers for correlation.
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 30 }}>
+          <Pill text="Daily tables" />
+          <Pill text="CSV/JSON export" />
+          <Pill text="Compare packages" />
+          <Pill text="Event markers" />
+        </div>
+      </div>
+
+      {createFooter()}
     </div>
   );
 }
@@ -271,7 +336,7 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats, logoSr
         justifyContent: "space-between",
       }}
     >
-      {createHeader(days, "pkg", logoSrc)}
+      {createHeader({ mode: "pkg", days }, logoSrc)}
 
       <div
         style={{
@@ -339,7 +404,7 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
         justifyContent: "space-between",
       }}
     >
-      {createHeader(days, "compare", logoSrc)}
+      {createHeader({ mode: "compare", days }, logoSrc)}
 
       <div
         style={{
@@ -396,7 +461,7 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
               gap: 14,
             }}
           >
-            {stats.packages.slice(0, 4).map((pkg, i) => (
+            {stats.packages.slice(0, 3).map((pkg, i) => (
               <div
                 key={pkg.name}
                 style={{
@@ -431,6 +496,33 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
                 </div>
               </div>
             ))}
+
+            {stats.packages.length > 3 && (
+              <div
+                key="_more"
+                style={{
+                  flex: 1,
+                  padding: "18px 18px",
+                  borderRadius: 18,
+                  border: `1px solid ${BORDER}`,
+                  background: "rgba(255,255,255,0.02)",
+                  borderTop: `4px solid ${ACCENT}`,
+                  minWidth: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                }}
+              >
+                <div style={{ color: MUTED, fontSize: 14, letterSpacing: 2.0, textTransform: "uppercase" }}>
+                  also compared
+                </div>
+                <div style={{ marginTop: 10, color: FG, fontSize: 56, fontWeight: 950, letterSpacing: -2.0 }}>
+                  +{stats.packages.length - 3}
+                </div>
+                <div style={{ marginTop: 10, color: MUTED, fontSize: 18 }}>more packages</div>
+                <div style={{ marginTop: 10, color: ACCENT, fontSize: 16, fontWeight: 800 }}>up to 5 total</div>
+              </div>
+            )}
           </div>
         ) : (
           <div
@@ -453,12 +545,14 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
 }
 
 export function buildOgImageResponse(options: OgImageOptions) {
-  const response = new ImageResponse(
-    options.mode === "compare"
-      ? createCompareLayout(options.pkgs, options.days, options.stats, options.logoSrc)
-      : createPackageLayout(options.pkg, options.days, options.stats, options.logoSrc),
-    { width: WIDTH, height: HEIGHT }
-  );
+  const element =
+    options.mode === "home"
+      ? createHomeLayout(options.logoSrc)
+      : options.mode === "compare"
+        ? createCompareLayout(options.pkgs, options.days, options.stats, options.logoSrc)
+        : createPackageLayout(options.pkg, options.days, options.stats, options.logoSrc);
+
+  const response = new ImageResponse(element, { width: WIDTH, height: HEIGHT });
   response.headers.set("Content-Type", "image/png");
   response.headers.set("Cache-Control", CACHE_CONTROL);
   return response;

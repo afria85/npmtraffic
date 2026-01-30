@@ -84,7 +84,7 @@ export async function generateMetadata({
   const description = `Daily npm download history for ${name} in a GitHub-style table`;
   // Some scrapers (notably WhatsApp) are more reliable when og:image URLs end with an image extension.
   // The /og/p route supports both "{days}" and "{days}.png".
-  const ogImage = `${baseUrl}/og/p/${encodePkg(name)}/${days}.png`;
+  const ogImage = `${baseUrl}/og.png?type=package&pkg=${encodePkg(name)}&days=${days}`;
   const fallbackOgImage = `${baseUrl}/og.png`;
 
   return {

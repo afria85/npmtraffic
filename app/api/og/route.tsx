@@ -1,9 +1,10 @@
 import { buildOgImageResponse } from "@/lib/og-image";
+import { loadOgLogoDataUrl } from "@/lib/og-logo";
 import type { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
-type OgMode = "pkg" | "compare";
+type OgMode = "home" | "pkg" | "compare";
 
 type OgDateRange = { start: string; end: string };
 type OgPkgStats = {
@@ -16,24 +17,6 @@ type OgCompareStats = OgPkgStats & { packages: string[] };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  // Node runtimes: Buffer exists. Edge runtimes: prefer btoa.
-  const maybeBuffer = (globalThis as unknown as { Buffer?: { from: (b: ArrayBuffer) => { toString: (enc: string) => string } } })
-    .Buffer;
-
-  if (maybeBuffer?.from) return maybeBuffer.from(buffer).toString("base64");
-
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  const btoaFn = (globalThis as unknown as { btoa?: (s: string) => string }).btoa;
-  if (!btoaFn) throw new Error("btoa is not available");
-  return btoaFn(binary);
 }
 
 function pickSparkline(data: unknown): number[] | null {
@@ -123,7 +106,21 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
 
   const modeParam = (url.searchParams.get("mode") || "").toLowerCase();
-  const mode: OgMode = modeParam === "compare" ? "compare" : "pkg";
+  const requestedMode: OgMode = modeParam === "compare" ? "compare" : modeParam === "home" ? "home" : "pkg";
+
+  const hasPkgishParam =
+    url.searchParams.has("pkg") ||
+    url.searchParams.has("name") ||
+    url.searchParams.has("pkgs") ||
+    url.searchParams.has("packages");
+
+  // If nothing is specified, treat it as the homepage OG.
+  if (!modeParam && !hasPkgishParam) {
+    const logoSrc = await loadOgLogoDataUrl(url.origin);
+    return buildOgImageResponse({ mode: "home", logoSrc });
+  }
+
+  const mode: Exclude<OgMode, "home"> = requestedMode === "compare" ? "compare" : "pkg";
 
   // Accept a few aliases so callers can be flexible.
   // - pkg/name: single package name OR comma-separated list for compare
@@ -139,19 +136,7 @@ export async function GET(request: NextRequest) {
   const packages = pkg.split(",").map((s) => s.trim()).filter(Boolean);
 
   // Prefer your actual logo from public/icon.png.
-  let logoSrc: string | undefined;
-  try {
-    const iconUrl = new URL("/icon.png", url.origin);
-    const resp = await fetch(iconUrl.toString(), { cache: "no-store" });
-    if (resp.ok) {
-      const contentType = resp.headers.get("content-type") || "image/png";
-      const buf = await resp.arrayBuffer();
-      const base64 = arrayBufferToBase64(buf);
-      logoSrc = `data:${contentType};base64,${base64}`;
-    }
-  } catch {
-    logoSrc = undefined;
-  }
+  const logoSrc = await loadOgLogoDataUrl(url.origin);
 
   // Build best-effort stats for the OG renderer. If the upstream fetch fails,
   // we still render a valid OG image with just the title/subtitle framing.
