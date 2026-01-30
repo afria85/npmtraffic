@@ -19,7 +19,8 @@ const DANGER = "#f87171";
 const CHART_COLORS = ["#06b6d4", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444"];
 
 // OG images are marketing; keep cache short-ish.
-const CACHE_CONTROL = "public, s-maxage=900, stale-while-revalidate=86400";
+// max-age=0 keeps browsers from caching aggressively, while s-maxage enables CDN caching.
+const CACHE_CONTROL = "public, max-age=0, s-maxage=900, stale-while-revalidate=86400";
 
 function clampText(value: string, max = 80) {
   const v = (value ?? "").trim();
@@ -552,8 +553,12 @@ export function buildOgImageResponse(options: OgImageOptions) {
         ? createCompareLayout(options.pkgs, options.days, options.stats, options.logoSrc)
         : createPackageLayout(options.pkg, options.days, options.stats, options.logoSrc);
 
-  const response = new ImageResponse(element, { width: WIDTH, height: HEIGHT });
-  response.headers.set("Content-Type", "image/png");
-  response.headers.set("Cache-Control", CACHE_CONTROL);
-  return response;
+  return new ImageResponse(element, {
+    width: WIDTH,
+    height: HEIGHT,
+    headers: {
+      "Content-Type": "image/png",
+      "Cache-Control": CACHE_CONTROL,
+    },
+  });
 }
