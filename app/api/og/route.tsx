@@ -1,8 +1,6 @@
 import { buildOgImageResponse } from "@/lib/og-image";
 import { loadOgLogoDataUrl } from "@/lib/og-logo";
-import { fetchDailyDownloadsRange } from "@/lib/npm-client";
 import { canonicalizePackages, parsePackageList } from "@/lib/query";
-import { toYYYYMMDD } from "@/lib/dates";
 import type { NextRequest } from "next/server";
 
 export const runtime = "edge";
@@ -107,31 +105,14 @@ function safeInt(value: string | null, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function parseIsoDate(value: string): Date | null {
-  const [year, month, day] = value.split("-").map((segment) => Number(segment));
-  if (!year || !month || !day) return null;
-  const d = new Date(Date.UTC(year, month - 1, day));
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
-function addDaysUtc(isoDate: string, deltaDays: number): string | null {
-  const base = parseIsoDate(isoDate);
-  if (!base) return null;
-  base.setUTCDate(base.getUTCDate() + deltaDays);
-  return toYYYYMMDD(base);
-}
-
-function sumDownloads(rows: Array<{ downloads?: number | null }> | null): number {
-  if (!rows || rows.length === 0) return 0;
-  return rows.reduce((acc, row) => acc + (typeof row.downloads === "number" ? row.downloads : 0), 0);
-}
-
-async function computePreviousPeriodTotal(pkg: string, startDate: string, days: number): Promise<number | null> {
-  const prevEnd = addDaysUtc(startDate, -1);
-  const prevStart = addDaysUtc(startDate, -days);
-  if (!prevEnd || !prevStart) return null;
-  const prev = await fetchDailyDownloadsRange(pkg, { start: prevStart, end: prevEnd });
-  return sumDownloads(prev.downloads);
+function computePercentChangeFromSeries(series: number[]): number | null {
+  if (series.length < 2) return null;
+  const window = Math.floor(series.length / 2);
+  if (window < 1) return null;
+  const prev = series.slice(0, window).reduce((sum, value) => sum + value, 0);
+  const current = series.slice(series.length - window).reduce((sum, value) => sum + value, 0);
+  if (prev <= 0) return null;
+  return ((current - prev) / prev) * 100;
 }
 
 async function bufferImageResponse(resp: Response) {
@@ -215,18 +196,10 @@ export async function GET(request: NextRequest) {
         const json = (await resp.json()) as unknown;
         const dateRange = pickDateRange(json);
         const total = pickTotal(json);
+        const sparkline = pickSparkline(json) ?? undefined;
         let percentChange = pickPercentChange(json);
-        if (typeof percentChange !== "number" && dateRange && typeof total === "number") {
-          try {
-            const prevTotal = await computePreviousPeriodTotal(name, dateRange.start, days);
-            if (typeof prevTotal === "number" && prevTotal > 0) {
-              percentChange = ((total - prevTotal) / prevTotal) * 100;
-            } else {
-              percentChange = null;
-            }
-          } catch {
-            percentChange = null;
-          }
+        if (typeof percentChange !== "number" && sparkline) {
+          percentChange = computePercentChangeFromSeries(sparkline);
         }
 
         if (dateRange && typeof total === "number") {
@@ -234,7 +207,7 @@ export async function GET(request: NextRequest) {
             total,
             percentChange: typeof percentChange === "number" ? percentChange : null,
             dateRange,
-            sparkline: pickSparkline(json) ?? undefined,
+            sparkline,
           };
         } else {
           stats = undefined;
