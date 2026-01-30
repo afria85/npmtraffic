@@ -102,6 +102,13 @@ function safeInt(value: string | null, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+async function bufferImageResponse(resp: Response) {
+  const buf = await resp.arrayBuffer();
+  const headers = new Headers(resp.headers);
+  headers.set("Content-Length", String(buf.byteLength));
+  return new Response(buf, { status: resp.status, headers });
+}
+
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
 
@@ -117,7 +124,7 @@ export async function GET(request: NextRequest) {
   // If nothing is specified, treat it as the homepage OG.
   if (!modeParam && !hasPkgishParam) {
     const logoSrc = await loadOgLogoDataUrl(url.origin);
-    return buildOgImageResponse({ mode: "home", logoSrc });
+    return bufferImageResponse(buildOgImageResponse({ mode: "home", logoSrc }));
   }
 
   const mode: Exclude<OgMode, "home"> = requestedMode === "compare" ? "compare" : "pkg";
@@ -226,11 +233,13 @@ export async function GET(request: NextRequest) {
 
   if (mode === "compare") {
     const compareStats = normalizeCompareStats(rawCompare) ?? normalizeCompareStats(stats);
-    return buildOgImageResponse({ mode: "compare", days, pkgs: packages, logoSrc, stats: compareStats });
+    return bufferImageResponse(
+      buildOgImageResponse({ mode: "compare", days, pkgs: packages, logoSrc, stats: compareStats })
+    );
   }
 
 
   const pkgName = packages[0] || pkg;
   const pkgStats = stats && !("packages" in stats) ? (stats as OgPkgStats) : undefined;
-  return buildOgImageResponse({ mode: "pkg", days, pkg: pkgName, logoSrc, stats: pkgStats });
+  return bufferImageResponse(buildOgImageResponse({ mode: "pkg", days, pkg: pkgName, logoSrc, stats: pkgStats }));
 }
