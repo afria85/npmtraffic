@@ -7,6 +7,7 @@ import ScrollHintContainer from "@/components/ScrollHintContainer";
 import SignedValue from "@/components/ui/SignedValue";
 import StatusPill from "@/components/ui/StatusPill";
 import ActionMenu from "@/components/ui/ActionMenu";
+import { copyToClipboard } from "@/lib/clipboard";
 import type { DerivedMetrics } from "@/lib/derived";
 import type { EventEntry } from "@/lib/events";
 import type { TrafficSeriesRow } from "@/lib/traffic";
@@ -70,6 +71,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
   const [statusMessage, setStatusMessage] = useState<{ text: string; tone: "info" | "warning" } | null>(null);
   const [shareLinkFallback, setShareLinkFallback] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const shareLinkInputRef = useRef<HTMLInputElement | null>(null);
 
   const searchParams = useSearchParams();
   const sharedParam = searchParams?.get("events") ?? "";
@@ -94,6 +96,15 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
     return () => window.clearTimeout(t);
   }, [statusMessage, shareLinkFallback]);
 
+  useEffect(() => {
+    if (!shareLinkFallback) return;
+    const raf = requestAnimationFrame(() => {
+      shareLinkInputRef.current?.focus();
+      shareLinkInputRef.current?.select();
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [shareLinkFallback]);
+
   const showStatus = (text: string, tone: "info" | "warning" = "info") =>
     setStatusMessage({ text, tone });
 
@@ -115,6 +126,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
           <div className="mt-2 flex flex-col gap-2">
             <span className="text-[10px] uppercase tracking-[0.3em] text-[var(--foreground-tertiary)]">Timeline link</span>
             <input
+              ref={shareLinkInputRef}
               className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 font-mono text-xs text-[var(--foreground)]"
               value={shareLinkFallback}
               readOnly
@@ -344,23 +356,14 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
     url.searchParams.set("events", shareEncoded);
     const text = url.toString();
 
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        setShareLinkFallback(null);
-        showStatus("Timeline link copied.");
-        return;
-      }
-    } catch {
-      // fall through
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      setShareLinkFallback(null);
+      showStatus("Timeline link copied.");
+      return;
     }
 
     setShareLinkFallback(text);
-    try {
-      window.prompt("Copy timeline link:", text);
-    } catch {
-      // ignore
-    }
     showStatus("Copy the timeline link below.", "warning");
   };
 

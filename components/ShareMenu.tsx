@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
+import { copyToClipboard } from "@/lib/clipboard";
 
 type NavigatorWithShare = Navigator & {
   share?: (data: ShareData) => Promise<void>;
@@ -49,33 +50,6 @@ function CheckIcon() {
       <polyline points="20 6 9 17 4 12" />
     </svg>
   );
-}
-
-async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    // fall through
-  }
-
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.setAttribute("readonly", "true");
-    ta.style.position = "fixed";
-    ta.style.top = "-9999px";
-    ta.style.left = "-9999px";
-    document.body.appendChild(ta);
-    ta.select();
-    const ok = document.execCommand("copy");
-    ta.remove();
-    return ok;
-  } catch {
-    return false;
-  }
 }
 
 function isAbortError(err: unknown): boolean {
