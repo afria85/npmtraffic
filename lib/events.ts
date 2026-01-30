@@ -251,6 +251,24 @@ async function gzipCompress(bytes: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(ab);
 }
 
+async function gzipCompressWithTimeout(bytes: Uint8Array, timeoutMs: number): Promise<Uint8Array> {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    return gzipCompress(bytes);
+  }
+
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<Uint8Array>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error("compression timeout")), timeoutMs);
+  });
+
+  try {
+    const result = (await Promise.race([gzipCompress(bytes), timeoutPromise])) as Uint8Array;
+    return result;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 async function gzipDecompress(bytes: Uint8Array): Promise<Uint8Array> {
   const DS = getDecompressionStreamCtor();
   if (!DS) throw new Error("decompression unavailable");
@@ -300,7 +318,9 @@ export async function encodeSharePayloadV2(events: EventEntry[]) {
   const payload = JSON.stringify(events);
   const bytes = utf8Encode(payload);
   try {
-    const compressed = await gzipCompress(bytes);
+    // Compression should be near-instant for small payloads. If it hangs (broken implementation),
+    // fall back to plain base64 so the UI doesn't get stuck in "Preparing".
+    const compressed = await gzipCompressWithTimeout(bytes, 1500);
     return `gz:${base64urlEncodeBytes(compressed)}`;
   } catch {
     return base64urlEncodeBytes(bytes);
