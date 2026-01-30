@@ -110,136 +110,157 @@ async function bufferImageResponse(resp: Response) {
 }
 
 export async function GET(request: NextRequest) {
-  const url = new URL(request.url);
-
-  const modeParam = (url.searchParams.get("mode") || "").toLowerCase();
-  const requestedMode: OgMode = modeParam === "compare" ? "compare" : modeParam === "home" ? "home" : "pkg";
-
-  const hasPkgishParam =
-    url.searchParams.has("pkg") ||
-    url.searchParams.has("name") ||
-    url.searchParams.has("pkgs") ||
-    url.searchParams.has("packages");
-
-  // If nothing is specified, treat it as the homepage OG.
-  if (!modeParam && !hasPkgishParam) {
-    const logoSrc = await loadOgLogoDataUrl(url.origin);
-    return bufferImageResponse(buildOgImageResponse({ mode: "home", logoSrc }));
-  }
-
-  const mode: Exclude<OgMode, "home"> = requestedMode === "compare" ? "compare" : "pkg";
-
-  // Accept a few aliases so callers can be flexible.
-  // - pkg/name: single package name OR comma-separated list for compare
-  // - pkgs/packages: compare list alias
-  const pkg =
-    url.searchParams.get("pkg") ||
-    url.searchParams.get("name") ||
-    url.searchParams.get("pkgs") ||
-    url.searchParams.get("packages") ||
-    "react";
-  const days = safeInt(url.searchParams.get("days"), 30);
-
-  const packages = pkg.split(",").map((s) => s.trim()).filter(Boolean);
-
-  // Prefer your actual logo from public/icon.png.
-  const logoSrc = await loadOgLogoDataUrl(url.origin);
-
-  // Build best-effort stats for the OG renderer. If the upstream fetch fails,
-  // we still render a valid OG image with just the title/subtitle framing.
-  let stats: OgPkgStats | OgCompareStats | undefined;
-  // For compare mode, keep the raw backend payload to preserve per-package totals/shares.
-  let rawCompare: unknown | undefined;
   try {
-    if (mode === "compare") {
-      const compareUrl = new URL("/api/v1/compare", url.origin);
-      // The backend logs use `package=...` (comma-separated). Keep aliases compatible.
-      compareUrl.searchParams.set("package", packages.join(","));
-      compareUrl.searchParams.set("days", String(days));
-      const resp = await fetch(compareUrl.toString(), { cache: "no-store" });
-      const json = (await resp.json()) as unknown;
-      rawCompare = json;
-      // Keep a minimal rollup in case normalization fails.
-      const dateRange = pickDateRange(json);
-      const total = pickTotal(json);
-      const percentChange = pickPercentChange(json);
-      if (dateRange && typeof total === "number" && typeof percentChange === "number") {
-        stats = { packages, total, percentChange, dateRange, sparkline: pickSparkline(json) ?? undefined };
-      }
-    } else {
-      const name = packages[0] || "react";
-      const dailyUrl = new URL(`/api/v1/package/${encodeURIComponent(name)}/daily`, url.origin);
-      dailyUrl.searchParams.set("days", String(days));
-      const resp = await fetch(dailyUrl.toString(), { cache: "no-store" });
-      const json = (await resp.json()) as unknown;
-      const dateRange = pickDateRange(json);
-      const total = pickTotal(json);
-      const percentChange = pickPercentChange(json);
+    const url = new URL(request.url);
 
-      if (dateRange && typeof total === "number" && typeof percentChange === "number") {
-        stats = {
-          total,
-          percentChange,
-          dateRange,
-          sparkline: pickSparkline(json) ?? undefined,
-        };
+    const modeParam = (url.searchParams.get("mode") || "").toLowerCase();
+    const requestedMode: OgMode = modeParam === "compare" ? "compare" : modeParam === "home" ? "home" : "pkg";
+
+    const hasPkgishParam =
+      url.searchParams.has("pkg") ||
+      url.searchParams.has("name") ||
+      url.searchParams.has("pkgs") ||
+      url.searchParams.has("packages");
+
+    // If nothing is specified, treat it as the homepage OG.
+    if (!modeParam && !hasPkgishParam) {
+      const logoSrc = await loadOgLogoDataUrl(url.origin);
+      return bufferImageResponse(buildOgImageResponse({ mode: "home", logoSrc }));
+    }
+
+    const mode: Exclude<OgMode, "home"> = requestedMode === "compare" ? "compare" : "pkg";
+
+    // Accept a few aliases so callers can be flexible.
+    // - pkg/name: single package name OR comma-separated list for compare
+    // - pkgs/packages: compare list alias
+    const pkg =
+      url.searchParams.get("pkg") ||
+      url.searchParams.get("name") ||
+      url.searchParams.get("pkgs") ||
+      url.searchParams.get("packages") ||
+      "react";
+    const days = safeInt(url.searchParams.get("days"), 30);
+
+    const packages = pkg.split(",").map((s) => s.trim()).filter(Boolean);
+
+    // Prefer your actual logo from public/icon.png.
+    const logoSrc = await loadOgLogoDataUrl(url.origin);
+
+    // Build best-effort stats for the OG renderer. If the upstream fetch fails,
+    // we still render a valid OG image with just the title/subtitle framing.
+    let stats: OgPkgStats | OgCompareStats | undefined;
+    // For compare mode, keep the raw backend payload to preserve per-package totals/shares.
+    let rawCompare: unknown | undefined;
+    try {
+      if (mode === "compare") {
+        const compareUrl = new URL("/api/v1/compare", url.origin);
+        // The backend logs use `package=...` (comma-separated). Keep aliases compatible.
+        compareUrl.searchParams.set("package", packages.join(","));
+        compareUrl.searchParams.set("days", String(days));
+        const resp = await fetch(compareUrl.toString(), { cache: "no-store" });
+        const json = (await resp.json()) as unknown;
+        rawCompare = json;
+        // Keep a minimal rollup in case normalization fails.
+        const dateRange = pickDateRange(json);
+        const total = pickTotal(json);
+        const percentChange = pickPercentChange(json);
+        if (dateRange && typeof total === "number" && typeof percentChange === "number") {
+          stats = { packages, total, percentChange, dateRange, sparkline: pickSparkline(json) ?? undefined };
+        }
       } else {
-        stats = undefined;
+        const name = packages[0] || "react";
+        const dailyUrl = new URL(`/api/v1/package/${encodeURIComponent(name)}/daily`, url.origin);
+        dailyUrl.searchParams.set("days", String(days));
+        const resp = await fetch(dailyUrl.toString(), { cache: "no-store" });
+        const json = (await resp.json()) as unknown;
+        const dateRange = pickDateRange(json);
+        const total = pickTotal(json);
+        const percentChange = pickPercentChange(json);
+
+        if (dateRange && typeof total === "number" && typeof percentChange === "number") {
+          stats = {
+            total,
+            percentChange,
+            dateRange,
+            sparkline: pickSparkline(json) ?? undefined,
+          };
+        } else {
+          stats = undefined;
+        }
       }
-    }
-  } catch {
-    stats = undefined;
-  }
-
-  type ComparePkgStats = { name: string; total: number; share: number };
-  type CompareStats = { dateRange?: { start: string; end: string }; packages: ComparePkgStats[] };
-
-  function normalizeCompareStats(raw: unknown): CompareStats | undefined {
-    if (!raw || typeof raw !== "object") return undefined;
-    const r = raw as Record<string, unknown>;
-    const pkgsRaw = r["packages"];
-    if (!Array.isArray(pkgsRaw)) return undefined;
-
-    const packages: ComparePkgStats[] = pkgsRaw
-      .map((p): ComparePkgStats | null => {
-        if (typeof p === "string") return { name: p, total: 0, share: 0 };
-        if (!p || typeof p !== "object") return null;
-        const pr = p as Record<string, unknown>;
-        const name = typeof pr["name"] === "string" ? pr["name"] : "";
-        const totalRaw = pr["total"];
-        const shareRaw = pr["share"];
-        const total = typeof totalRaw === "number" ? totalRaw : Number(totalRaw);
-        const share = typeof shareRaw === "number" ? shareRaw : Number(shareRaw);
-        return {
-          name,
-          total: Number.isFinite(total) ? total : 0,
-          share: Number.isFinite(share) ? share : 0,
-        };
-      })
-      .filter((p): p is ComparePkgStats => Boolean(p && p.name));
-
-    const dr = r["dateRange"];
-    let start = "";
-    let end = "";
-    if (dr && typeof dr === "object") {
-      const drr = dr as Record<string, unknown>;
-      start = typeof drr["start"] === "string" ? (drr["start"] as string) : typeof drr["from"] === "string" ? (drr["from"] as string) : "";
-      end = typeof drr["end"] === "string" ? (drr["end"] as string) : typeof drr["to"] === "string" ? (drr["to"] as string) : "";
+    } catch {
+      stats = undefined;
     }
 
-    if (!packages.length) return undefined;
-    return { dateRange: { start, end }, packages };
+    type ComparePkgStats = { name: string; total: number; share: number };
+    type CompareStats = { dateRange?: { start: string; end: string }; packages: ComparePkgStats[] };
+
+    function normalizeCompareStats(raw: unknown): CompareStats | undefined {
+      if (!raw || typeof raw !== "object") return undefined;
+      const r = raw as Record<string, unknown>;
+      const pkgsRaw = r["packages"];
+      if (!Array.isArray(pkgsRaw)) return undefined;
+
+      const packages: ComparePkgStats[] = pkgsRaw
+        .map((p): ComparePkgStats | null => {
+          if (typeof p === "string") return { name: p, total: 0, share: 0 };
+          if (!p || typeof p !== "object") return null;
+          const pr = p as Record<string, unknown>;
+          const name = typeof pr["name"] === "string" ? pr["name"] : "";
+          const totalRaw = pr["total"];
+          const shareRaw = pr["share"];
+          const total = typeof totalRaw === "number" ? totalRaw : Number(totalRaw);
+          const share = typeof shareRaw === "number" ? shareRaw : Number(shareRaw);
+          return {
+            name,
+            total: Number.isFinite(total) ? total : 0,
+            share: Number.isFinite(share) ? share : 0,
+          };
+        })
+        .filter((p): p is ComparePkgStats => Boolean(p && p.name));
+
+      const dr = r["dateRange"];
+      let start = "";
+      let end = "";
+      if (dr && typeof dr === "object") {
+        const drr = dr as Record<string, unknown>;
+        start =
+          typeof drr["start"] === "string"
+            ? (drr["start"] as string)
+            : typeof drr["from"] === "string"
+              ? (drr["from"] as string)
+              : "";
+        end =
+          typeof drr["end"] === "string"
+            ? (drr["end"] as string)
+            : typeof drr["to"] === "string"
+              ? (drr["to"] as string)
+              : "";
+      }
+
+      if (!packages.length) return undefined;
+      return { dateRange: { start, end }, packages };
+    }
+
+    if (mode === "compare") {
+      const compareStats = normalizeCompareStats(rawCompare) ?? normalizeCompareStats(stats);
+      return bufferImageResponse(
+        buildOgImageResponse({ mode: "compare", days, pkgs: packages, logoSrc, stats: compareStats })
+      );
+    }
+
+    const pkgName = packages[0] || pkg;
+    const pkgStats = stats && !("packages" in stats) ? (stats as OgPkgStats) : undefined;
+    return bufferImageResponse(buildOgImageResponse({ mode: "pkg", days, pkg: pkgName, logoSrc, stats: pkgStats }));
+  } catch (error) {
+    console.error("OG render failed", error);
+    const url = new URL(request.url);
+    const debug = url.searchParams.get("debug") === "1";
+    const message =
+      error instanceof Error ? `${error.name}: ${error.message}${error.stack ? `\n${error.stack}` : ""}` : "Unknown error";
+    return new Response(debug ? message : "OG render failed.", {
+      status: 500,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
   }
-
-  if (mode === "compare") {
-    const compareStats = normalizeCompareStats(rawCompare) ?? normalizeCompareStats(stats);
-    return bufferImageResponse(
-      buildOgImageResponse({ mode: "compare", days, pkgs: packages, logoSrc, stats: compareStats })
-    );
-  }
-
-
-  const pkgName = packages[0] || pkg;
-  const pkgStats = stats && !("packages" in stats) ? (stats as OgPkgStats) : undefined;
-  return bufferImageResponse(buildOgImageResponse({ mode: "pkg", days, pkg: pkgName, logoSrc, stats: pkgStats }));
 }
