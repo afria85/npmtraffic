@@ -167,7 +167,7 @@ function StatCell({
           </div>
         ) : null}
       </div>
-      {children ? <div style={{ marginTop: 14 }}>{children}</div> : null}
+      {children ? <div style={{ marginTop: 14, display: "flex" }}>{children}</div> : null}
     </div>
   );
 }
