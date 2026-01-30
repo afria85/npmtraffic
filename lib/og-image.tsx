@@ -136,7 +136,7 @@ function StatCell({
         minWidth: 0,
       }}
     >
-      <div>
+      <div style={{ display: "flex", flexDirection: "column" }}>
         <div style={{ color: MUTED, fontSize: 14, letterSpacing: 2.2, textTransform: "uppercase" }}>{label}</div>
         <div
           style={{
@@ -275,11 +275,24 @@ function createHomeLayout(logoSrc?: string) {
           border: `1px solid ${BORDER}`,
           background: BG_CARD,
           padding: 44,
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ color: FG, fontSize: 70, fontWeight: 950, letterSpacing: -2.4, lineHeight: 0.98 }}>
-            <span style={{ color: ACCENT }}>npm</span> download analytics.
+          <div
+            style={{
+              color: FG,
+              fontSize: 70,
+              fontWeight: 950,
+              letterSpacing: -2.4,
+              lineHeight: 0.98,
+              display: "flex",
+              alignItems: "baseline",
+            }}
+          >
+            <span style={{ color: ACCENT }}>npm</span>
+            <span> download analytics.</span>
           </div>
           <div style={{ color: ACCENT, fontSize: 60, fontWeight: 950, letterSpacing: -2.2, lineHeight: 0.98 }}>
             Daily data, full metadata.
@@ -345,6 +358,8 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats, logoSr
           border: `1px solid ${BORDER}`,
           background: BG_CARD,
           padding: 36,
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <div style={{ color: MUTED, fontSize: 16, letterSpacing: 3, textTransform: "uppercase" }}>Daily downloads</div>
@@ -419,7 +434,7 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
         }}
       >
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-          <div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ color: MUTED, fontSize: 16, letterSpacing: 3, textTransform: "uppercase" }}>Compare</div>
             <div style={{ marginTop: 10, color: FG, fontSize: 52, fontWeight: 950, letterSpacing: -1.8 }}>Daily downloads</div>
           </div>
@@ -472,6 +487,8 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
                   background: "rgba(255,255,255,0.02)",
                   borderTop: `4px solid ${CHART_COLORS[i % CHART_COLORS.length]}`,
                   minWidth: 0,
+                  display: "flex",
+                  flexDirection: "column",
                 }}
               >
                 <div
@@ -492,7 +509,7 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
                 </div>
                 <div style={{ marginTop: 10, color: MUTED, fontSize: 16 }}>total downloads</div>
                 <div style={{ marginTop: 10, color: CHART_COLORS[i % CHART_COLORS.length], fontSize: 16, fontWeight: 800 }}>
-                  {pkg.share.toFixed(1)}% share
+                  {`${pkg.share.toFixed(1)}% share`}
                 </div>
               </div>
             ))}
@@ -517,7 +534,7 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
                   also compared
                 </div>
                 <div style={{ marginTop: 10, color: FG, fontSize: 56, fontWeight: 950, letterSpacing: -2.0 }}>
-                  +{stats.packages.length - 3}
+                  {`+${stats.packages.length - 3}`}
                 </div>
                 <div style={{ marginTop: 10, color: MUTED, fontSize: 18 }}>more packages</div>
                 <div style={{ marginTop: 10, color: ACCENT, fontSize: 16, fontWeight: 800 }}>up to 5 total</div>
