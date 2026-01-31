@@ -72,6 +72,11 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
   const [refreshKey, setRefreshKey] = useState(0);
   const [shareToast, setShareToast] = useState<"preparing" | "copied" | "failed" | null>(null);
   const shareToastTimeoutRef = useRef<number | null>(null);
+  const shareToastRef = useRef<HTMLDivElement | null>(null);
+  const shareToastAnchorRef = useRef<HTMLElement | null>(null);
+  const [shareToastStyle, setShareToastStyle] = useState<{ top: number; left: number } | null>(null);
+  const [useAnchoredToast, setUseAnchoredToast] = useState(false);
+  const [hasShareToastAnchor, setHasShareToastAnchor] = useState(false);
 
   const searchParams = useSearchParams();
   const sharedParam = searchParams?.get("events") ?? "";
@@ -104,6 +109,19 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(min-width: 640px)");
+    const update = () => setUseAnchoredToast(media.matches);
+    update();
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", update);
+      return () => media.removeEventListener("change", update);
+    }
+    media.addListener(update);
+    return () => media.removeListener(update);
+  }, []);
+
   const showShareToast = (state: "preparing" | "copied" | "failed", durationMs?: number) => {
     if (shareToastTimeoutRef.current) {
       window.clearTimeout(shareToastTimeoutRef.current);
@@ -113,6 +131,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
     if (durationMs && typeof window !== "undefined") {
       shareToastTimeoutRef.current = window.setTimeout(() => {
         setShareToast(null);
+        setShareToastStyle(null);
       }, durationMs);
     }
   };
@@ -349,7 +368,59 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
     refresh();
   };
 
-  const handleCopyShareLink = async () => {
+  const updateShareToastPosition = useCallback(() => {
+    if (!useAnchoredToast || !hasShareToastAnchor || typeof window === "undefined") {
+      return;
+    }
+    const anchor = shareToastAnchorRef.current;
+    const toast = shareToastRef.current;
+    if (!anchor || !toast) {
+      return;
+    }
+    const anchorRect = anchor.getBoundingClientRect();
+    const toastRect = toast.getBoundingClientRect();
+    const margin = 12;
+    const gap = 8;
+    const maxLeft = Math.max(margin, window.innerWidth - toastRect.width - margin);
+    const left = Math.min(Math.max(anchorRect.left, margin), maxLeft);
+    const belowTop = anchorRect.bottom + gap;
+    const aboveTop = anchorRect.top - toastRect.height - gap;
+    let top = belowTop;
+    if (belowTop + toastRect.height > window.innerHeight - margin && aboveTop >= margin) {
+      top = aboveTop;
+    }
+    top = Math.max(margin, top);
+    setShareToastStyle({ top: Math.round(top), left: Math.round(left) });
+  }, [hasShareToastAnchor, useAnchoredToast]);
+
+  useEffect(() => {
+    if (!shareToast || !useAnchoredToast || !hasShareToastAnchor) return;
+    if (typeof window === "undefined") return;
+    const raf = window.requestAnimationFrame(() => updateShareToastPosition());
+    return () => window.cancelAnimationFrame(raf);
+  }, [shareToast, useAnchoredToast, hasShareToastAnchor, updateShareToastPosition]);
+
+  useEffect(() => {
+    if (!shareToast || !useAnchoredToast || !hasShareToastAnchor) return;
+    if (typeof window === "undefined") return;
+    const handleReposition = () => updateShareToastPosition();
+    window.addEventListener("resize", handleReposition);
+    window.addEventListener("scroll", handleReposition, true);
+    return () => {
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition, true);
+    };
+  }, [shareToast, useAnchoredToast, hasShareToastAnchor, updateShareToastPosition]);
+
+  const handleCopyShareLink = async (event?: React.MouseEvent<HTMLElement>) => {
+    if (useAnchoredToast && event?.currentTarget instanceof HTMLElement) {
+      shareToastAnchorRef.current = event.currentTarget;
+      setHasShareToastAnchor(true);
+    } else {
+      shareToastAnchorRef.current = null;
+      setHasShareToastAnchor(false);
+    }
+    setShareToastStyle(null);
     if (!hasEvents) {
       showStatus("Add events to enable sharing.", "warning");
       return;
@@ -414,6 +485,36 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
   };
 
   const sharedEvents = sharedData.events;
+  const shareToastContent = shareToast ? (
+    <div
+      ref={shareToastRef}
+      role="status"
+      aria-live="polite"
+      className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)]/95 px-3 py-2 text-xs text-[var(--foreground)] shadow-lg shadow-black/20"
+    >
+      {shareToast === "preparing" ? (
+        <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--foreground-tertiary)]">
+          <svg viewBox="0 0 24 24" className="h-4 w-4 animate-spin" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.25" fill="none" />
+            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2" fill="none" />
+          </svg>
+        </span>
+      ) : (
+        <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--accent)]">
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
+            <path d="M4.5 10.5 8.2 14 15.5 6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      )}
+      {shareToast === "preparing" ? (
+        <span>Preparing link…</span>
+      ) : shareToast === "copied" ? (
+        <span>Share link copied</span>
+      ) : (
+        <span>Copy failed — try again</span>
+      )}
+    </div>
+  ) : null;
   return (
     <>
       <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
@@ -744,7 +845,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
                   <button
                     type="button"
-                    onClick={handleCopyShareLink}
+                    onClick={(event) => handleCopyShareLink(event)}
                     disabled={!shareEnabled}
                     className={`${ACTION_BUTTON_CLASSES}${shareEnabled ? "" : " opacity-50"}`}
                   >
@@ -812,35 +913,22 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
               </div>
             </div>
             {shareToast ? (
-              <div className="pointer-events-none absolute bottom-4 left-4 right-4 z-20 flex justify-center sm:justify-start">
+              useAnchoredToast && hasShareToastAnchor ? (
                 <div
-                  role="status"
-                  aria-live="polite"
-                  className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)]/95 px-3 py-2 text-xs text-[var(--foreground)] shadow-lg shadow-black/20"
+                  className="pointer-events-none fixed z-[80]"
+                  style={{
+                    top: shareToastStyle?.top ?? 0,
+                    left: shareToastStyle?.left ?? 0,
+                    visibility: shareToastStyle ? "visible" : "hidden",
+                  }}
                 >
-                  {shareToast === "preparing" ? (
-                    <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--foreground-tertiary)]">
-                      <svg viewBox="0 0 24 24" className="h-4 w-4 animate-spin" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.25" fill="none" />
-                        <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2" fill="none" />
-                      </svg>
-                    </span>
-                  ) : (
-                    <span className="inline-flex h-4 w-4 items-center justify-center text-[var(--accent)]">
-                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="h-4 w-4">
-                        <path d="M4.5 10.5 8.2 14 15.5 6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                  )}
-                  {shareToast === "preparing" ? (
-                    <span>Preparing link…</span>
-                  ) : shareToast === "copied" ? (
-                    <span>Share link copied</span>
-                  ) : (
-                    <span>Copy failed — try again</span>
-                  )}
+                  {shareToastContent}
                 </div>
-              </div>
+              ) : (
+                <div className="pointer-events-none absolute bottom-4 left-4 right-4 z-20 flex justify-center sm:justify-start">
+                  {shareToastContent}
+                </div>
+              )
             ) : null}
           </div>
         </div>
