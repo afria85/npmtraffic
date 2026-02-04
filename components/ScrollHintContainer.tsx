@@ -5,6 +5,11 @@ import { useEffect, useRef, useState } from "react";
 
 type Props = {
   className?: string;
+  /**
+   * Optional left offset for the left-side scroll hint overlay.
+   * Useful when the first table column is sticky-left and would otherwise cover the hint.
+   */
+  leftHintOffset?: string;
   children: ReactNode;
 };
 
@@ -17,7 +22,7 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
   );
 }
 
-export default function ScrollHintContainer({ className, children }: Props) {
+export default function ScrollHintContainer({ className, leftHintOffset, children }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -70,7 +75,10 @@ export default function ScrollHintContainer({ className, children }: Props) {
   return (
     <div className="relative">
       {canScrollLeft ? (
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-black/55 to-transparent">
+        <div
+          className="pointer-events-none absolute inset-y-0 z-10 w-14 bg-gradient-to-r from-black/55 to-transparent"
+          style={{ left: leftHintOffset ?? "0px" }}
+        >
           <div className="pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2">
             <button
               type="button"
