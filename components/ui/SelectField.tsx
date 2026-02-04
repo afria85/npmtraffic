@@ -12,6 +12,7 @@ type Props = {
   className?: string;
   selectClassName?: string;
   id?: string;
+  name?: string;
   iconClassName?: string;
 };
 
@@ -23,6 +24,7 @@ export function SelectField({
   className,
   selectClassName,
   id,
+  name,
   iconClassName,
 }: Props) {
   return (
@@ -31,6 +33,7 @@ export function SelectField({
       <div className="relative mt-2">
         <select
           id={id}
+          name={name}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className={cx(
