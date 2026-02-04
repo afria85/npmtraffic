@@ -6,8 +6,8 @@ import { useEffect, useRef, useState } from "react";
 type Props = {
   className?: string;
   /**
-   * Optional left offset for the left-side scroll hint overlay.
-   * Useful when the first table column is sticky-left and would otherwise cover the hint.
+   * Offset for the left scroll hint overlay. Useful when the first column is sticky
+   * (e.g. a sticky Date column) so the left hint isn't hidden behind it.
    */
   leftHintOffset?: string;
   children: ReactNode;
@@ -76,8 +76,8 @@ export default function ScrollHintContainer({ className, leftHintOffset, childre
     <div className="relative">
       {canScrollLeft ? (
         <div
-          className="pointer-events-none absolute inset-y-0 z-10 w-14 bg-gradient-to-r from-black/55 to-transparent"
-          style={{ left: leftHintOffset ?? "0px" }}
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-black/55 to-transparent"
+          style={leftHintOffset ? { left: leftHintOffset } : undefined}
         >
           <div className="pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2">
             <button
