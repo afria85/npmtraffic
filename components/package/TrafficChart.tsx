@@ -22,6 +22,11 @@ function MetricCheckbox({
   title?: string;
   onChange: (next: boolean) => void;
 }) {
+  const slug = label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  const name = `metric-${slug || "toggle"}`;
   return (
     <label
       className={`inline-flex items-center gap-2 text-xs font-medium text-[var(--foreground-secondary)] select-none ${
@@ -32,6 +37,8 @@ function MetricCheckbox({
       <span className="relative inline-flex h-4 w-4 flex-none">
         <input
           type="checkbox"
+          name={name}
+          id={name}
           checked={checked}
           disabled={disabled}
           onChange={(e) => onChange(e.target.checked)}
@@ -68,11 +75,18 @@ function ChartSelect({
   onChange: (value: string) => void;
   options: Array<{ label: string; value: string }>;
 }) {
+  const slug = label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  const name = `chart-${slug || "select"}`;
   return (
     <label className="flex flex-col gap-1">
       <span className="text-[var(--foreground-tertiary)]">{label}</span>
       <div className="relative">
         <select
+          name={name}
+          id={name}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="w-full appearance-none rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 pr-10 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"

@@ -217,6 +217,7 @@ function SearchPanel({
         <input
           ref={inputRef}
           value={query}
+          name="q"
           onChange={(event) => {
             const nextValue = event.target.value;
             const normalized = normalizePackageInput(nextValue);

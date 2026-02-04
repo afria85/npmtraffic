@@ -13,7 +13,7 @@ const shippingNow = [
 const nextUp = [
   "Harden dropdown/menu behavior (no clipping, reliable close on outside click/Escape)",
   "Clarify comparison table labels and tooltips (derived metrics, % of total semantics)",
-  "Chart polish: optional MA7 toggle + better tooltip ergonomics",
+  "Chart polish: better tooltip ergonomics + marker clarity",
   "Status reliability improvements (reduce flapping; improve persistence where appropriate)",
 ];
 
