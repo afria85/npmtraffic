@@ -57,7 +57,11 @@ export default function CompareSeriesTable({ series, packageNames }: Props) {
 
       <thead className="sticky top-0 z-20 bg-[var(--surface)] text-xs uppercase tracking-wide text-[var(--foreground-secondary)] backdrop-blur">
         <tr>
-          <th rowSpan={2} className="px-2 py-2 text-left font-semibold whitespace-nowrap sm:px-3" title="Date (UTC)">
+          <th
+            rowSpan={2}
+            className="sticky left-0 z-30 bg-[var(--surface)] px-2 py-2 text-left font-semibold whitespace-nowrap sm:px-3"
+            title="Date (UTC)"
+          >
             <button
               type="button"
               onClick={() => setDateSortDir((prev) => (prev === "desc" ? "asc" : "desc"))}
@@ -106,7 +110,7 @@ export default function CompareSeriesTable({ series, packageNames }: Props) {
       <tbody className="divide-y divide-white/10">
         {sortedSeries.map((row) => (
           <tr key={row.date} className="text-[var(--foreground)]">
-            <td className="px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-[var(--foreground-tertiary)] whitespace-nowrap sm:px-3 sm:text-xs">
+            <td className="sticky left-0 z-10 bg-[var(--surface)] px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-[var(--foreground-tertiary)] whitespace-nowrap sm:px-3 sm:text-xs">
               {row.date}
             </td>
             {packageNames.map((pkg) => (

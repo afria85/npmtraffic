@@ -4,7 +4,6 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { config } from "@/lib/config";
 import { Suspense } from "react";
-import { cookies } from "next/headers";
 
 export const metadata: Metadata = {
   title: {
@@ -72,17 +71,10 @@ const THEME_INIT_SCRIPT = `(() => {
 })();`;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies();
-  const themeCookie = cookieStore.get("npmtraffic_theme")?.value;
-  const theme = themeCookie === "dark" || themeCookie === "light" ? themeCookie : "light";
-
   return (
     <html
       lang="en"
       suppressHydrationWarning
-      data-theme={theme}
-      className={theme === "dark" ? "dark" : undefined}
-      style={{ colorScheme: theme }}
     >
       <head>
         <link rel="icon" href="/favicon.ico" />

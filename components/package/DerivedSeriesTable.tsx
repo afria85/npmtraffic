@@ -557,6 +557,10 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
         </div>
         {statusContent && !showEventsList ? <div className="px-4 py-3">{statusContent}</div> : null}
         <ScrollHintContainer className="max-h-[60vh] overflow-auto pt-px">
+          {/**
+           * On mobile, the derived-metrics table becomes horizontally scrollable.
+           * Keep the Date column sticky-left in that mode only (sm and up remain unchanged).
+           */}
           <table
             className={`w-full text-sm ${showDerived ? "min-w-[700px] md:min-w-0 table-auto md:table-fixed" : "table-fixed"}`}
           >
@@ -582,7 +586,12 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
             </colgroup>
             <thead className="sticky top-0 z-20 bg-[var(--surface)] text-xs uppercase tracking-normal text-[var(--foreground-secondary)] backdrop-blur">
                 <tr>
-                  <th className="px-2 py-2 text-left font-semibold whitespace-nowrap sm:px-3" title="Date (UTC)">
+                  <th
+                    className={`px-2 py-2 text-left font-semibold whitespace-nowrap sm:px-3 ${
+                      showDerived ? "sticky left-0 z-30 bg-[var(--surface)] sm:static sm:z-auto" : ""
+                    }`}
+                    title="Date (UTC)"
+                  >
                     <button
                       type="button"
                       onClick={() => setDateSortDir((prev) => (prev === "desc" ? "asc" : "desc"))}
@@ -630,7 +639,11 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   const isOutlier = Boolean(outlier?.is_outlier);
                   return (
                     <tr key={row.date} className="text-[var(--foreground)] border-b border-[var(--border)] last:border-b-0">
-                      <td className="px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-[var(--foreground-tertiary)] whitespace-nowrap sm:px-3 sm:text-xs">
+                      <td
+                        className={`px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-[var(--foreground-tertiary)] whitespace-nowrap sm:px-3 sm:text-xs ${
+                          showDerived ? "sticky left-0 z-10 bg-[var(--surface)] sm:static sm:z-auto" : ""
+                        }`}
+                      >
                         <div className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
                           <span className="min-w-0 truncate">{row.date}</span>
                           {dayEvents?.length ? (
