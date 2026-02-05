@@ -9,8 +9,6 @@ import { buildExportCommentHeader, buildExportMeta } from "@/lib/export";
 import { buildExportFilename } from "@/lib/export-filename";
 import { rangeForDays } from "@/lib/query";
 import SearchBox from "@/components/SearchBox";
-import { Button } from "@/components/ui/Button";
-
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getBaseUrl();
   const ogImage = `${baseUrl}/og.png`;
@@ -248,11 +246,7 @@ export default async function Home() {
           <p className="mb-8 text-lg text-[var(--foreground-secondary)]">
             Up to 5 packages. Aligned date ranges. Consistent labeling. Shareable URLs.
           </p>
-          <Link href="/compare">
-            <Button variant="primary" size="lg">
-              Start Comparing
-            </Button>
-          </Link>
+          <Link href="/compare" className="inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] disabled:pointer-events-none disabled:opacity-50 bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] focus-visible:ring-[var(--accent)] shadow-sm h-12 px-6 text-base">Start Comparing</Link>
         </div>
       </section>
 

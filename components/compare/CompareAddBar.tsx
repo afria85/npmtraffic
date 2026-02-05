@@ -222,8 +222,13 @@ export default function CompareAddBar({ packages, days, className }: Props) {
   };
 
   return (
-    <div className={className}>
-      <div className="relative">
+    // NOTE: some browser extensions inject random attributes (ids/guids) into these wrappers
+    // before React hydrates. Those injected attributes are nondeterministic and can trigger
+    // hydration mismatch warnings or even a client-side re-mount in production.
+    // We don't control the extension behavior, so we explicitly suppress hydration warnings
+    // for this small subtree.
+    <div className={className} suppressHydrationWarning>
+      <div className="relative" suppressHydrationWarning>
         <input id="compare-add" name="compare"
           ref={inputRef}
           value={query}

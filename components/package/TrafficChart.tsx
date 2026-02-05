@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useLayoutEffect, useMemo, useRef, useState, useId} from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import type { DerivedMetrics } from "@/lib/derived";
 import type { TrafficSeriesRow } from "@/lib/traffic";
@@ -22,9 +22,11 @@ function MetricCheckbox({
   title?: string;
   onChange: (next: boolean) => void;
 }) {
-  const slug = label.toLowerCase().replace(/\s+/g, "");
-  const id = `metric-${slug}`;
-  const name = slug;
+  const reactId = useId();
+  const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const base = `metric-${slug || "toggle"}`;
+  const id = `${base}-${reactId.replace(/[:]/g, "")}`;
+  const name = base;
 
   return (
     <label
@@ -76,7 +78,7 @@ function ChartSelect({
 }) {
   const reactId = useId();
   const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-  const base = `chart-select-${slug || "select"}`;
+  const base = `chart-${slug || "select"}`;
   const id = `${base}-${reactId.replace(/[:]/g, "")}`;
   const name = base;
 

@@ -13,11 +13,11 @@ export default function Header() {
         
         <nav className="flex items-center gap-2" aria-label="Main navigation">
           <Link
-            href="/about"
-            className="inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] text-[var(--foreground-secondary)] hover:bg-[var(--surface)] hover:text-[var(--foreground)] focus-visible:ring-[var(--accent)] h-8 px-3 text-xs"
-          >
-            About
-          </Link>
+              href="/about"
+              className="inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] text-[var(--foreground-secondary)] hover:bg-[var(--surface)] hover:text-[var(--foreground)] focus-visible:ring-[var(--accent)] h-8 px-3 text-xs"
+            >
+              About
+            </Link>
           <a
             href={REPO_URL}
             target="_blank"

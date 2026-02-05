@@ -1,5 +1,6 @@
 "use client";
 
+import { useHydrated } from "@/lib/hydrated";
 import Link from "next/link";
 import { useCallback, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import {
@@ -32,8 +33,14 @@ export default function CompareTray({
   onSyncCompareUrl,
   compareDays,
 }: CompareTrayProps = {}) {
-  // Hydration-safe: SSR snapshot is always empty. Client reads localStorage after mount via the store.
-  const packages = useSyncExternalStore(subscribeCompareList, loadCompareList, getEmptySnapshot);
+  const hydrated = useHydrated();
+
+  const getClientSnapshot = useCallback(() => {
+    return hydrated ? loadCompareList() : EMPTY_SNAPSHOT;
+  }, [hydrated]);
+
+  // Hydration-safe: SSR snapshot is always empty. Client reads localStorage after mount.
+  const packages = useSyncExternalStore(subscribeCompareList, getClientSnapshot, getEmptySnapshot);
 
   const trayRef = useRef<HTMLDivElement | null>(null);
 

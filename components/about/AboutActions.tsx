@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useSyncExternalStore } from "react";
+
+import { Button } from "@/components/ui/Button";
 import { useHydrated } from "@/lib/hydrated";
 import { loadCompareList, subscribeCompareList } from "@/lib/compare-store";
-import { Button } from "@/components/ui/Button";
 
 const EMPTY_SNAPSHOT: string[] = [];
 const getEmptySnapshot = () => EMPTY_SNAPSHOT;
@@ -16,22 +16,17 @@ export default function AboutActions() {
     return hydrated ? loadCompareList() : EMPTY_SNAPSHOT;
   }, [hydrated]);
 
-  const compareList = useSyncExternalStore(
-    subscribeCompareList,
-    getClientSnapshot,
-    getEmptySnapshot
-  );
+  const packages = useSyncExternalStore(subscribeCompareList, getClientSnapshot, getEmptySnapshot);
+
+  if (!hydrated || packages.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Link href="/compare">
-        <Button variant="primary" size="sm">
-          Compare
+    <div className="mt-8 flex flex-wrap items-center gap-3">
+      <a href={`/compare?packages=${encodeURIComponent(packages.join(","))}&days=30`}>
+        <Button variant="secondary" size="sm">
+          Open compare ({packages.length})
         </Button>
-      </Link>
-      <span className="text-sm text-muted-foreground">
-        {compareList.length ? `${compareList.length} in compare` : "No compare list yet"}
-      </span>
+      </a>
     </div>
   );
 }
