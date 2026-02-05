@@ -556,7 +556,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
           </div>
         </div>
         {statusContent && !showEventsList ? <div className="px-4 py-3">{statusContent}</div> : null}
-        <ScrollHintContainer className="max-h-[60vh] overflow-auto pt-px">
+        <ScrollHintContainer className="max-h-[60vh] overflow-auto pt-px" leftHintOffset={showDerived ? "74px" : undefined}>
           <table
             className={`w-full text-sm ${showDerived ? "min-w-[700px] md:min-w-0 table-auto md:table-fixed" : "table-fixed"}`}
           >
