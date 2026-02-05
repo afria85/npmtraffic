@@ -556,10 +556,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
           </div>
         </div>
         {statusContent && !showEventsList ? <div className="px-4 py-3">{statusContent}</div> : null}
-        <ScrollHintContainer
-          className="max-h-[60vh] overflow-auto pt-px"
-          leftHintOffset={showDerived ? "74px" : undefined}
-        >
+        <ScrollHintContainer className="max-h-[60vh] overflow-auto pt-px">
           <table
             className={`w-full text-sm ${showDerived ? "min-w-[700px] md:min-w-0 table-auto md:table-fixed" : "table-fixed"}`}
           >
@@ -585,12 +582,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
             </colgroup>
             <thead className="sticky top-0 z-20 bg-[var(--surface)] text-xs uppercase tracking-normal text-[var(--foreground-secondary)] backdrop-blur">
                 <tr>
-                  <th
-                    className={`px-2 py-2 text-left font-semibold whitespace-nowrap sm:px-3 ${
-                      showDerived ? "sticky left-0 z-30 bg-[var(--surface)] sm:static sm:z-auto" : ""
-                    }`}
-                    title="Date (UTC)"
-                  >
+                  <th className={`px-2 py-2 text-left font-semibold whitespace-nowrap sm:px-3 ${showDerived ? "sticky left-0 z-30 bg-[var(--surface)] sm:static sm:z-auto sm:bg-transparent" : ""}`} title="Date (UTC)">
                     <button
                       type="button"
                       onClick={() => setDateSortDir((prev) => (prev === "desc" ? "asc" : "desc"))}
@@ -638,11 +630,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   const isOutlier = Boolean(outlier?.is_outlier);
                   return (
                     <tr key={row.date} className="text-[var(--foreground)] border-b border-[var(--border)] last:border-b-0">
-                      <td
-                        className={`px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-[var(--foreground-tertiary)] whitespace-nowrap sm:px-3 sm:text-xs ${
-                          showDerived ? "sticky left-0 z-10 bg-[var(--surface)] sm:static sm:z-auto" : ""
-                        }`}
-                      >
+                      <td className={`px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-[var(--foreground-tertiary)] whitespace-nowrap sm:px-3 sm:text-xs ${showDerived ? "sticky left-0 z-10 bg-[var(--surface)] sm:static sm:z-auto sm:bg-transparent" : ""}`}>
                         <div className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
                           <span className="min-w-0 truncate">{row.date}</span>
                           {dayEvents?.length ? (
@@ -729,6 +717,8 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   <label className="min-w-0 flex flex-col gap-2 text-xs uppercase tracking-widest text-[var(--foreground-tertiary)]">
   Date
   <DateField
+    id="event_date_utc"
+    name="date_utc"
     value={form.date_utc}
     onChange={(event) => setForm((prev) => ({ ...prev, date_utc: (event.target as HTMLInputElement).value }))}
     required
@@ -739,6 +729,8 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
                   <div className="min-w-0">
   <SelectField
+    id="event_type"
+    name="event_type"
     label="Type"
     value={form.event_type}
     onChange={(value) =>
@@ -756,6 +748,8 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                 <label className="flex flex-col gap-2 text-xs uppercase tracking-widest text-[var(--foreground-tertiary)]">
                   Label
                   <input
+                    id="event_label"
+                    name="label"
                     value={form.label}
                     onChange={(event) => setForm((prev) => ({ ...prev, label: event.target.value }))}
                     className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
@@ -767,6 +761,8 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   <label className="min-w-0 flex flex-col gap-2 text-xs uppercase tracking-widest text-[var(--foreground-tertiary)]">
                     URL (optional)
                     <input
+                      id="event_url"
+                      name="url"
                       value={form.url ?? ""}
                       onChange={(event) => setForm((prev) => ({ ...prev, url: event.target.value || undefined }))}
                       className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
@@ -775,6 +771,8 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
                   <div className="min-w-0">
   <SelectField
+    id="event_strength"
+    name="strength"
     label="Strength"
     value={String(form.strength)}
     onChange={(value) => setForm((prev) => ({ ...prev, strength: Number(value) as 1 | 2 | 3 }))}
@@ -867,6 +865,8 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
                 <input
                   ref={importFileRef}
+                  id="events-import"
+                  name="eventsImport"
                   type="file"
                   accept="application/json"
                   className="hidden"

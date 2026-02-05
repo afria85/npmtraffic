@@ -1,29 +1,26 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { isCompareTrayAllowed } from "@/lib/compare-tray";
-import { buildCompareUrl } from "@/lib/compare-store";
-import { clampDays } from "@/lib/query";
+import { useCallback, useSyncExternalStore } from "react";
+import { useHydrated } from "@/lib/hydrated";
+import { loadCompareList, subscribeCompareList } from "@/lib/compare-store";
+import CompareTray from "@/components/compare/CompareTray";
 
-const CompareTray = dynamic(() => import("@/components/compare/CompareTray"), { ssr: false });
+const EMPTY_SNAPSHOT: string[] = [];
+const getEmptySnapshot = () => EMPTY_SNAPSHOT;
 
 export default function CompareTrayGate() {
-  const pathname = usePathname() ?? "/";
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const hydrated = useHydrated();
 
-  const days = clampDays(searchParams?.get("days") ?? undefined);
-  if (!isCompareTrayAllowed(pathname)) return null;
-  return (
-    <CompareTray
-      pathname={pathname}
-      compareDays={days}
-      onNavigateToCompareRoot={() => router.replace("/compare")}
-      onSyncCompareUrl={(packages, nextDays) => {
-        const next = buildCompareUrl(packages, nextDays);
-        router.replace(next ?? "/compare");
-      }}
-    />
+  const getClientSnapshot = useCallback(() => {
+    return hydrated ? loadCompareList() : EMPTY_SNAPSHOT;
+  }, [hydrated]);
+
+  const compareList = useSyncExternalStore(
+    subscribeCompareList,
+    getClientSnapshot,
+    getEmptySnapshot
   );
+
+  if (!compareList.length) return null;
+  return <CompareTray />;
 }

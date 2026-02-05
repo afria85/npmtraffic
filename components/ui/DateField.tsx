@@ -1,18 +1,19 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useId, useRef } from "react";
 import { cx } from "@/lib/cx";
 import { IconCalendar } from "@/components/ui/icons";
+
+type PickerCapableInput = HTMLInputElement & { showPicker?: () => void };
 
 function openNativeDatePicker(input: HTMLInputElement | null) {
   if (!input) return;
   // Prefer the native picker when available (Chromium).
   // Fallbacks keep behavior reasonable on Safari/iOS.
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const anyInput = input as any;
-    if (typeof anyInput.showPicker === "function") {
-      anyInput.showPicker();
+    const pickerInput = input as PickerCapableInput;
+    if (typeof pickerInput.showPicker === "function") {
+      pickerInput.showPicker();
       return;
     }
   } catch {
@@ -28,18 +29,26 @@ export function DateField({
   inputClassName,
   iconClassName,
   iconButtonClassName,
-  ...props
+  id: providedId,
+  name: providedName,
+  ...rest
 }: Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
   inputClassName?: string;
   iconClassName?: string;
   iconButtonClassName?: string;
 }) {
   const ref = useRef<HTMLInputElement | null>(null);
+  const reactId = useId();
+  const autoId = `date-${reactId.replace(/[:]/g, "")}`;
+  const id = providedId ?? autoId;
+  const name = providedName ?? id;
 
   return (
     <div className={cx("relative", className)}>
       <input
-        {...props}
+        {...rest}
+        id={id}
+        name={name}
         ref={ref}
         type="date"
         className={cx("nt-date w-full min-w-0 pr-12 appearance-none", inputClassName)}

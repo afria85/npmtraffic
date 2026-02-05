@@ -30,8 +30,7 @@ function decodeBase64UrlToUtf8(input: string): string {
 
 export function encodePkg(name: string) {
   if (hasBuffer()) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const B = (globalThis as any).Buffer as typeof Buffer;
+    const B = (globalThis as (typeof globalThis & { Buffer?: typeof Buffer })).Buffer;
     return B.from(name, "utf8").toString("base64url");
   }
   return encodeUtf8ToBase64Url(name);
@@ -42,8 +41,7 @@ export function decodePkg(encoded: string) {
     if (!encoded) return null;
 
     if (hasBuffer()) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const B = (globalThis as any).Buffer as typeof Buffer;
+      const B = (globalThis as (typeof globalThis & { Buffer?: typeof Buffer })).Buffer;
       const decoded = B.from(encoded, "base64url").toString("utf8");
       return decoded || null;
     }

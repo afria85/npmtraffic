@@ -1,5 +1,6 @@
 "use client";
 
+import { useHydrated } from "@/lib/hydrated";
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import {
   addToCompare,
@@ -23,8 +24,10 @@ function includesPackage(list: string[], name: string) {
 }
 
 export default function CompareButton({ name }: CompareButtonProps) {
+  const hydrated = useHydrated();
   // Hydration-safe: server snapshot is always empty; client picks up localStorage after mount.
-  const compareList = useSyncExternalStore(subscribeCompareList, loadCompareList, getEmptySnapshot);
+    const getClientSnapshot = useCallback(() => (hydrated ? loadCompareList() : EMPTY_SNAPSHOT), [hydrated]);
+  const compareList = useSyncExternalStore(subscribeCompareList, getClientSnapshot, getEmptySnapshot);
 
   const isActive = useMemo(() => includesPackage(compareList, name), [compareList, name]);
 

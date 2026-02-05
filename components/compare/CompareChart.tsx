@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {useEffect, useLayoutEffect, useMemo, useRef, useState, useId} from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import ActionMenu from "@/components/ui/ActionMenu";
 import { IconChevronDown } from "@/components/ui/icons";
@@ -60,11 +60,19 @@ function ChartSelect({
   options: Array<{ label: string; value: string }>;
   labelClassName?: string;
 }) {
+  const reactId = useId();
+  const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const base = `compare-chart-${slug || "select"}`;
+  const id = `${base}-${reactId.replace(/[:]/g, "")}`;
+  const name = base;
+
   return (
     <label className="block">
       <span className={`mb-1 block ${labelClassName}`}>{label}</span>
       <div className="relative">
         <select
+          id={id}
+          name={name}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="w-full appearance-none rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 pr-10 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"

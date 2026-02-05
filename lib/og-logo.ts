@@ -3,8 +3,7 @@ import type { NextRequest } from "next/server";
 function arrayBufferToBase64(buf: ArrayBuffer): string {
   // Prefer Buffer in Node; fall back to btoa for Edge-safe base64 encoding.
   if (typeof (globalThis as { Buffer?: unknown }).Buffer !== "undefined") {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const B = (globalThis as any).Buffer as typeof Buffer;
+    const B = (globalThis as (typeof globalThis & { Buffer?: typeof Buffer })).Buffer;
     return B.from(buf).toString("base64");
   }
   const bytes = new Uint8Array(buf);

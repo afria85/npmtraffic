@@ -1,7 +1,8 @@
 "use client";
 
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useHydrated } from "@/lib/hydrated";
+import { useEffect, useCallback, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { COMPARE_UPDATED_EVENT, saveCompareList } from "@/lib/compare-store";
 import { POPULAR_PACKAGES } from "@/lib/constants";
@@ -59,7 +60,11 @@ export default function CompareAddBar({ packages, days, className }: Props) {
   const [query, setQuery] = useState("");
   const [state, setState] = useState<SearchState>("idle");
   const [results, setResults] = useState<SearchResult[]>([]);
-  const recent = useSyncExternalStore(subscribeRecentSearches, loadRecentSearches, getEmptySnapshot);
+  const hydrated = useHydrated();
+  const getClientSnapshot = useCallback(() => {
+    return hydrated ? loadRecentSearches() : EMPTY_SNAPSHOT;
+  }, [hydrated]);
+  const recent = useSyncExternalStore(subscribeRecentSearches, getClientSnapshot, getEmptySnapshot);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isListOpen, setIsListOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -219,7 +224,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
   return (
     <div className={className}>
       <div className="relative">
-        <input
+        <input id="compare-add" name="compare"
           ref={inputRef}
           value={query}
           onChange={(event) => {
