@@ -347,7 +347,10 @@ export default async function ComparePage({ searchParams }: Props) {
         <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3 text-sm text-[var(--foreground)]">
           <span className="text-sm font-semibold">Daily downloads ({days}d)</span>
         </div>
-	        <ScrollHintContainer className={COMPARE_TABLE_WRAPPER_CLASSES} leftHintOffset="120px">
+	        <ScrollHintContainer
+	          className={COMPARE_TABLE_WRAPPER_CLASSES}
+	          leftHintOffset="calc(var(--nt-date-col-w) + 8px)"
+	        >
 	          <CompareSeriesTable series={data.series} packageNames={tablePackageNames} />
 	        </ScrollHintContainer>
         <p className="px-3 py-2 text-xs text-[var(--foreground-tertiary)]">

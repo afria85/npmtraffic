@@ -3,6 +3,11 @@ import { NextResponse } from "next/server";
 import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
 import { fetchSearch } from "@/lib/search";
+
+// FIX: Missing revalidate export. All other API routes define this
+// for consistent ISR behavior.
+export const revalidate = 900;
+
 export async function GET(req: Request) {
   const requestId = crypto.randomUUID();
   const start = Date.now();
@@ -48,7 +53,12 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json(data, {
-      headers: { "x-request-id": requestId },
+      headers: {
+        "x-request-id": requestId,
+        // FIX: Add Cache-Control for CDN edge caching consistency.
+        // Next.js caches per full URL so query params are safe.
+        "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
+      },
     });
   } catch {
     logApiEvent({

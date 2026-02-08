@@ -8,10 +8,16 @@ function escapeCsvValue(
   // Mitigate CSV/Excel formula injection for Excel-friendly exports.
   // If a cell begins with one of the characters below, Excel may interpret it
   // as a formula when opening CSV.
-  if (opts.excelSafe && /^[=+\-@|%]/.test(str)) {
-    // Prefix with a single quote to force literal interpretation in Excel.
-    // Also escape any existing single quotes to keep the cell content stable.
-    str = `'${str.replace(/'/g, "''")}`;
+  if (/^[=+\-@|%]/.test(str)) {
+    if (opts.excelSafe) {
+      // Excel-friendly export: prefix with a single quote to force literal interpretation.
+      // Escape any existing single quotes to keep the cell content stable.
+      str = `'${str.replace(/'/g, "''")}`;
+    } else {
+      // Standard CSV export: prefix with a tab to avoid formulas in Excel/Sheets
+      // while remaining visually non-invasive in most CSV viewers.
+      str = `\t${str}`;
+    }
   }
   if (str.includes(",") || str.includes("\"") || str.includes("\n")) {
     return `"${str.replace(/"/g, "\"\"")}"`;

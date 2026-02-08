@@ -1,6 +1,9 @@
 const MAX_PACKAGE_NAME_LENGTH = 214;
 
-const fullPackageRegex = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/i;
+// FIX: Removed `i` flag — input is now always lowercased by
+// normalizePackageInput(), so case-insensitive matching is unnecessary
+// and would mask improperly normalized input.
+const fullPackageRegex = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
 const allowedCharsRegex = /^[a-z0-9@._~/-]+$/i;
 
 export type PackageNameValidation = {
@@ -9,7 +12,11 @@ export type PackageNameValidation = {
 };
 
 export function normalizePackageInput(input: string) {
-  return input.trim();
+  // FIX: Lowercase during normalization. npm package names are
+  // case-insensitive but the previous implementation only trimmed.
+  // This caused cache key fragmentation where "React" and "react"
+  // could produce separate cache entries.
+  return input.trim().toLowerCase();
 }
 
 export function validatePackageName(name: string): PackageNameValidation {

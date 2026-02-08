@@ -46,7 +46,7 @@ export default function CompareSeriesTable({ series, packageNames }: Props) {
   return (
     <table className="min-w-[760px] w-max table-fixed text-sm sm:w-full">
       <colgroup>
-        <col className="w-[120px]" />
+        <col className="w-[var(--nt-date-col-w)]" />
         {packageNames.map((pkg) => (
           <Fragment key={`cols-${pkg}`}>
             <col className="w-[120px]" />

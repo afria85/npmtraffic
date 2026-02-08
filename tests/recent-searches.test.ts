@@ -4,7 +4,8 @@ import { mergeRecentSearches } from "../lib/recent-searches";
 
 test("merges and dedupes recent searches", () => {
   const merged = mergeRecentSearches(["react", "vue"], "React");
-  assert.deepEqual(merged, ["React", "vue"]);
+  // Recent searches are stored in normalized (lower-case) form.
+  assert.deepEqual(merged, ["react", "vue"]);
 });
 
 test("caps recent searches at 10 items", () => {

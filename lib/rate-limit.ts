@@ -24,18 +24,25 @@ export function getClientIp(req: Request) {
     return cleaned;
   };
 
-  const forwarded = normalize(req.headers.get("x-forwarded-for"));
-  if (forwarded) return forwarded;
-
-  const candidates = [
+  // FIX: Prefer platform-verified headers over x-forwarded-for.
+  // x-forwarded-for can be spoofed by clients when not behind a trusted
+  // proxy. Vercel's x-vercel-forwarded-for and Cloudflare's
+  // cf-connecting-ip are set by the platform and are not spoofable.
+  const platformCandidates = [
     req.headers.get("cf-connecting-ip"),
-    req.headers.get("x-real-ip"),
     req.headers.get("x-vercel-forwarded-for"),
+    req.headers.get("x-real-ip"),
   ];
-  for (const candidate of candidates) {
+  for (const candidate of platformCandidates) {
     const ip = normalize(candidate);
     if (ip) return ip;
   }
+
+  // Fallback: x-forwarded-for is last resort since it can be spoofed
+  // when no trusted reverse proxy strips/overwrites it.
+  const forwarded = normalize(req.headers.get("x-forwarded-for"));
+  if (forwarded) return forwarded;
+
   return undefined;
 }
 
@@ -48,18 +55,26 @@ async function memoryRateLimit(
   const windowStart = now - windowMs;
   const entries = memoryStore.get(key) ?? [];
   const recent = entries.filter((ts) => ts > windowStart);
-  recent.push(now);
+
+  // FIX: Check count BEFORE pushing the current request.
+  // Previously, denied requests were still added to the array, causing
+  // unbounded memory growth under sustained attack.
+  const count = recent.length;
+  const allowed = count < limit;
+
+  if (allowed) {
+    recent.push(now);
+  }
+
   memoryStore.set(key, recent);
 
-  const count = recent.length;
-  const allowed = count <= limit;
   const oldest = recent[0] ?? now;
   const retryAfter = allowed ? 0 : Math.ceil((windowMs - (now - oldest)) / 1000);
 
   return {
     allowed,
     limit,
-    remaining: Math.max(0, limit - count),
+    remaining: Math.max(0, limit - (allowed ? count + 1 : count)),
     retryAfter,
     key,
   };

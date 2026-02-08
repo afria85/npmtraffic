@@ -76,7 +76,7 @@ export default function ScrollHintContainer({ className, leftHintOffset, childre
     <div className="relative">
       {canScrollLeft ? (
         <div
-          className="pointer-events-none absolute inset-y-0 z-10 w-14 bg-gradient-to-r from-black/55 to-transparent"
+          className="pointer-events-none absolute inset-y-0 z-30 w-14 bg-gradient-to-r from-black/55 to-transparent"
           style={{ left: leftHintOffset ?? "0px" }}
         >
           <div className="pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2">
@@ -92,7 +92,7 @@ export default function ScrollHintContainer({ className, leftHintOffset, childre
         </div>
       ) : null}
       {canScrollRight ? (
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-black/55 to-transparent">
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-30 w-14 bg-gradient-to-l from-black/55 to-transparent">
           <div className="pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2">
             <button
               type="button"

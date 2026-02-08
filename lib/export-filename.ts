@@ -7,6 +7,11 @@ const MAX_FILENAME_LENGTH = 180;
 function sanitizeSegment(value: string) {
   return value
     .replace(/\//g, "__")
+    // FIX: Explicitly strip double quotes, backslashes, and control
+    // characters to prevent Content-Disposition header injection when
+    // the filename is placed inside `filename="..."`.
+    .replace(/["\\]/g, "")
+    .replace(/[\x00-\x1f\x7f]/g, "")
     .replace(/[^a-zA-Z0-9@._-]/g, "_")
     .replace(/__+/g, "__");
 }

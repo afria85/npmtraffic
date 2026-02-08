@@ -15,7 +15,8 @@ test("clampDays defaults and clamps to allowed values", () => {
 
 test("canonicalizePackages sorts and dedupes", () => {
   const result = canonicalizePackages(["Vue", "react", "vue", "logshield-cli"]);
-  assert.deepEqual(result, ["logshield-cli", "react", "Vue"]);
+  // Package inputs are normalized to lower-case for consistent URLs/cache keys.
+  assert.deepEqual(result, ["logshield-cli", "react", "vue"]);
 });
 
 test("rangeForDays returns yesterday-based window", () => {

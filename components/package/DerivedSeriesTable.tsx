@@ -558,16 +558,14 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
         {statusContent && !showEventsList ? <div className="px-4 py-3">{statusContent}</div> : null}
         <ScrollHintContainer
           className="max-h-[60vh] overflow-auto pt-px"
-          // When derived metrics are enabled on mobile we make the Date column sticky.
-          // Offset the left scroll hint so it doesn't overlap the sticky Date column.
-          leftHintOffset={showDerived ? "82px" : undefined}
+          leftHintOffset={showDerived ? "calc(var(--nt-date-col-w) + 8px)" : undefined}
         >
           <table
             className={`w-full text-sm ${showDerived ? "min-w-[700px] md:min-w-0 table-auto md:table-fixed" : "table-fixed"}`}
           >
             <colgroup>
               {/* Date */}
-              <col className={showDerived ? "w-[74px] sm:w-[120px] md:w-[96px]" : "w-[34%] sm:w-[140px]"} />
+              <col className={showDerived ? "w-[var(--nt-date-col-w)]" : "w-[34%] sm:w-[140px]"} />
               {/* Downloads */}
               <col className={showDerived ? "w-[88px] sm:w-[150px] md:w-[110px]" : "w-[33%] sm:w-[160px]"} />
               {/* Delta */}
@@ -637,7 +635,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                     <tr key={row.date} className="text-[var(--foreground)] border-b border-[var(--border)] last:border-b-0">
                       <td className={`px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-[var(--foreground-tertiary)] whitespace-nowrap sm:px-3 sm:text-xs ${showDerived ? "sticky left-0 z-10 bg-[var(--surface)] sm:static sm:z-auto sm:bg-transparent" : ""}`}>
                         <div className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
-                          <span className="min-w-0 truncate">{row.date}</span>
+                          <span className="flex-none">{row.date}</span>
                           {dayEvents?.length ? (
                             <button
                               type="button"
@@ -870,8 +868,6 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
                 <input
                   ref={importFileRef}
-                  id="events-import"
-                  name="eventsImport"
                   type="file"
                   accept="application/json"
                   className="hidden"

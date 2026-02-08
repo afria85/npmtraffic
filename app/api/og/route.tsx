@@ -284,8 +284,11 @@ export async function GET(request: NextRequest) {
     return bufferImageResponse(await buildOgImageResponse({ mode: "pkg", days, pkg: pkgName, logoSrc, stats: pkgStats }));
   } catch (error) {
     console.error("OG render failed", error);
+    // FIX: Only expose debug info in non-production environments.
+    // Previously ?debug=1 leaked full stack traces to any visitor.
+    const isDev = process.env.NODE_ENV !== "production";
     const url = new URL(request.url);
-    const debug = url.searchParams.get("debug") === "1";
+    const debug = isDev && url.searchParams.get("debug") === "1";
     const message =
       error instanceof Error ? `${error.name}: ${error.message}${error.stack ? `\n${error.stack}` : ""}` : "Unknown error";
     return new Response(debug ? message : "OG render failed.", {

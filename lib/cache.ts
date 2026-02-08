@@ -13,6 +13,26 @@ globalThis.__npmtraffic_cache__ = store;
 // Map preserves insertion order; we refresh access by delete+set.
 const MAX_CACHE_ENTRIES = 1000;
 
+// FIX: Periodically purge fully expired entries (past staleAt) to
+// prevent the store from filling up with dead entries that only get
+// cleaned on individual access. O(n) with n ≤ 1000 — safe to run
+// inline during normal cache operations.
+const PURGE_INTERVAL_MS = 60_000 * 5; // every 5 minutes
+let lastPurge = Date.now();
+
+function purgeExpired() {
+  const now = Date.now();
+  if (now - lastPurge < PURGE_INTERVAL_MS) return;
+  lastPurge = now;
+
+  for (const [key, ent] of store) {
+    const deadline = ent.staleAt ?? ent.expiresAt;
+    if (now > deadline) {
+      store.delete(key);
+    }
+  }
+}
+
 function touch(key: string, ent: CacheEntry<unknown>) {
   // Refresh insertion order to approximate LRU.
   store.delete(key);
@@ -28,6 +48,7 @@ function evictIfNeeded() {
 }
 
 export function cacheGet<T>(key: string): { hit: boolean; value?: T } {
+  purgeExpired();
   const ent = store.get(key);
   if (!ent) return { hit: false };
   if (Date.now() > ent.expiresAt) {
@@ -46,6 +67,7 @@ export function cacheSet<T>(key: string, value: T, ttlSeconds: number) {
 export function cacheGetWithStale<T>(
   key: string
 ): { hit: boolean; stale: boolean; value?: T } {
+  purgeExpired();
   const ent = store.get(key);
   if (!ent) return { hit: false, stale: false };
   const now = Date.now();

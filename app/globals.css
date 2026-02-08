@@ -70,6 +70,21 @@
   --pill-no-bg: rgba(255, 255, 255, 0.06);
   --pill-no-border: rgba(255, 255, 255, 0.10);
   --pill-no-fg: #94a3b8;
+
+  /* Table layout tokens */
+  --nt-date-col-w: 112px;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --nt-date-col-w: 132px;
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --nt-date-col-w: 140px;
+  }
 }
 
 /* Light Theme - Premium */
