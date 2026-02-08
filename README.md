@@ -8,17 +8,17 @@ Daily npm download analytics built for package maintainers.
 
 ## What is this?
 
-npmtraffic helps you track npm package downloads with daily precision. It pulls data directly from npm's registry, displays trends with event markers, and lets you export datasets with full metadata for reproducible analysis.
+npmtraffic helps you track npm package downloads with daily precision. It pulls data directly from npm's public APIs, displays trends with event markers, and lets you export datasets with full metadata for reproducible analysis.
 
 **Live site:** [npmtraffic.com](https://npmtraffic.com)
 
 ## Features
 
 - **Day-by-day tables** &ndash; Browse downloads by date, catch inflection points, and see exactly when changes happened
-- **Reproducible exports** &ndash; CSV and JSON files include UTC timestamps, date ranges, and cache status for repeatable analysis
+- **Reproducible exports** &ndash; CSV (including an Excel-friendly variant) and JSON files include UTC timestamps, date ranges, and cache status for repeatable analysis
 - **Event markers** &ndash; Pin releases, blog posts, or incidents to your charts to correlate with download spikes
 - **Package comparison** &ndash; Compare 2-5 packages side-by-side with aligned date ranges
-- **Privacy-friendly telemetry** &ndash; Minimal, aggregate analytics and performance metrics (Vercel Web Analytics + Speed Insights). No user accounts or profiling.
+- **Privacy-friendly telemetry** &ndash; Minimal, aggregate usage analytics via Vercel Web Analytics. No user accounts, profiling, or ad pixels.
 
 ## Tech Stack
 
@@ -26,7 +26,7 @@ npmtraffic helps you track npm package downloads with daily precision. It pulls 
 - **Styling:** [Tailwind CSS 4](https://tailwindcss.com/)
 - **Language:** [TypeScript 5](https://www.typescriptlang.org/) (strict mode)
 - **Deployment:** [Vercel](https://vercel.com/) (edge functions, caching)
-- **Data source:** npm registry API (`api.npmjs.org`)
+- **Data source:** npm downloads API (`api.npmjs.org`) + package metadata (`registry.npmjs.org`)
 
 ## Getting Started
 
@@ -142,23 +142,29 @@ Found a bug or have a feature request? [Open an issue](https://github.com/afria8
 
 ## Roadmap
 
-See [/roadmap](https://npmtraffic.com/roadmap) for planned features and improvements.
+See [/roadmap](https://npmtraffic.com/roadmap) for planned work and longer-term ideas.
 
-Current focus:
+Near-term focus:
 
-- Enhanced event markers with custom categories
-- Historical data exports (>365 days)
-- API rate limiting improvements
-- Performance optimizations
+- Harden dropdown/menu behavior (no clipping; reliable close on outside click/Escape)
+- Clarify comparison table labels/tooltips (derived metrics, % of total semantics)
+- Chart polish (tooltip ergonomics + event marker clarity)
+- Status reliability improvements (reduce flapping; improve persistence where appropriate)
+
+Longer-term ideas (non-commitment):
+
+- Long-range exports (>365 days) with explicit cost/latency tradeoffs
+- Version-level attribution (requires additional data sources beyond npm downloads API)
+- Optional alerts (email/webhook) if there is clear demand
 
 ## Privacy & Data
 
-- **No user profiling** &ndash; No accounts, no user-level tracking; analytics are aggregate only
-- **No tracking cookies** &ndash; Theme preference uses a first-party cookie plus localStorage
-- **Minimal analytics** &ndash; Aggregate usage + performance metrics via Vercel (no ad pixels, no user profiling)
-- **GDPR compliant** &ndash; No external font loading, no tracking scripts
+- **No accounts** &ndash; No sign-in, dashboards, or user profiles
+- **No tracking profiles** &ndash; We avoid ad pixels and cross-site tracking
+- **Theme preference** &ndash; Stored via a first-party cookie plus localStorage
+- **Aggregate analytics** &ndash; Vercel Web Analytics for basic usage measurement
 
-All data comes from npm's public API. We don't store or sell user data.
+All package data comes from npm's public APIs. We don't sell user data.
 
 ## License
 
@@ -167,7 +173,7 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](LICENSE) f
 ## Acknowledgments
 
 - Data provided by [npm, Inc.](https://www.npmjs.com/)
-- Charts powered by custom canvas rendering
+- Charts rendered with custom SVG (no charting dependency)
 - Hosted on [Vercel](https://vercel.com/)
 
 ## Support

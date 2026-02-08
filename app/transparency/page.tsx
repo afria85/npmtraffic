@@ -54,7 +54,7 @@ export default function TransparencyPage() {
 
         <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
           <h2 className="mb-3 text-lg font-semibold text-[var(--foreground)]">Rate Limiting &amp; Privacy</h2>
-          <p className="text-sm text-[var(--foreground-secondary)]">Public endpoints are rate limited to prevent abuse. Rate limiting uses request metadata transiently and is not used for profiling. We use privacy-friendly telemetry (Vercel Web Analytics + Speed Insights) to understand basic site usage and performance (aggregate page views, top pages, referrers, and core web vitals) without cross-site tracking cookies or user profiles.</p>
+          <p className="text-sm text-[var(--foreground-secondary)]">Public endpoints are rate limited to prevent abuse. Rate limiting uses request metadata transiently and is not used for profiling. We use privacy-friendly telemetry (Vercel Web Analytics) to understand basic site usage (aggregate page views and top pages) without cross-site tracking cookies or user profiles.</p>
         </section>
 
         <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">

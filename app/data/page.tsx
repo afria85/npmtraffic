@@ -65,7 +65,7 @@ export default function DataPage() {
           copy cannot be fetched. Totals, averages, and series always represent the normalized range.
         </p>
         <p>
-          Supported ranges now include 7, 14, 30, 90, 180, and 365 days. Longer views (90+ days) refresh every 12 hours while still honoring
+          Supported ranges include 7, 14, 30, 90, 180, and 365 days. Longer views (90+ days) refresh every 12 hours while still honoring
           the 24-hour stale window so that historic traffic remains available even during upstream hiccups.
         </p>
         <div>
@@ -81,17 +81,22 @@ export default function DataPage() {
         <div>
           <h2 className="text-lg font-semibold">Exports</h2>
           <p>
-            Download the data as CSV or JSON from <code>/api/v1/package/&#123;name&#125;/daily.csv</code> or <code>/api/v1/package/&#123;name&#125;/daily.json</code>.
-            CSV files now add comment headers that document <em>from</em>/<em>to</em> dates, <em>timezone</em>, <em>generated_at</em>, and the data
-            <em>source</em>. JSON responses expose the normalized range along with a <code>meta</code> block that repeats those fields
-            plus cache status, stale flags, derived method metadata, and the requestId for auditing.
+            Package exports: <code>/api/v1/package/&#123;name&#125;/daily.csv</code>, <code>/api/v1/package/&#123;name&#125;/daily.excel.csv</code>, or{' '}
+            <code>/api/v1/package/&#123;name&#125;/daily.json</code>. All endpoints accept <code>?days=7|14|30|90|180|365</code>.
+          </p>
+          <p>
+            Compare exports: <code>/api/v1/compare.json</code>, <code>/api/v1/compare.csv</code>, and <code>/api/v1/compare.excel.csv</code> with{' '}
+            <code>?packages=pkg1,pkg2</code> (or <code>pkgs</code>) plus optional <code>days</code>.
           </p>
           <p className="text-sm text-[var(--foreground-tertiary)]">
-            Both CSV and JSON exports now share an <strong>export metadata</strong> block (from/to dates, timezone=UTC, generated_at timestamp, source, request_id, cache status, and stale indicators)
-            so you can verify precisely what data was generated and why.
+            Standard CSV includes a comment header with export metadata (from/to dates, timezone=UTC, generated_at, source, request_id, cache status, and stale indicators).{' '}
+            The Excel CSV variant adds <code>sep=;</code> and uses <code>;</code> as the delimiter for easier spreadsheet imports.
           </p>
           <p className="text-sm text-[var(--foreground-tertiary)]">
-            Derived metrics such as trailing MA3/MA7 and MAD-based outlier scores are available in the exports and behind the
+            JSON exports include the normalized range along with a <code>meta</code> block, plus an <code>export</code> metadata block for traceability.
+          </p>
+          <p className="text-sm text-[var(--foreground-tertiary)]">
+            Derived metrics such as trailing MA3/MA7 and MAD-based outlier scores are available in exports and behind the
             &quot;Show derived metrics&quot; toggle on package pages. These values are computed heuristically and do not alter the raw download counts.
           </p>
           <p className="text-sm text-[var(--foreground-tertiary)]">
