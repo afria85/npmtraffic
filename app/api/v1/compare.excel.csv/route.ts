@@ -150,10 +150,42 @@ export async function GET(req: Request) {
       );
     }
 
+    if (error instanceof TrafficError) {
+      if (error.code === "INVALID_REQUEST") {
+        logApiEvent({
+          requestId,
+          route,
+          status: 400,
+          ms: Date.now() - start,
+          package: pkgList,
+          days: daysValue,
+        });
+        return NextResponse.json(
+          { error: { code: "INVALID_REQUEST", message: "Invalid package name" } },
+          { status: 400, headers: { "x-request-id": requestId } }
+        );
+      }
+      if (error.code === "PACKAGE_NOT_FOUND") {
+        logApiEvent({
+          requestId,
+          route,
+          status: 404,
+          ms: Date.now() - start,
+          package: pkgList,
+          days: daysValue,
+        });
+        return NextResponse.json(
+          { error: { code: "PACKAGE_NOT_FOUND", message: "Package not found" } },
+          { status: 404, headers: { "x-request-id": requestId } }
+        );
+      }
+    }
+
+    const status = error instanceof TrafficError ? error.status : 500;
     logApiEvent({
       requestId,
       route,
-      status: 502,
+      status,
       ms: Date.now() - start,
       upstreamStatus,
       package: pkgList,
@@ -162,12 +194,12 @@ export async function GET(req: Request) {
     return NextResponse.json(
       {
         error: {
-          code: "UPSTREAM_UNAVAILABLE",
-          message: "npm API temporarily unavailable",
+          code: status == 500 ? "INTERNAL_ERROR" : "UPSTREAM_UNAVAILABLE",
+          message: status == 500 ? "Internal server error" : "npm API temporarily unavailable",
         },
-        status: upstreamStatus ?? 502,
+        status: upstreamStatus ?? status,
       },
-      { status: 502, headers: { "x-request-id": requestId } }
+      { status, headers: { "x-request-id": requestId } }
     );
   }
 }

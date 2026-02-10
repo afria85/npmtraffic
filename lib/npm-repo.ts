@@ -1,8 +1,9 @@
 import { cacheGetWithStale, cacheSetWithStale } from "@/lib/cache";
 import { normalizePackageInput } from "@/lib/package-name";
+import { config } from "@/lib/config";
 import { USER_AGENT } from "./version";
 
-const CACHE_TTL_SECONDS = 60 * 60 * 24;
+const CACHE_TTL_SECONDS = config.cache.metadataTTLSeconds;
 
 type RepoCacheValue = { url: string };
 

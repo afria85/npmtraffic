@@ -65,7 +65,7 @@ export default function PackageHeader({
               <a
                 href={repoUrl}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className={`${ACTION_BUTTON_CLASSES} h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm inline-flex items-center gap-2`}
                 title={repoUrl}
                 aria-label="View GitHub repository"

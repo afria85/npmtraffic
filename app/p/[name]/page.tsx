@@ -4,6 +4,7 @@ import { getBaseUrl } from "@/lib/base-url";
 import { clampDays } from "@/lib/query";
 import { buildPackageCanonical } from "@/lib/canonical";
 import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
+import { getPackageVersionTimeline } from "@/lib/npm-versions";
 import DerivedSeriesTable from "@/components/package/DerivedSeriesTable";
 import PackageHeader from "@/components/package/PackageHeader";
 import RangeSelector from "@/components/RangeSelector";
@@ -282,6 +283,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
   }
 
   const traffic = data;
+  const versionTimeline = await getPackageVersionTimeline(name, traffic.range);
 
   return (
     <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 px-4 py-6">
@@ -310,7 +312,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <TrafficChart series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
+      <TrafficChart series={traffic.series} derived={traffic.derived} pkgName={name} days={days} versionMarkers={versionTimeline?.markers ?? []} />
 
       <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
 

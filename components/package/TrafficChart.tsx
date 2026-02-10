@@ -5,6 +5,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import type { DerivedMetrics } from "@/lib/derived";
 import type { TrafficSeriesRow } from "@/lib/traffic";
 import { groupEventsByDate, loadEvents } from "@/lib/events";
+import type { VersionTimelineMarker } from "@/lib/npm-versions";
 import ActionMenu from "@/components/ui/ActionMenu";
 import { IconChevronDown } from "@/components/ui/icons";
 import { computeLeftPad } from "@/components/charts/axis-padding";
@@ -115,6 +116,7 @@ type Props = {
   derived: DerivedMetrics;
   pkgName: string;
   days: number;
+  versionMarkers?: VersionTimelineMarker[];
 };
 
 type PaletteKey = "accent" | "slate" | "blue" | "emerald" | "violet" | "amber" | "orange" | "pink" | "cyan";
@@ -123,6 +125,7 @@ type LineStyleKey = "solid" | "dashed" | "dotted";
 type ChartSettings = {
   showMA7: boolean;
   showMA3: boolean;
+  showVersions: boolean;
   downloadsColor: PaletteKey;
   ma7Color: PaletteKey;
   ma3Color: PaletteKey;
@@ -291,7 +294,7 @@ async function svgToPngBlob(svgEl: SVGSVGElement, background: string) {
   return pngBlob;
 }
 
-export default function TrafficChart({ series, derived, pkgName, days }: Props) {
+export default function TrafficChart({ series, derived, pkgName, days, versionMarkers }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const stylePanelRef = useRef<HTMLDivElement | null>(null);
@@ -307,6 +310,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
       return {
         showMA7: true,
         showMA3: false,
+        showVersions: true,
         downloadsColor: "accent",
         ma7Color: "violet",
         ma3Color: "orange",
@@ -326,6 +330,7 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
     return {
       showMA7: saved.showMA7 ?? true,
       showMA3: saved.showMA3 ?? false,
+      showVersions: (saved as unknown as { showVersions?: boolean }).showVersions ?? true,
       downloadsColor: (saved.downloadsColor as PaletteKey) ?? "accent",
       ma7Color: (saved.ma7Color as PaletteKey) ?? "violet",
       ma3Color: (saved.ma3Color as PaletteKey) ?? "orange",
@@ -399,6 +404,17 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
   }, [hoverIndex, isMobile]);
 
   const eventsByDate = useMemo(() => groupEventsByDate(loadEvents(pkgName)), [pkgName]);
+
+  const versionsByDate = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const marker of versionMarkers ?? []) {
+      if (!marker || typeof marker.date_utc !== "string") continue;
+      const versions = Array.isArray(marker.versions) ? marker.versions.filter((v) => typeof v === "string") : [];
+      if (!versions.length) continue;
+      map.set(marker.date_utc, versions);
+    }
+    return map;
+  }, [versionMarkers]);
 
   const maxValue = useMemo(() => {
     const downloads = series.map((row) => row.downloads);
@@ -550,6 +566,10 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
     ? (((eventsByDate.get(hovered.date) as ChartEvent[] | undefined) ?? []) as ChartEvent[])
     : [];
 
+  const hoveredVersions: string[] = hovered && settings.showVersions
+    ? (versionsByDate.get(hovered.date) ?? [])
+    : [];
+
   const canShowMA7 = Boolean(ma7Path);
   const canShowMA3 = Boolean(ma3Path);
 
@@ -631,19 +651,28 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
       <div className={headerRowClass}>
         <p className="text-sm font-semibold text-[var(--foreground-secondary)]">Daily downloads ({days}d)</p>
         <div className={toggleGroupClass}>
+          {versionMarkers?.length ? (
+            <MetricCheckbox
+              label="Versions"
+              checked={settings.showVersions}
+              onChange={(next) => setSettings((prev) => ({ ...prev, showVersions: next }))}
+              title="Show npm publish markers for versions (from registry.npmjs.org)"
+            />
+          ) : null}
+
           <MetricCheckbox label="MA 3" checked={settings.showMA3} disabled={!canShowMA3} onChange={(next) => setSettings((prev) => ({ ...prev, showMA3: next }))} title="3-day moving average" />
 
           <MetricCheckbox label="MA 7" checked={settings.showMA7} disabled={!canShowMA7} onChange={(next) => setSettings((prev) => ({ ...prev, showMA7: next }))} title="7-day moving average" />
         </div>
       </div>
 
-            {/*
+      {/*
         Chart layout contract:
         - Legend must never overlay the plot (avoid covering data/tooltip).
         - Legend sits below the plot to keep the chart wide on tablet/mobile.
       */}
       <div ref={chartContainerRef} className="relative mt-3 min-w-0">
-          <svg
+        <svg
             ref={svgRef}
             viewBox={`0 0 ${width} ${height}`}
             className="h-60 w-full touch-pan-y sm:h-64"
@@ -687,16 +716,22 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               );
             })}
 
-            {/* event markers */}
+            {/* markers (events + version publishes) */}
             {series.map((row, index) => {
               const dayEvents = eventsByDate.get(row.date);
-              if (!dayEvents?.length) return null;
+              const dayVersions = settings.showVersions ? versionsByDate.get(row.date) : undefined;
+              if (!dayEvents?.length && !dayVersions?.length) return null;
               const x = downloadsPoints[index]?.x ?? null;
               if (x == null) return null;
               return (
-                <g key={`evt-${row.date}`}>
-                  <line x1={x} x2={x} y1={pad.t} y2={pad.t + innerH} stroke="var(--chart-palette-accent)" opacity={0.14} />
-                  <circle cx={x} cy={pad.t + 6} r={eventMarkerRadius} fill="var(--chart-palette-accent)" opacity={0.45} />
+                <g key={`mk-${row.date}`}>
+                  <line x1={x} x2={x} y1={pad.t} y2={pad.t + innerH} stroke="var(--chart-grid)" opacity={0.22} />
+                  {dayEvents?.length ? (
+                    <circle cx={x} cy={pad.t + 6} r={eventMarkerRadius} fill="var(--chart-palette-accent)" opacity={0.45} />
+                  ) : null}
+                  {dayVersions?.length ? (
+                    <rect x={x - 4} y={pad.t + 14} width={8} height={8} rx={2} fill="var(--chart-palette-slate)" opacity={0.52} />
+                  ) : null}
                 </g>
               );
             })}
@@ -742,6 +777,15 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               />
             ) : null}
 
+
+            {versionMarkers?.length && settings.showVersions ? (
+              <li className="flex items-center gap-2">
+                <svg width="32" height="8" viewBox="0 0 32 8" aria-hidden>
+                  <rect x="14" y="2" width="4" height="4" rx="1" fill="var(--chart-palette-slate)" opacity="0.75" />
+                </svg>
+                <span className="text-[var(--foreground-tertiary)]">Releases</span>
+              </li>
+            ) : null}
             {settings.showMA3 && canShowMA3 ? (
               <path
                 d={ma3Path}
@@ -898,6 +942,22 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
                   </div>
                 ) : null}
 
+                {hoveredVersions.length ? (
+                  <div className="pt-1">
+                    <div className="text-[10px] uppercase tracking-[0.25em] text-[var(--foreground-tertiary)]">Releases</div>
+                    <ul className="mt-1 space-y-0.5">
+                      {hoveredVersions.slice(0, 3).map((v) => (
+                        <li key={`${hovered.date}-${v}`} className="truncate font-mono text-[var(--foreground)]">
+                          {v}
+                        </li>
+                      ))}
+                      {hoveredVersions.length > 3 ? (
+                        <li className="text-[var(--foreground-tertiary)]">+{hoveredVersions.length - 3} more</li>
+                      ) : null}
+                    </ul>
+                  </div>
+                ) : null}
+
                 {hoveredEvents.length ? (
                   <div className="pt-1">
                     <div className="text-[10px] uppercase tracking-[0.25em] text-[var(--foreground-tertiary)]">Events</div>
@@ -934,6 +994,15 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
               </svg>
               <span className="text-[var(--foreground-tertiary)]">Downloads</span>
             </li>
+
+            {versionMarkers?.length && settings.showVersions ? (
+              <li className="flex items-center gap-2">
+                <svg width="32" height="8" viewBox="0 0 32 8" aria-hidden>
+                  <rect x="13" y="2" width="6" height="6" rx="1.5" fill="var(--chart-palette-slate)" opacity="0.8" />
+                </svg>
+                <span className="text-[var(--foreground-tertiary)]">Releases</span>
+              </li>
+            ) : null}
 
             {settings.showMA3 && canShowMA3 ? (
               <li className="flex items-center gap-2">
@@ -984,13 +1053,13 @@ export default function TrafficChart({ series, derived, pkgName, days }: Props) 
 
         <div className="flex items-center justify-end gap-2">
           <button
-          type="button"
-          className={CHART_BUTTON_CLASSES}
-          onClick={() => setStyleOpen((v) => !v)}
-          aria-expanded={styleOpen}
-        >
-          Style
-        </button>
+            type="button"
+            className={CHART_BUTTON_CLASSES}
+            onClick={() => setStyleOpen((v) => !v)}
+            aria-expanded={styleOpen}
+          >
+            Style
+          </button>
           <ActionMenu label="Export" items={exports} buttonClassName={CHART_BUTTON_CLASSES} />
         </div>
       </div>

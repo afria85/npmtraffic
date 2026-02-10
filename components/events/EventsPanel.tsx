@@ -11,6 +11,7 @@ import {
   importEventsFromPayload,
   loadEvents,
   subscribeEvents,
+  isSafeHttpUrl,
   isValidDate,
   type EventEntry,
   type EventType,
@@ -183,6 +184,11 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
     }
     if (!label) {
       setStatusFor("Label is required.");
+      return;
+    }
+
+    if (url && !isSafeHttpUrl(url)) {
+      setStatusFor("Invalid URL. Use http(s)://...");
       return;
     }
 
@@ -470,11 +476,11 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
 
                         <p className="mt-1 break-words text-sm text-[var(--foreground)]">{entry.label}</p>
 
-                        {entry.url ? (
+                        {entry.url && isSafeHttpUrl(entry.url) ? (
                           <a
                             href={entry.url}
                             target="_blank"
-                            rel="noreferrer"
+                            rel="noopener noreferrer"
                             className="mt-1 inline-block break-all text-xs text-[var(--accent)] hover:underline"
                           >
                             {entry.url}

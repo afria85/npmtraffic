@@ -55,6 +55,9 @@ test("event validation accepts allowed types and date", () => {
   );
   assert.ok(!isValidEvent({ date_utc: "2025-12-01", event_type: "unknown", label: "bad" }));
   assert.ok(!isValidEvent({ date_utc: "not-a-date", event_type: "release", label: "bad" }));
+
+  assert.ok(!isValidEvent({ date_utc: "2025-12-01", event_type: "release", label: "bad", url: "javascript:alert(1)" }));
+  assert.ok(isValidEvent({ date_utc: "2025-12-01", event_type: "release", label: "ok", url: "https://example.com" }));
 });
 
 test("load/save events sorts entries and respects schema version", () => {

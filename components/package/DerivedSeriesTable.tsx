@@ -987,7 +987,7 @@ function EventRow({
         <a
           href={event.url}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="mt-1 inline-block text-xs font-medium text-[var(--accent)] underline underline-offset-4"
         >
           View link

@@ -19,6 +19,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
     },
     {
+      url: `${baseUrl}/about`,
+      lastModified: now,
+    },
+    {
+      url: `${baseUrl}/support`,
+      lastModified: now,
+    },
+    {
+      url: `${baseUrl}/donate`,
+      lastModified: now,
+    },
+    {
       url: `${baseUrl}/compare`,
       lastModified: now,
     },

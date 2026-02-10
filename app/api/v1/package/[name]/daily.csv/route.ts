@@ -232,10 +232,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
       }
     }
 
+    const status = error instanceof TrafficError ? error.status : 500;
     logApiEvent({
       requestId,
       route,
-      status: 502,
+      status,
       ms: Date.now() - start,
       upstreamStatus,
       package: pkgName,
@@ -244,12 +245,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
     return NextResponse.json(
       {
         error: {
-          code: "UPSTREAM_UNAVAILABLE",
-          message: "npm API temporarily unavailable",
+          code: status == 500 ? "INTERNAL_ERROR" : "UPSTREAM_UNAVAILABLE",
+          message:
+            status == 500 ? "Internal server error" : "npm API temporarily unavailable",
         },
-        status: upstreamStatus ?? 502,
+        status: upstreamStatus ?? status,
       },
-      { status: 502, headers: { "x-request-id": requestId } }
+      { status, headers: { "x-request-id": requestId } }
     );
   }
 }

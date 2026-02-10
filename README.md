@@ -63,7 +63,7 @@ npm start
 ```
 npmtraffic/
 ├── app/                # Next.js app directory
-│   ├── p/[pkg]/        # Package detail pages
+│   ├── p/[name]/       # Package detail pages
 │   ├── compare/        # Package comparison
 │   ├── api/            # API routes
 │   └── ...
@@ -111,13 +111,13 @@ See `lib/npm-client.ts` for implementation details.
 
 ## Caching Strategy
 
-To minimize load on npm's API and keep responses fast:
+npmtraffic uses an explicit server-side in-memory cache (`lib/cache.ts`) with stale fallback:
 
-1. **Daily downloads** cached for 15 minutes (enough freshness, reduces API calls)
-2. **Package metadata** cached for 7 days (rarely changes)
-3. **Validation results** cached for 24 hours (positive) or 1 hour (negative)
+1. **Daily downloads (traffic):** cached for 15 minutes for ≤30-day ranges, and 12 hours for longer ranges, with up to 24 hours of stale fallback if the npm API errors.
+2. **Package metadata (repo URL):** cached for up to 7 days.
+3. **Validation results:** cached for 24 hours (positive) or 1 hour (negative).
 
-All caching happens at the Next.js level using `fetch` with `next.revalidate`.
+Exports (`*.csv`) are additionally cached at the edge via `Cache-Control` response headers.
 
 ## Contributing
 

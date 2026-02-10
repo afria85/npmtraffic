@@ -49,13 +49,25 @@ export function isValidDate(value: string) {
   return DATE_RE.test(value);
 }
 
+export function isSafeHttpUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function isValidEvent(event: unknown): event is EventEntry {
   if (!event || typeof event !== "object") return false;
   const candidate = event as Partial<EventEntry>;
   if (!candidate.date_utc || !isValidDate(candidate.date_utc)) return false;
   if (!candidate.label || typeof candidate.label !== "string") return false;
   if (!candidate.event_type || !isValidEventType(candidate.event_type)) return false;
-  if (candidate.url && typeof candidate.url !== "string") return false;
+  if (candidate.url) {
+    if (typeof candidate.url !== "string") return false;
+    if (!isSafeHttpUrl(candidate.url)) return false;
+  }
   if (candidate.strength && ![1, 2, 3].includes(candidate.strength)) return false;
   return true;
 }
