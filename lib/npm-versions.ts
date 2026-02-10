@@ -9,13 +9,15 @@ export type VersionTimelineMarker = {
   versions: string[];
 };
 
-type RegistryTimeResponse = {
+type RegistryMetaResponse = {
   time?: Record<string, string>;
+  "dist-tags"?: Record<string, string>;
 };
 
 type VersionTimeCacheValue = {
   fetchedAt: string;
   time: Record<string, string>;
+  distTags: Record<string, string>;
 };
 
 const CACHE_FRESH_SECONDS = 60 * 60 * 6; // 6h
@@ -52,7 +54,60 @@ function pickEvenlyIndices(indices: number[], count: number) {
   return Array.from(new Set(picked)).sort((a, b) => a - b);
 }
 
-export function downsampleVersionMarkers(markers: VersionTimelineMarker[], maxDays = MAX_MARKER_DAYS): VersionTimelineMarker[] {
+function toUtcDay(iso: string): string | null {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString().slice(0, 10);
+}
+
+function analyzeTime(
+  time: Record<string, string>,
+  distTags: Record<string, string>,
+  range: Pick<RangeForDaysResult, "startDate" | "endDate">
+) {
+  let totalVersions = 0;
+  let releasesInRange = 0;
+
+  let mostRecentIso = "";
+  let mostRecentVersion: string | null = null;
+
+  for (const [key, iso] of Object.entries(time)) {
+    if (key === "created" || key === "modified") continue;
+    if (!isSemverLike(key)) continue;
+    if (typeof iso !== "string") continue;
+
+    const day = toUtcDay(iso);
+    if (!day) continue;
+
+    totalVersions += 1;
+
+    if (iso > mostRecentIso) {
+      mostRecentIso = iso;
+      mostRecentVersion = key;
+    }
+
+    if (day >= range.startDate && day <= range.endDate) {
+      releasesInRange += 1;
+    }
+  }
+
+  const distTagLatest = typeof distTags.latest === "string" ? distTags.latest : null;
+  const latestVersion = distTagLatest && typeof time[distTagLatest] === "string" ? distTagLatest : mostRecentVersion;
+  const latestPublishedDateUtc = latestVersion ? toUtcDay(time[latestVersion] ?? "") : null;
+
+  return {
+    totalVersions,
+    releasesInRange,
+    distTagLatest,
+    latestVersion,
+    latestPublishedDateUtc,
+  };
+}
+
+export function downsampleVersionMarkers(
+  markers: VersionTimelineMarker[],
+  maxDays = MAX_MARKER_DAYS
+): VersionTimelineMarker[] {
   if (markers.length <= maxDays) return markers;
 
   const mustKeep = new Set<number>();
@@ -99,16 +154,18 @@ export function downsampleVersionMarkers(markers: VersionTimelineMarker[], maxDa
 
 export function extractVersionMarkersFromTime(
   time: Record<string, string>,
-  range: Pick<RangeForDaysResult, "startDate" | "endDate">
+  range: Pick<RangeForDaysResult, "startDate" | "endDate">,
+  maxDays = MAX_MARKER_DAYS
 ): VersionTimelineMarker[] {
   const byDate = new Map<string, string[]>();
 
   for (const [key, iso] of Object.entries(time)) {
     if (key === "created" || key === "modified") continue;
     if (!isSemverLike(key)) continue;
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) continue;
-    const day = date.toISOString().slice(0, 10);
+    if (typeof iso !== "string") continue;
+
+    const day = toUtcDay(iso);
+    if (!day) continue;
 
     // Range dates are YYYY-MM-DD (UTC). Lexicographic comparison works.
     if (day < range.startDate || day > range.endDate) continue;
@@ -125,7 +182,7 @@ export function extractVersionMarkersFromTime(
     }))
     .sort((a, b) => a.date_utc.localeCompare(b.date_utc));
 
-  return downsampleVersionMarkers(markers);
+  return downsampleVersionMarkers(markers, maxDays);
 }
 
 export async function getPackageVersionTimeline(
@@ -137,6 +194,11 @@ export async function getPackageVersionTimeline(
   fetchedAt: string;
   cacheStatus: "HIT" | "MISS" | "STALE";
   isStale: boolean;
+  distTagLatest: string | null;
+  latestVersion: string | null;
+  latestPublishedDateUtc: string | null;
+  releasesInRange: number;
+  totalVersions: number;
 } | null> {
   const pkg = normalizePackageInput(pkgInput);
   if (!pkg) return null;
@@ -144,17 +206,21 @@ export async function getPackageVersionTimeline(
   const key = buildCacheKey(pkg);
   const cached = cacheGetWithStale<VersionTimeCacheValue>(key);
   if (cached.hit && cached.value && !cached.stale) {
+    const distTags = cached.value.distTags ?? {};
+    const analysis = analyzeTime(cached.value.time, distTags, range);
+
     return {
       package: pkg,
       markers: extractVersionMarkersFromTime(cached.value.time, range),
       fetchedAt: cached.value.fetchedAt,
       cacheStatus: "HIT",
       isStale: false,
+      ...analysis,
     };
   }
 
-  async function fetchTime(): Promise<Record<string, string>> {
-    const url = `https://registry.npmjs.org/${encodeURIComponent(pkg)}?fields=time`;
+  async function fetchMeta(): Promise<{ time: Record<string, string>; distTags: Record<string, string> }> {
+    const url = `https://registry.npmjs.org/${encodeURIComponent(pkg)}?fields=time,dist-tags`;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 5000);
     try {
@@ -168,17 +234,22 @@ export async function getPackageVersionTimeline(
       if (!res.ok) {
         throw new Error(`Upstream HTTP ${res.status}`);
       }
-      const data = (await res.json()) as RegistryTimeResponse;
-      return data.time ?? {};
+      const data = (await res.json()) as RegistryMetaResponse;
+      return {
+        time: data.time ?? {},
+        distTags: data["dist-tags"] ?? {},
+      };
     } finally {
       clearTimeout(timer);
     }
   }
 
   try {
-    const time = await fetchTime();
+    const { time, distTags } = await fetchMeta();
     const fetchedAt = new Date().toISOString();
-    cacheSetWithStale(key, { fetchedAt, time }, CACHE_FRESH_SECONDS, CACHE_STALE_SECONDS);
+    cacheSetWithStale(key, { fetchedAt, time, distTags }, CACHE_FRESH_SECONDS, CACHE_STALE_SECONDS);
+
+    const analysis = analyzeTime(time, distTags, range);
 
     return {
       package: pkg,
@@ -186,15 +257,20 @@ export async function getPackageVersionTimeline(
       fetchedAt,
       cacheStatus: "MISS",
       isStale: false,
+      ...analysis,
     };
   } catch {
     if (cached.hit && cached.value) {
+      const distTags = cached.value.distTags ?? {};
+      const analysis = analyzeTime(cached.value.time, distTags, range);
+
       return {
         package: pkg,
         markers: extractVersionMarkersFromTime(cached.value.time, range),
         fetchedAt: cached.value.fetchedAt,
         cacheStatus: "STALE",
         isStale: true,
+        ...analysis,
       };
     }
     return null;

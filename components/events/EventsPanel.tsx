@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ChangeEvent } from "react";
+import type { RangeForDaysResult } from "@/lib/query";
 import {
   EVENT_TYPES,
   addEvent,
@@ -23,6 +24,7 @@ import { SelectField } from "@/components/ui/SelectField";
 type Props = {
   pkgName: string;
   encoded?: string; // from URL search param ?events=...
+  range?: Pick<RangeForDaysResult, "startDate" | "endDate">;
 };
 
 type ImportBanner =
@@ -68,6 +70,24 @@ function DownloadIcon() {
   );
 }
 
+function TagIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5"
+      aria-hidden
+    >
+      <path d="M20.6 13.2 12.8 21a2 2 0 0 1-2.8 0L3 14.9V3h11.9l5.7 5.7a2 2 0 0 1 0 2.8Z" />
+      <path d="M7 7h.01" />
+    </svg>
+  );
+}
+
 function todayUtc() {
   const d = new Date();
   const yyyy = d.getUTCFullYear();
@@ -88,9 +108,22 @@ function downloadText(filename: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-export default function EventsPanel({ pkgName, encoded }: Props) {
+const SEMVER_LIKE_RE = /^\d+\.\d+\.\d+(?:[-+].+)?$/;
+
+function isSemverLike(value: string) {
+  return SEMVER_LIKE_RE.test(value);
+}
+
+function toUtcDay(iso: string): string | null {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
+}
+
+export default function EventsPanel({ pkgName, encoded, range }: Props) {
   const [events, setEvents] = useState<EventEntry[]>([]);
   const [status, setStatus] = useState<string | null>(null);
+  const [isImportingReleases, setIsImportingReleases] = useState(false);
 
   const [draftDate, setDraftDate] = useState<string>("");
   const [draftType, setDraftType] = useState<EventType>("release");
@@ -104,9 +137,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [importBanner, setImportBanner] = useState<ImportBanner>({ kind: "none" });
 
-  // ? Hydration-safe, stable id for the form grid container.
-  // If any third-party script/extension injects random ids into nodes without an id,
-  // providing our own stable id prevents mismatches.
+  // Hydration-safe stable id for the form grid container.
   const reactId = useId();
   const formGridId = useMemo(() => `events-form-${reactId.replace(/:/g, "")}`, [reactId]);
 
@@ -271,6 +302,64 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
     setStatusFor(`Imported shared events: +${result.added} / updated ${result.updated}.`);
   }
 
+  async function onImportReleases() {
+    if (!range) {
+      setStatusFor("No range available for release import.");
+      return;
+    }
+    if (!pkgName) return;
+
+    setIsImportingReleases(true);
+    try {
+      const url = `https://registry.npmjs.org/${encodeURIComponent(pkgName)}?fields=time`;
+      const res = await fetch(url, { headers: { accept: "application/json" } });
+      if (!res.ok) throw new Error(`Upstream HTTP ${res.status}`);
+      const data = (await res.json()) as { time?: Record<string, string> };
+      const time = data.time ?? {};
+
+      const releases: EventEntry[] = [];
+      for (const [key, iso] of Object.entries(time)) {
+        if (key === "created" || key === "modified") continue;
+        if (!isSemverLike(key)) continue;
+        if (typeof iso !== "string") continue;
+        const day = toUtcDay(iso);
+        if (!day) continue;
+        if (day < range.startDate || day > range.endDate) continue;
+
+        releases.push({
+          date_utc: day,
+          event_type: "release",
+          label: `v${key}`,
+          url: `https://www.npmjs.com/package/${encodeURIComponent(pkgName)}/v/${encodeURIComponent(key)}`,
+        });
+      }
+
+      if (!releases.length) {
+        setStatusFor("No releases found in the current range.");
+        return;
+      }
+
+      // Cap to avoid overwhelming local storage for packages with huge version histories.
+      const capped = releases
+        .sort((a, b) => (a.date_utc !== b.date_utc ? b.date_utc.localeCompare(a.date_utc) : a.label.localeCompare(b.label)))
+        .slice(0, 500);
+
+      const result = importEventsFromPayload(pkgName, JSON.stringify(capped));
+      setEvents(result.events);
+
+      const trimmed = releases.length > capped.length ? ` (trimmed to ${capped.length})` : "";
+      if (result.errors?.length) {
+        setStatusFor(`Imported releases with warnings${trimmed}: ${result.errors.join("; ")}`);
+      } else {
+        setStatusFor(`Imported releases${trimmed}: +${result.added} / updated ${result.updated}.`);
+      }
+    } catch {
+      setStatusFor("Failed to import releases from registry.");
+    } finally {
+      setIsImportingReleases(false);
+    }
+  }
+
   const showBanner = !dismissed && importBanner.kind !== "none";
 
   const EVENT_ACTION_SM =
@@ -278,7 +367,7 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
   const EVENT_ACTION_DANGER_SM =
     `${ACTION_BUTTON_CLASSES} h-8 sm:h-9 px-3 sm:px-3 text-xs sm:text-xs bg-[var(--surface)] border-[var(--border)] text-rose-700 dark:text-rose-300 hover:bg-[var(--surface-hover)]`;
 
-  // ? Lint-safe strength coercion (no `any`)
+  // Lint-safe strength coercion (no `any`)
   const STRENGTH_VALUES = ["", "1", "2", "3"] as const;
   type StrengthValue = (typeof STRENGTH_VALUES)[number];
 
@@ -297,6 +386,18 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
           </p>
         </div>
         <div className="ml-auto flex flex-nowrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onImportReleases}
+            disabled={isImportingReleases || !range}
+            className={`${ACTION_BUTTON_CLASSES} gap-2 h-11 w-11 px-0 sm:h-10 sm:w-auto sm:px-4 border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-hover)] disabled:opacity-50 disabled:cursor-not-allowed`}
+            aria-label="Import releases"
+            title={range ? "Import releases from npm registry into local markers" : "Release import unavailable"}
+          >
+            <TagIcon />
+            <span className="hidden sm:inline">Releases</span>
+          </button>
+
           <button
             type="button"
             onClick={onPickImportFile}
@@ -406,6 +507,22 @@ export default function EventsPanel({ pkgName, encoded }: Props) {
             value={draftLabel}
             onChange={(e) => setDraftLabel(e.target.value)}
             placeholder="e.g. v0.4.4 released"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+          />
+        </div>
+
+        <div className="min-w-0 space-y-2 md:col-span-3">
+          <label
+            htmlFor="event-url"
+            className="block text-xs font-semibold uppercase tracking-wider text-[var(--foreground-tertiary)]"
+          >
+            URL (optional)
+          </label>
+          <input
+            id="event-url"
+            value={draftUrl}
+            onChange={(e) => setDraftUrl(e.target.value)}
+            placeholder="https://..."
             className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
           />
         </div>

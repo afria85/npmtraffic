@@ -4,7 +4,6 @@ import { getBaseUrl } from "@/lib/base-url";
 import { clampDays } from "@/lib/query";
 import { buildPackageCanonical } from "@/lib/canonical";
 import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
-import { getPackageVersionTimeline } from "@/lib/npm-versions";
 import DerivedSeriesTable from "@/components/package/DerivedSeriesTable";
 import PackageHeader from "@/components/package/PackageHeader";
 import RangeSelector from "@/components/RangeSelector";
@@ -13,9 +12,11 @@ import ShareMenu from "@/components/ShareMenu";
 import { buildExportFilename } from "@/lib/export-filename";
 import EventsPanel from "@/components/events/EventsPanel";
 import TrafficChart from "@/components/package/TrafficChartClient";
+import VersionMetadataPanel from "@/components/package/VersionMetadataPanel";
 import RetryButton from "@/components/ui/RetryButton";
 import { encodePkg } from "@/lib/og-encode";
 import { getPackageGithubRepo } from "@/lib/npm-repo";
+import { getPackageVersionTimeline } from "@/lib/npm-versions";
 
 type Props = {
   params: Promise<{ name: string }>;
@@ -187,7 +188,9 @@ export default async function PackagePage({ params, searchParams }: Props) {
   }
 
   const updatedLabel = data ? formatUpdatedAt(data.meta.fetchedAt) : null;
-  const repoUrl = data ? await getPackageGithubRepo(name) : null;
+  const [repoUrl, versionTimeline] = data
+    ? await Promise.all([getPackageGithubRepo(name), getPackageVersionTimeline(name, data.range)])
+    : [null, null];
   const updatedLabelCompact = data ? formatUpdatedAtCompact(data.meta.fetchedAt) : null;
   const rangeSelector = (
     <RangeSelector
@@ -283,7 +286,6 @@ export default async function PackagePage({ params, searchParams }: Props) {
   }
 
   const traffic = data;
-  const versionTimeline = await getPackageVersionTimeline(name, traffic.range);
 
   return (
     <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 px-4 py-6">
@@ -312,11 +314,33 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <TrafficChart series={traffic.series} derived={traffic.derived} pkgName={name} days={days} versionMarkers={versionTimeline?.markers ?? []} />
+      {versionTimeline ? (
+        <VersionMetadataPanel
+          pkgName={name}
+          repoUrl={repoUrl}
+          range={traffic.range}
+          distTagLatest={versionTimeline.distTagLatest}
+          latestVersion={versionTimeline.latestVersion}
+          latestPublishedDateUtc={versionTimeline.latestPublishedDateUtc}
+          releasesInRange={versionTimeline.releasesInRange}
+          totalVersions={versionTimeline.totalVersions}
+          cacheStatus={versionTimeline.cacheStatus}
+          isStale={versionTimeline.isStale}
+          fetchedAt={versionTimeline.fetchedAt}
+        />
+      ) : null}
+
+      <TrafficChart
+        series={traffic.series}
+        derived={traffic.derived}
+        pkgName={name}
+        days={days}
+        versionMarkers={versionTimeline?.markers}
+      />
 
       <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
 
-      <EventsPanel key={`${name}:${sp.events ?? ""}`} pkgName={name} encoded={sp.events} />
+      <EventsPanel key={`${name}:${sp.events ?? ""}`} pkgName={name} encoded={sp.events} range={traffic.range} />
 
       <p className="text-xs text-slate-500">Data from api.npmjs.org.</p>
     </main>

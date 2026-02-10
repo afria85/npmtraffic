@@ -403,7 +403,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
     };
   }, [hoverIndex, isMobile]);
 
-  const eventsByDate = useMemo(() => groupEventsByDate(loadEvents(pkgName)), [pkgName]);
+  const eventsByDate = useMemo(() => groupEventsByDate(loadEvents(pkgName).filter((e) => e.event_type !== "release")), [pkgName]);
 
   const versionsByDate = useMemo(() => {
     const map = new Map<string, string[]>();
