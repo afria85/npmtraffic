@@ -8,6 +8,7 @@ import { useDropdownDismiss } from "@/components/ui/useDropdownDismiss";
 export type ExportItem = {
   key: string;
   label: string;
+  description?: string;
   href: string;
   downloadName?: string;
 };
@@ -159,7 +160,12 @@ export default function ExportDropdown({
                 {...(downloadProps ?? {})}
                 onClick={() => close()}
               >
-                {item.label}
+                <span className="block font-medium">{item.label}</span>
+                {item.description ? (
+                  <span className="mt-0.5 block text-xs leading-5 text-[var(--foreground-tertiary)]">
+                    {item.description}
+                  </span>
+                ) : null}
               </a>
             );
           })}

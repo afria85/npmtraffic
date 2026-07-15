@@ -58,6 +58,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function Home() {
   const baseUrl = await getBaseUrl();
   const jsonLd = homepageJsonLd(baseUrl);
+  const jsonLdText = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
   const exampleDays = 30;
   const examplePackage = "react";
   const exampleRange = rangeForDays(exampleDays);
@@ -89,7 +90,7 @@ export default async function Home() {
               <span className="text-gradient">Daily data, full metadata,<br />zero guessing.</span>
             </h1>
             <p className="mx-auto max-w-3xl text-lg leading-relaxed text-[var(--foreground-secondary)] sm:text-xl">
-              UTC-anchored daily tables. Deterministic exports with traceable metadata. Event markers for correlation. Built for reproducible analysis.
+              UTC-anchored daily tables, compare insights, release context, and exports with traceable metadata. Built for reproducible package traffic analysis.
             </p>
           </div>
 
@@ -119,11 +120,11 @@ export default async function Home() {
             <p className="text-center text-xs text-[var(--foreground-tertiary)]">
               Start with a package, or <Link
                 href="/compare"
-                className="underline underline-offset-2 hover:text-[var(--foreground-secondary)]"
+                className="inline-flex min-h-8 items-center align-middle underline underline-offset-2 hover:text-[var(--foreground-secondary)]"
               >compare</Link> 2 - 5 packages &bull;{" "}
               <Link
                 href="/about"
-                className="underline underline-offset-2 hover:text-[var(--foreground-secondary)]"
+                className="inline-flex min-h-8 items-center align-middle underline underline-offset-2 hover:text-[var(--foreground-secondary)]"
               >
                 Why this exists
               </Link>{" "}
@@ -140,13 +141,13 @@ export default async function Home() {
               Made for package maintainers
             </h2>
             <p className="mx-auto max-w-2xl text-lg text-[var(--foreground-secondary)]">
-              Not just charts. Tables you can read, exports you can trust, events you can correlate.
+              Not just charts. Tables you can audit, insights you can scan, exports you can trust, and events you can correlate.
             </p>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2">
             {/* Feature 1: UTC-anchored */}
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-lg">
+            <div className="min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg sm:p-8">
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent-muted)]">
                   <svg className="h-5 w-5 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,9 +157,9 @@ export default async function Home() {
                 <h3 className="text-xl font-semibold text-[var(--foreground)]">UTC-anchored daily rows</h3>
               </div>
               <p className="mb-4 text-[var(--foreground-secondary)]">
-                Date ranges end at yesterday UTC, matching npm&rsquo;s official reporting window. No time zone confusion.
+                Date ranges end at yesterday UTC, matching npm&rsquo;s reporting window. Package tables also include deltas, MA3/MA7, and MAD outlier signals.
               </p>
-              <div className="rounded-lg bg-[var(--background)] p-3 font-mono text-xs text-[var(--foreground-secondary)]">
+              <div className="min-w-0 overflow-x-auto rounded-lg bg-[var(--background)] p-3 font-mono text-xs text-[var(--foreground-secondary)]">
                 <div className="text-[10px] uppercase tracking-widest text-[var(--foreground-tertiary)]">
                   Example row (format)
                 </div>
@@ -171,7 +172,7 @@ export default async function Home() {
             </div>
 
             {/* Feature 2: Deterministic exports */}
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-lg">
+            <div className="min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg sm:p-8">
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent-muted)]">
                   <svg className="h-5 w-5 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,13 +182,13 @@ export default async function Home() {
                 <h3 className="text-xl font-semibold text-[var(--foreground)]">Deterministic exports</h3>
               </div>
               <p className="mb-4 text-[var(--foreground-secondary)]">
-                CSV/JSON with traceable metadata (cache status, generated_at, request_id) embedded in the file header. Filenames include the UTC date range.
+                CSV, Excel-friendly CSV, and JSON include cache status, generated_at, request_id, stale flags, and UTC date ranges for repeatable analysis.
               </p>
-              <div className="rounded-lg bg-[var(--background)] p-3 font-mono text-xs text-[var(--foreground-secondary)]">
+              <div className="min-w-0 overflow-x-auto rounded-lg bg-[var(--background)] p-3 font-mono text-xs text-[var(--foreground-secondary)]">
                 <div className="text-[10px] uppercase tracking-widest text-[var(--foreground-tertiary)]">
                   Example output (format)
                 </div>
-                <div className="mt-2 text-[var(--accent)]">{exportFilename}</div>
+                <div className="mt-2 break-all text-[var(--accent)]">{exportFilename}</div>
                 <div className="mt-2 text-[var(--foreground)]">Header metadata</div>
                 {exportHeaderLines.map((line) => (
                   <div key={line}>{line}</div>
@@ -196,41 +197,41 @@ export default async function Home() {
             </div>
 
             {/* Feature 3: Event correlation */}
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-lg">
+            <div className="min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg sm:p-8">
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent-muted)]">
                   <svg className="h-5 w-5 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-[var(--foreground)]">Event markers overlay</h3>
+                <h3 className="text-xl font-semibold text-[var(--foreground)]">Events + release markers</h3>
               </div>
               <p className="mb-4 text-[var(--foreground-secondary)]">
-                Pin releases, blog posts, or incidents to charts. See how they correlate with download spikes. Local-first storage.
+                Pin your own notes, import npm releases into local markers, and show publish markers on charts without syncing private context to the server.
               </p>
-              <div className="flex items-center gap-2 rounded-lg bg-[var(--background)] p-3">
+              <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-[var(--background)] p-3">
                 <div className="h-2 w-2 rounded-full bg-[var(--accent)]" />
-                <span className="font-mono text-xs text-[var(--foreground)]">2025-01-20: v19.0.0 release</span>
-                <span className="ml-auto text-xs text-[var(--foreground-tertiary)]">+18% spike</span>
+                <span className="min-w-0 break-all font-mono text-xs text-[var(--foreground)]">2025-01-20: v19.0.0 release</span>
+                <span className="text-xs text-[var(--foreground-tertiary)] sm:ml-auto">local marker</span>
               </div>
             </div>
 
             {/* Feature 4: Cache/stale surfaced */}
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-lg">
+            <div className="min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg sm:p-8">
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent-muted)]">
                   <svg className="h-5 w-5 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-[var(--foreground)]">Stale-aware UI</h3>
+                <h3 className="text-xl font-semibold text-[var(--foreground)]">Insights + stale-aware UI</h3>
               </div>
               <p className="mb-4 text-[var(--foreground-secondary)]">
-                See when data was fetched, and get an explicit warning + retry button when upstream errors force stale results.
+                Package and compare pages summarize leaders, movers, peaks, consistency, and outliers. Stale responses show explicit warnings and retry controls.
               </p>
-              <div className="flex items-center gap-2 rounded-lg bg-[var(--background)] p-3">
+              <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-[var(--background)] p-3">
                 <div className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-                <span className="text-xs text-[var(--foreground-secondary)]">Updated 3 min ago • Stale warning if upstream fails</span>
+                <span className="min-w-0 text-xs text-[var(--foreground-secondary)]">Leader, fastest mover, peak day, outliers, cache state</span>
               </div>
             </div>
           </div>
@@ -244,7 +245,7 @@ export default async function Home() {
             Compare packages side-by-side
           </h2>
           <p className="mb-8 text-lg text-[var(--foreground-secondary)]">
-            Up to 5 packages. Aligned date ranges. Consistent labeling. Shareable URLs.
+            Up to 5 packages. Aligned date ranges. Leader and fastest-mover insights. Shareable URLs.
           </p>
           <Link href="/compare" className="inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] disabled:pointer-events-none disabled:opacity-50 bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] focus-visible:ring-[var(--accent)] shadow-sm h-12 px-6 text-base">Start Comparing</Link>
         </div>
@@ -253,7 +254,7 @@ export default async function Home() {
       <script
         type="application/ld+json"
         suppressHydrationWarning
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdText }}
       />
     </main>
   );

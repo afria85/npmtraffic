@@ -8,5 +8,8 @@ test("status page renders even without health data", async () => {
   resetHealthSnapshot();
   const element = await StatusPage();
   const html = ReactDOMServer.renderToStaticMarkup(element);
-  assert.ok(html.includes("No health data recorded yet"), "should mention missing health data");
+  assert.ok(
+    html.includes("No traffic health data recorded in this runtime yet"),
+    "should mention missing runtime health data"
+  );
 });

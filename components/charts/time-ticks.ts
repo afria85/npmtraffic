@@ -219,7 +219,7 @@ function labelHasYear(label: string): boolean {
 /**
  * adjustMonthTicksForOverlap
  *
- * Lightweight overlap mitigation for tight ranges (e.g. Dec 31 → Jan 01).
+ * Lightweight overlap mitigation for tight ranges (e.g. Dec 31 -> Jan 01).
  * It keeps buildMonthTicks deterministic, and only blanks labels that are too close.
  *
  * Strategy:

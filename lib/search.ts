@@ -30,6 +30,12 @@ function buildCacheKey(query: string, limit: number) {
   return `search:${query.toLowerCase()}:${limit}`;
 }
 
+function withTimeout(ms: number) {
+  const ctrl = new AbortController();
+  const timeout = setTimeout(() => ctrl.abort(), ms);
+  return { ctrl, clear: () => clearTimeout(timeout) };
+}
+
 export async function fetchSearch(queryInput: string, limit = 10): Promise<SearchResponse> {
   const query = normalizePackageInput(queryInput);
   if (!query) {
@@ -57,8 +63,11 @@ export async function fetchSearch(queryInput: string, limit = 10): Promise<Searc
   url.searchParams.set("text", query);
   url.searchParams.set("size", String(limit));
 
+  const { ctrl, clear } = withTimeout(5000);
+
   try {
     const res = await fetch(url.toString(), {
+      signal: ctrl.signal,
       headers: {
         accept: "application/json",
         "user-agent": USER_AGENT,
@@ -109,5 +118,7 @@ export async function fetchSearch(queryInput: string, limit = 10): Promise<Searc
       };
     }
     throw new Error("UPSTREAM_UNAVAILABLE");
+  } finally {
+    clear();
   }
 }

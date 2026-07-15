@@ -50,16 +50,16 @@ export default function PackageHeader({
             </span>
           </div>
         </div>
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col items-stretch gap-2 sm:items-end">
           <div className="w-full sm:w-72">
-            <div className="flex justify-end sm:hidden">
+            <div className="sm:hidden">
               <SearchBox variant="modal" triggerLabel="Search another package" />
             </div>
             <div className="hidden sm:block">
               <SearchBox />
             </div>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
             <CompareButton name={name} />
             {repoUrl ? (
               <a

@@ -1,25 +1,32 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import BrandText from "@/components/BrandText";
 import { getBaseUrl } from "@/lib/base-url";
 
 const shippingNow = [
   "Package pages with UTC-anchored daily tables",
+  "Package insights for latest trend, peak day, consistency, and MAD outliers",
   "Compare 2–5 packages with aligned date ranges",
-  "Deterministic exports (CSV/JSON) with cache + generation metadata",
-  "Local-first event markers (stored in browser storage) with optional URL sharing",
+  "Compare insights for leader, fastest mover, latest-day leader, and closest race",
+  "Deterministic exports (CSV, Excel CSV, JSON) with cache + generation metadata",
+  "Chart exports (SVG/PNG) and chart controls for MA3, MA7, outliers, events, and releases",
+  "Version metadata from the npm registry, including dist-tag latest and releases in range",
+  "Local-first event markers with release import, JSON import/export, and optional URL sharing",
+  "Hardened dropdowns, scroll hints, and touch targets across mobile, tablet, and desktop",
   "Transparency and status pages for operational context",
 ];
 
 const nextUp = [
-  "Harden dropdown/menu behavior (no clipping, reliable close on outside click/Escape)",
-  "Clarify comparison table labels and tooltips (derived metrics, % of total semantics)",
-  "Chart polish: better tooltip ergonomics + marker clarity",
-  "Status reliability improvements (reduce flapping; improve persistence where appropriate)",
+  "Persist operational health beyond the current server runtime so status is less ephemeral",
+  "Add broader browser/device visual regression coverage for complex chart and table states",
+  "Improve API documentation examples for stale responses, export filenames, and Excel CSV",
+  "Add clearer onboarding for event sharing limits and imported release markers",
 ];
 
 const ideas = [
   "Long-range exports (>365 days) with explicit cost/latency tradeoffs",
-  "Version-level attribution (requires additional data sources beyond npm downloads API)",
+  "Deeper release-to-traffic attribution beyond simple publish markers",
+  "Saved comparison presets without requiring user accounts",
   "Optional alerts (email/webhook) if there is clear demand",
 ];
 
@@ -28,7 +35,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const ogImage = `${baseUrl}/og.png`;
   const fallbackOgImage = `${baseUrl}/og-fallback.png`;
   return {
-    title: "Roadmap | npmtraffic",
+    title: "Roadmap",
     description: "Roadmap for npmtraffic features and infrastructure.",
     alternates: {
       canonical: `${baseUrl}/roadmap`,
@@ -73,12 +80,16 @@ export default function RoadmapPage() {
   return (
     <main className="mx-auto min-h-full max-w-4xl px-6 py-16 sm:py-20">
       <header className="mb-8">
-        <Link href="/" className="text-xs uppercase tracking-[0.3em] text-[var(--foreground-tertiary)]">
-          npmtraffic
+        <Link
+          href="/"
+          className="inline-flex min-h-8 items-center"
+          aria-label="npmtraffic home"
+        >
+          <BrandText />
         </Link>
         <h1 className="mt-2 text-4xl font-semibold">Roadmap</h1>
         <p className="mt-2 text-sm text-[var(--foreground-tertiary)]">
-          A lightweight, maintainer-focused tool. We intentionally avoid accounts, dashboards, and tracking-heavy analytics.
+          A lightweight, maintainer-focused tool. Shipping items reflect what is already in the app; future work keeps the same no-account, low-tracking posture.
         </p>
       </header>
 

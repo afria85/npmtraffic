@@ -13,6 +13,13 @@ type Props = {
   children: ReactNode;
 };
 
+export const SCROLL_HINT_OVERLAY_CLASSES =
+  "pointer-events-none absolute top-0 bottom-3 z-30 w-12 sm:w-14";
+export const SCROLL_HINT_LEFT_FADE_CLASSES =
+  "absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-[var(--surface)] to-transparent sm:w-4";
+export const SCROLL_HINT_RIGHT_FADE_CLASSES =
+  "absolute inset-y-0 right-0 w-3 bg-gradient-to-l from-[var(--surface)] to-transparent sm:w-4";
+
 function Chevron({ dir }: { dir: "left" | "right" }) {
   const d = dir === "left" ? "M12.75 15.25 8.5 11l4.25-4.25" : "M7.25 4.75 11.5 9l-4.25 4.25";
   return (
@@ -76,15 +83,19 @@ export default function ScrollHintContainer({ className, leftHintOffset, childre
     <div className="relative">
       {canScrollLeft ? (
         <div
-          className="pointer-events-none absolute inset-y-0 z-30 w-14 bg-gradient-to-r from-black/55 to-transparent"
+          className={SCROLL_HINT_OVERLAY_CLASSES}
           style={{ left: leftHintOffset ?? "0px" }}
         >
-          <div className="pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2">
+          <div
+            aria-hidden="true"
+            className={SCROLL_HINT_LEFT_FADE_CLASSES}
+          />
+          <div className="pointer-events-auto absolute left-1 top-1/2 -translate-y-1/2 sm:left-2">
             <button
               type="button"
               aria-label="Scroll left"
               onClick={() => scrollByStep("left")}
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] shadow-sm transition hover:bg-[var(--surface-hover)]"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] shadow-sm transition hover:bg-[var(--surface-hover)] sm:h-10 sm:w-10"
             >
               <Chevron dir="left" />
             </button>
@@ -92,13 +103,17 @@ export default function ScrollHintContainer({ className, leftHintOffset, childre
         </div>
       ) : null}
       {canScrollRight ? (
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-30 w-14 bg-gradient-to-l from-black/55 to-transparent">
-          <div className="pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2">
+        <div className={`${SCROLL_HINT_OVERLAY_CLASSES} right-0`}>
+          <div
+            aria-hidden="true"
+            className={SCROLL_HINT_RIGHT_FADE_CLASSES}
+          />
+          <div className="pointer-events-auto absolute right-1 top-1/2 -translate-y-1/2 sm:right-2">
             <button
               type="button"
               aria-label="Scroll right"
               onClick={() => scrollByStep("right")}
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] shadow-sm transition hover:bg-[var(--surface-hover)]"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] shadow-sm transition hover:bg-[var(--surface-hover)] sm:h-10 sm:w-10"
             >
               <Chevron dir="right" />
             </button>

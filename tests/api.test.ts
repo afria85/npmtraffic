@@ -8,6 +8,7 @@ import { GET as getCompare } from "../app/api/v1/compare/route";
 import { GET as getCompareCsv } from "../app/api/v1/compare.csv/route";
 import { GET as getCompareExcelCsv } from "../app/api/v1/compare.excel.csv/route";
 import { GET as getSearch } from "../app/api/v1/search/route";
+import { GET as getValidateExists } from "../app/api/v1/validate/[name]/exists/route";
 import { rangeForDays } from "../lib/query";
 
 test("daily API returns traffic response shape", async (t) => {
@@ -462,7 +463,9 @@ test("compare Excel CSV export uses semicolon delimiter", async (t) => {
 
 test("search API returns normalized results", async (t) => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async (input) => {
+  let sawAbortSignal = false;
+  globalThis.fetch = async (input, init) => {
+    sawAbortSignal = init?.signal instanceof AbortSignal;
     const url = typeof input === "string" ? input : input.url;
     if (url.startsWith("https://registry.npmjs.org/-/v1/search")) {
       return new Response(
@@ -495,6 +498,53 @@ test("search API returns normalized results", async (t) => {
   assert.equal(body.query, "react");
   assert.equal(body.items?.[0]?.name, "react");
   assert.equal(typeof body.meta?.cacheStatus, "string");
+  assert.equal(sawAbortSignal, true);
+});
+
+test("validate API returns request id and cache headers", async (t) => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = typeof input === "string" ? input : input.url;
+    if (url === "https://registry.npmjs.org/react") {
+      return new Response(JSON.stringify({ name: "react" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const req = new Request("http://localhost/api/v1/validate/react/exists");
+  const res = await getValidateExists(req, { params: Promise.resolve({ name: "react" }) });
+  assert.equal(res.status, 200);
+  assert.ok(res.headers.get("x-request-id"));
+  assert.equal(
+    res.headers.get("cache-control"),
+    "public, s-maxage=900, stale-while-revalidate=86400"
+  );
+});
+
+test("search API rejects oversized queries before upstream fetch", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    throw new Error("upstream fetch should not be called");
+  };
+
+  try {
+    const req = new Request(`http://localhost/api/v1/search?q=${"r".repeat(215)}`);
+    const res = await getSearch(req);
+    assert.equal(res.status, 400);
+    assert.ok(res.headers.get("x-request-id"));
+    assert.equal(res.headers.get("cache-control"), "no-store");
+    const payload = (await res.json()) as { error?: { code?: string } };
+    assert.equal(payload.error?.code, "INVALID_REQUEST");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("compare API requires packages", async () => {

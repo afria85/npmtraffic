@@ -46,6 +46,10 @@ export function resolveBaseUrl(options: ResolveBaseUrlOptions = {}) {
       // ignore
     }
 
+    if (env.NODE_ENV === "production" && config.site.url) {
+      return normalizeBaseUrl(config.site.url);
+    }
+
     return normalizeBaseUrl(`${proto}://${trimmedHost}`);
   }
 

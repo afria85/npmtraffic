@@ -65,7 +65,7 @@ export default function CompareSeriesTable({ series, packageNames }: Props) {
             <button
               type="button"
               onClick={() => setDateSortDir((prev) => (prev === "desc" ? "asc" : "desc"))}
-              className="inline-flex items-center gap-1"
+              className="-mx-1 inline-flex min-h-7 items-center gap-1 rounded px-1 transition-colors hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30"
               aria-label={`Sort by date (${dateSortDir === "desc" ? "newest first" : "oldest first"})`}
             >
               <span>Date</span>

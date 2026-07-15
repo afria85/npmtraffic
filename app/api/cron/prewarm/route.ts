@@ -3,9 +3,8 @@ import { NextResponse } from "next/server";
 import { normalizePackageInput } from "@/lib/package-name";
 import { prewarmTraffic } from "@/lib/prewarm";
 
-// FIX: Verify authorization for the prewarm endpoint.
-// Without auth, anyone can trigger mass upstream requests and abuse
-// this as an amplification vector or exhaust npm API rate limits.
+// Production prewarm calls must be authenticated because this endpoint
+// can fan out into multiple upstream npm requests.
 function isAuthorized(req: Request): boolean {
   const secret = process.env.CRON_SECRET;
   // If no secret configured, allow only in development.
@@ -27,7 +26,7 @@ export async function handlePrewarmRequest(
 ) {
   const requestId = crypto.randomUUID();
 
-  // Generic 401 — intentionally does not distinguish missing vs wrong
+  // Generic 401: intentionally does not distinguish missing vs wrong
   // credentials to avoid leaking whether CRON_SECRET is configured.
   if (!isAuthorized(req)) {
     return NextResponse.json(

@@ -7,6 +7,24 @@ import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
 import { USER_AGENT } from "@/lib/version";
 
+export const revalidate = 900;
+
+function buildHeaders(
+  requestId: string,
+  options: { retryAfter?: number; cache?: boolean } = {}
+) {
+  const headers: Record<string, string> = {
+    "x-request-id": requestId,
+  };
+  if (options.retryAfter != null) {
+    headers["Retry-After"] = String(options.retryAfter);
+  }
+  headers["Cache-Control"] = options.cache
+    ? "public, s-maxage=900, stale-while-revalidate=86400"
+    : "no-store";
+  return headers;
+}
+
 async function fetchPackageExists(name: string) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
@@ -46,7 +64,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
       });
       return NextResponse.json(
         { requestId, error: "rate_limited", retryAfter: limit.retryAfter },
-        { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
+        { status: 429, headers: buildHeaders(requestId, { retryAfter: limit.retryAfter }) }
       );
     }
 
@@ -66,7 +84,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
       });
       return NextResponse.json(
         { requestId, name: decoded, exists },
-        { status: exists ? 200 : 404 }
+        { status: exists ? 200 : 404, headers: buildHeaders(requestId, { cache: true }) }
       );
     }
 
@@ -83,7 +101,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
     });
     return NextResponse.json(
       { requestId, name: decoded, exists },
-      { status: exists ? 200 : 404 }
+      { status: exists ? 200 : 404, headers: buildHeaders(requestId, { cache: true }) }
     );
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error ?? "");
@@ -99,7 +117,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
           requestId,
           error: { code: "BAD_REQUEST", message: msg.replace("BAD_REQUEST: ", "") },
         },
-        { status: 400 }
+        { status: 400, headers: buildHeaders(requestId) }
       );
     }
 
@@ -114,7 +132,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
         requestId,
         error: { code: "UPSTREAM_ERROR", message: "Registry lookup failed" },
       },
-      { status: 502 }
+      { status: 502, headers: buildHeaders(requestId) }
     );
   }
 }

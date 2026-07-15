@@ -63,7 +63,8 @@ const THEME_INIT_SCRIPT = `(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
     if (!cookie && (saved === "dark" || saved === "light")) {
       const maxAge = 60 * 60 * 24 * 365;
-      document.cookie = key + "=" + encodeURIComponent(saved) + "; Path=/; Max-Age=" + maxAge + "; SameSite=Lax";
+      const secure = window.location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = key + "=" + encodeURIComponent(saved) + "; Path=/; Max-Age=" + maxAge + "; SameSite=Lax" + secure;
     }
   } catch (e) {
     // ignore

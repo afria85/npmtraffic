@@ -36,7 +36,7 @@ function MetricCheckbox({
       }`}
       title={title}
     >
-      <span className="relative inline-flex h-4 w-4 flex-none">
+      <span className="relative inline-flex h-6 w-6 flex-none items-center justify-center">
         <input
           id={id}
           name={name}
@@ -44,7 +44,7 @@ function MetricCheckbox({
           checked={checked}
           disabled={disabled}
           onChange={(e) => onChange(e.target.checked)}
-          className="peer h-4 w-4 appearance-none rounded-md border border-[var(--border)] bg-[var(--surface)] shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30 checked:bg-[var(--accent)] checked:border-[var(--accent)]"
+          className="peer h-6 w-6 appearance-none rounded-md border border-[var(--border)] bg-[var(--surface)] shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30 checked:bg-[var(--accent)] checked:border-[var(--accent)]"
         />
         <svg
           viewBox="0 0 20 20"
@@ -778,14 +778,6 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
             ) : null}
 
 
-            {versionMarkers?.length && settings.showVersions ? (
-              <li className="flex items-center gap-2">
-                <svg width="32" height="8" viewBox="0 0 32 8" aria-hidden>
-                  <rect x="14" y="2" width="4" height="4" rx="1" fill="var(--chart-palette-slate)" opacity="0.75" />
-                </svg>
-                <span className="text-[var(--foreground-tertiary)]">Releases</span>
-              </li>
-            ) : null}
             {settings.showMA3 && canShowMA3 ? (
               <path
                 d={ma3Path}

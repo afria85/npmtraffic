@@ -557,8 +557,8 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
         </div>
         {statusContent && !showEventsList ? <div className="px-4 py-3">{statusContent}</div> : null}
         <ScrollHintContainer
-          className="max-h-[60vh] overflow-auto pt-px"
-          leftHintOffset={showDerived ? "calc(var(--nt-date-col-w) + 8px)" : undefined}
+          className="max-h-[60vh] overflow-auto bg-[var(--surface)]"
+          leftHintOffset={showDerived ? "var(--nt-date-col-w)" : undefined}
         >
           <table
             className={`w-full text-sm ${showDerived ? "min-w-[700px] md:min-w-0 table-auto md:table-fixed" : "table-fixed"}`}
@@ -583,13 +583,13 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                 </>
               ) : null}
             </colgroup>
-            <thead className="sticky top-0 z-20 bg-[var(--surface)] text-xs uppercase tracking-normal text-[var(--foreground-secondary)] backdrop-blur">
+            <thead className="sticky top-0 z-20 bg-[var(--surface)] text-xs uppercase tracking-normal text-[var(--foreground-secondary)] shadow-[0_1px_0_var(--border)]">
                 <tr>
                   <th className={`px-2 py-2 text-left font-semibold whitespace-nowrap sm:px-3 ${showDerived ? "sticky left-0 z-30 bg-[var(--surface)] sm:static sm:z-auto sm:bg-transparent" : ""}`} title="Date (UTC)">
                     <button
                       type="button"
                       onClick={() => setDateSortDir((prev) => (prev === "desc" ? "asc" : "desc"))}
-                      className="inline-flex items-center gap-1"
+                      className="-mx-1 inline-flex min-h-7 items-center gap-1 rounded px-1 transition-colors hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30"
                       aria-label={`Sort by date (${dateSortDir === "desc" ? "newest first" : "oldest first"})`}
                     >
                       <span>Date</span>

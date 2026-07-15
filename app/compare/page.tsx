@@ -11,9 +11,11 @@ import RangeSelector from "@/components/RangeSelector";
 import ExportDropdown from "@/components/ExportDropdown";
 import ShareMenu from "@/components/ShareMenu";
 import SearchBox from "@/components/SearchBox";
+import BrandText from "@/components/BrandText";
 import CompareChart from "@/components/compare/CompareChartClient";
 import CompareAddBar from "@/components/compare/CompareAddBar";
 import CompareSeriesTable from "@/components/compare/CompareSeriesTable";
+import CompareInsightsPanel from "@/components/compare/CompareInsightsPanel";
 import { buildExportFilename } from "@/lib/export-filename";
 import RetryButton from "@/components/ui/RetryButton";
 import {
@@ -60,7 +62,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
   if (pkgs.length < 2) {
     return {
-      title: "Compare npm downloads | npmtraffic",
+      title: "Compare npm downloads",
       description: "Compare npm download history across packages.",
       alternates: { canonical: `${baseUrl}/compare` },
       openGraph: {
@@ -72,7 +74,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   }
 
   const canonical = buildCompareCanonical(baseUrl, pkgs, days);
-  const title = `Compare npm downloads (${days} days) | npmtraffic`;
+  const title = `Compare npm downloads (${days} days)`;
+  const socialTitle = `${title} | npmtraffic`;
   const description = `Compare npm download history for ${pkgs.join(", ")}.`;
   const encodedPkgs = encodePkg(pkgs.join(","));
   const ogImage = `${baseUrl}/og/compare/${encodedPkgs}/${days}.png`;
@@ -85,7 +88,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     openGraph: {
       type: "website",
       siteName: "npmtraffic",
-      title,
+      title: socialTitle,
       description,
       url: canonical,
       images: [
@@ -107,7 +110,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: socialTitle,
       description,
       images: [
         {
@@ -135,7 +138,7 @@ export default async function ComparePage({ searchParams }: Props) {
     return (
       <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-12">
         <div className="space-y-3">
-          <p className="text-xs uppercase tracking-[0.3em] text-[var(--foreground-tertiary)]">npmtraffic</p>
+          <BrandText />
           <h1 className="text-3xl font-semibold tracking-tight text-[var(--foreground)]">Compare npm packages</h1>
           <p className="text-sm text-[var(--foreground-tertiary)]">
             Add at least two packages to compare daily downloads, deltas, and trends.
@@ -221,18 +224,21 @@ export default async function ComparePage({ searchParams }: Props) {
         {
           key: "csv",
           label: "CSV",
+          description: "Comment header, UTC dates, daily deltas",
           href: `/api/v1/compare.csv?packages=${canonicalPkgs}&days=${days}`,
           downloadName: csvFilename,
         },
         {
           key: "excel",
           label: "Excel CSV",
+          description: "Semicolon-delimited for spreadsheet imports",
           href: `/api/v1/compare.excel.csv?packages=${canonicalPkgs}&days=${days}`,
           downloadName: excelFilename,
         },
         {
           key: "json",
           label: "JSON",
+          description: "Package totals, daily values, metadata, export block",
           href: `/api/v1/compare.json?packages=${canonicalPkgs}&days=${days}`,
           downloadName: jsonFilename,
         },
@@ -251,7 +257,10 @@ export default async function ComparePage({ searchParams }: Props) {
             <span className="text-[11px] uppercase tracking-widest">Open package:</span>
             {pkgs.map((name, i) => (
               <span key={name} className="flex items-center gap-2">
-                <Link href={`/p/${encodeURIComponent(name)}`} className="text-sm font-medium text-[color:var(--link)] hover:underline">
+                <Link
+                  href={`/p/${encodeURIComponent(name)}`}
+                  className="inline-flex min-h-8 min-w-10 items-center justify-center px-1 text-sm font-medium text-[color:var(--link)] hover:underline"
+                >
                   {name}
                 </Link>
                 {i < pkgs.length - 1 ? <span aria-hidden="true">,</span> : null}
@@ -261,9 +270,9 @@ export default async function ComparePage({ searchParams }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
+      <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
         <div className="min-w-0">{rangeSelector}</div>
-        <div className={`${COMPARE_ACTION_CONTAINER_CLASSES} flex-shrink-0 self-end`}>
+        <div className={`${COMPARE_ACTION_CONTAINER_CLASSES} flex-shrink-0 self-start sm:self-end`}>
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
           <ShareMenu url={canonical} title={`npmtraffic compare (${days} days)`} iconOnlyOnMobile />
         </div>
@@ -332,7 +341,7 @@ export default async function ComparePage({ searchParams }: Props) {
               </div>
               <Link
                 href={`/p/${encodeURIComponent(pkg.name)}`}
-                className="shrink-0 text-xs font-medium text-[color:var(--link)] hover:underline"
+                className="inline-flex h-8 shrink-0 items-center px-2 text-xs font-medium text-[color:var(--link)] hover:underline"
               >
                 View
               </Link>
@@ -341,18 +350,20 @@ export default async function ComparePage({ searchParams }: Props) {
         ))}
       </div>
 
+      <CompareInsightsPanel packages={data.packages} series={data.series} days={days} />
+
       <CompareChart series={data.series} packageNames={tablePackageNames} days={days} />
 
       <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
         <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3 text-sm text-[var(--foreground)]">
           <span className="text-sm font-semibold">Daily downloads ({days}d)</span>
         </div>
-	        <ScrollHintContainer
-	          className={COMPARE_TABLE_WRAPPER_CLASSES}
-	          leftHintOffset="calc(var(--nt-date-col-w) + 8px)"
-	        >
-	          <CompareSeriesTable series={data.series} packageNames={tablePackageNames} />
-	        </ScrollHintContainer>
+        <ScrollHintContainer
+          className={COMPARE_TABLE_WRAPPER_CLASSES}
+          leftHintOffset="var(--nt-date-col-w)"
+        >
+          <CompareSeriesTable series={data.series} packageNames={tablePackageNames} />
+        </ScrollHintContainer>
         <p className="px-3 py-2 text-xs text-[var(--foreground-tertiary)]">
           &Delta; vs previous day = downloads today - downloads yesterday
         </p>

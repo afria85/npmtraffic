@@ -15,9 +15,10 @@ npmtraffic helps you track npm package downloads with daily precision. It pulls 
 ## Features
 
 - **Day-by-day tables** &ndash; Browse downloads by date, catch inflection points, and see exactly when changes happened
-- **Reproducible exports** &ndash; CSV (including an Excel-friendly variant) and JSON files include UTC timestamps, date ranges, and cache status for repeatable analysis
-- **Event markers** &ndash; Pin releases, blog posts, or incidents to your charts to correlate with download spikes
-- **Package comparison** &ndash; Compare 2-5 packages side-by-side with aligned date ranges
+- **Insights and derived metrics** &ndash; Scan trends, peak days, active rate, MA3/MA7, and MAD-based outliers
+- **Reproducible exports** &ndash; CSV, Excel-friendly CSV, and JSON files include UTC timestamps, date ranges, request IDs, and cache/stale status
+- **Event and release markers** &ndash; Pin local notes, import npm releases, and show publish markers on charts
+- **Package comparison** &ndash; Compare 2-5 packages side-by-side with aligned date ranges, shares, leaders, and fastest movers
 - **Privacy-friendly telemetry** &ndash; Minimal, aggregate usage analytics via Vercel Web Analytics. No user accounts, profiling, or ad pixels.
 
 ## Tech Stack
@@ -25,7 +26,7 @@ npmtraffic helps you track npm package downloads with daily precision. It pulls 
 - **Framework:** [Next.js 16](https://nextjs.org/) (App Router, React Server Components)
 - **Styling:** [Tailwind CSS 4](https://tailwindcss.com/)
 - **Language:** [TypeScript 5](https://www.typescriptlang.org/) (strict mode)
-- **Deployment:** [Vercel](https://vercel.com/) (edge functions, caching)
+- **Deployment:** [Vercel](https://vercel.com/) (Next.js server routes and CDN caching)
 - **Data source:** npm downloads API (`api.npmjs.org`) + package metadata (`registry.npmjs.org`)
 
 ## Getting Started
@@ -146,15 +147,16 @@ See [/roadmap](https://npmtraffic.com/roadmap) for planned work and longer-term 
 
 Near-term focus:
 
-- Harden dropdown/menu behavior (no clipping; reliable close on outside click/Escape)
-- Clarify comparison table labels/tooltips (derived metrics, % of total semantics)
-- Chart polish (tooltip ergonomics + event marker clarity)
-- Status reliability improvements (reduce flapping; improve persistence where appropriate)
+- Persist operational health beyond the current server runtime
+- Broaden browser/device visual regression coverage for chart and table states
+- Improve API documentation examples for stale responses, export filenames, and Excel CSV
+- Clarify event sharing limits and imported release marker behavior
 
 Longer-term ideas (non-commitment):
 
 - Long-range exports (>365 days) with explicit cost/latency tradeoffs
-- Version-level attribution (requires additional data sources beyond npm downloads API)
+- Deeper release-to-traffic attribution beyond simple publish markers
+- Saved comparison presets without requiring user accounts
 - Optional alerts (email/webhook) if there is clear demand
 
 ## Privacy & Data

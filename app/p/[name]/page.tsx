@@ -13,6 +13,7 @@ import { buildExportFilename } from "@/lib/export-filename";
 import EventsPanel from "@/components/events/EventsPanel";
 import TrafficChart from "@/components/package/TrafficChartClient";
 import VersionMetadataPanel from "@/components/package/VersionMetadataPanel";
+import PackageInsightsPanel from "@/components/package/PackageInsightsPanel";
 import RetryButton from "@/components/ui/RetryButton";
 import { encodePkg } from "@/lib/og-encode";
 import { getPackageGithubRepo } from "@/lib/npm-repo";
@@ -82,7 +83,8 @@ export async function generateMetadata({
   }
   const days = clampDays(sp.days);
   const canonical = buildPackageCanonical(baseUrl, name, days);
-  const title = `${name} npm downloads (${days} days) | npmtraffic`;
+  const title = `${name} npm downloads (${days} days)`;
+  const socialTitle = `${title} | npmtraffic`;
   const description = `Daily npm download history for ${name} in a GitHub-style table`;
   // Some scrapers (notably WhatsApp) are more reliable when og:image URLs end with an image extension.
   // Use the dedicated /og/p route (supports "{days}" and "{days}.png") and keep a static fallback.
@@ -99,7 +101,7 @@ export async function generateMetadata({
     openGraph: {
       type: "website",
       siteName: "npmtraffic",
-      title,
+      title: socialTitle,
       description,
       url: canonical,
       images: [
@@ -121,7 +123,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: socialTitle,
       description,
       images: [
         {
@@ -229,18 +231,21 @@ export default async function PackagePage({ params, searchParams }: Props) {
         {
           key: "csv",
           label: "CSV",
+          description: "Comment header, UTC dates, derived columns",
           href: `/api/v1/package/${encodedName}/daily.csv?days=${days}`,
           downloadName: csvFilename,
         },
         {
           key: "excel",
           label: "Excel CSV",
+          description: "Semicolon-delimited for spreadsheet imports",
           href: `/api/v1/package/${encodedName}/daily.excel.csv?days=${days}`,
           downloadName: excelFilename,
         },
         {
           key: "json",
           label: "JSON",
+          description: "Normalized range, series, metadata, export block",
           href: `/api/v1/package/${encodedName}/daily.json?days=${days}`,
           downloadName: jsonFilename,
         },
@@ -257,9 +262,9 @@ export default async function PackagePage({ params, searchParams }: Props) {
       />
 
       {/* Command bar: range left, export/share right */}
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+      <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
         <div className="min-w-0 sm:min-w-[230px]">{rangeSelector}</div>
-        <div className="flex flex-shrink-0 items-center justify-end gap-2">
+        <div className="flex flex-shrink-0 items-center justify-start gap-2 sm:justify-end">
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
           <ShareMenu
             url={canonical}
@@ -276,7 +281,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
       <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 px-4 py-6">
         {header}
         <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
-          <p className="text-sm text-slate-200">{errorText ?? "We couldn't load this package right now."}</p>
+          <p className="text-sm text-[var(--foreground)]">{errorText ?? "We couldn't load this package right now."}</p>
           <div className="mt-3 flex items-center gap-2">
             <RetryButton />
           </div>
@@ -297,22 +302,24 @@ export default async function PackagePage({ params, searchParams }: Props) {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-2 sm:grid-cols-2">
-        <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
-          <p className="whitespace-nowrap text-xs font-medium text-slate-300">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="min-w-0 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
+          <p className="whitespace-nowrap text-xs font-medium text-[var(--foreground-secondary)]">
             Total downloads ({days}d)
           </p>
           <p className="mt-1 text-lg font-semibold tabular-nums text-[color:var(--foreground)] sm:text-xl">
             {formatNumber(traffic.totals.sum)}
           </p>
         </div>
-        <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
-          <p className="whitespace-nowrap text-xs font-medium text-slate-300">Avg per day</p>
+        <div className="min-w-0 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
+          <p className="whitespace-nowrap text-xs font-medium text-[var(--foreground-secondary)]">Avg per day</p>
           <p className="mt-1 text-lg font-semibold tabular-nums text-[color:var(--foreground)] sm:text-xl">
             {formatNumber(traffic.totals.avgPerDay)}
           </p>
         </div>
       </div>
+
+      <PackageInsightsPanel series={traffic.series} derived={traffic.derived} days={days} />
 
       {versionTimeline ? (
         <VersionMetadataPanel
@@ -342,7 +349,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
       <EventsPanel key={`${name}:${sp.events ?? ""}`} pkgName={name} encoded={sp.events} range={traffic.range} />
 
-      <p className="text-xs text-slate-500">Data from api.npmjs.org.</p>
+      <p className="text-xs text-[var(--foreground-tertiary)]">Data from api.npmjs.org.</p>
     </main>
   );
 }

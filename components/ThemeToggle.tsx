@@ -49,7 +49,8 @@ function persistTheme(theme: Theme) {
     // ignore
   }
   const maxAge = 60 * 60 * 24 * 365;
-  document.cookie = `${COOKIE_KEY}=${encodeURIComponent(theme)}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${COOKIE_KEY}=${encodeURIComponent(theme)}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`;
 }
 
 export default function ThemeToggle() {

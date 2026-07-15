@@ -267,8 +267,8 @@ function SearchPanel({
                   className={[
                     "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition",
                     activeOption?.id === option.id
-                      ? "bg-black/5 text-[color:var(--foreground)]"
-                      : "text-[color:var(--foreground)]/90 hover:bg-black/5"
+                      ? "bg-[var(--surface-hover)] text-[color:var(--foreground)]"
+                      : "text-[color:var(--foreground)]/90 hover:bg-[var(--surface-hover)]"
                   ].join(" ")}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => selectPackage(option.value)}

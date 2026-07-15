@@ -30,7 +30,7 @@ export default function Logo({
   return (
     <Link
       href="/"
-      className={`inline-flex items-center gap-2.5 transition-opacity hover:opacity-80 ${className}`}
+      className={`inline-flex min-h-10 items-center gap-2.5 transition-opacity hover:opacity-80 ${className}`}
       aria-label="npmtraffic home"
     >
       <BrandMark className={iconSizes[size]} variant={markVariant} />

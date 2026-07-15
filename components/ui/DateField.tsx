@@ -4,15 +4,18 @@ import React, { useId, useRef } from "react";
 import { cx } from "@/lib/cx";
 import { IconCalendar } from "@/components/ui/icons";
 
+type DateInputWithPicker = HTMLInputElement & {
+  showPicker?: () => void;
+};
+
 function openNativeDatePicker(input: HTMLInputElement | null) {
   if (!input) return;
   // Prefer the native picker when available (Chromium).
   // Fallbacks keep behavior reasonable on Safari/iOS.
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const anyInput = input as any;
-    if (typeof anyInput.showPicker === "function") {
-      anyInput.showPicker();
+    const dateInput = input as DateInputWithPicker;
+    if (typeof dateInput.showPicker === "function") {
+      dateInput.showPicker();
       return;
     }
   } catch {

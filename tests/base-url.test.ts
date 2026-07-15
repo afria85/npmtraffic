@@ -35,3 +35,14 @@ test("prefers config.site.url when only Vercel URL is available", () => {
   });
   assert.equal(result, "https://npmtraffic.com");
 });
+
+test("ignores arbitrary request host in production", () => {
+  const result = resolveBaseUrl({
+    env: {
+      ...process.env,
+      NODE_ENV: "production",
+    },
+    headers: { host: "example-attacker.test", proto: "https" },
+  });
+  assert.equal(result, "https://npmtraffic.com");
+});

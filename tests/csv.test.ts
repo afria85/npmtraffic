@@ -12,3 +12,16 @@ test("buildCsv outputs header and rows", () => {
   assert.equal(lines[0], "date,downloads");
   assert.equal(lines.length, 3);
 });
+
+test("buildCsv quotes the active delimiter", () => {
+  const csv = buildCsv([["name", "description"], ["pkg", "a;b"]], ";");
+  assert.equal(csv.split("\n")[1], "pkg;\"a;b\"");
+});
+
+test("buildCsv keeps negative numbers numeric while protecting formula-like strings", () => {
+  const csv = buildCsv([
+    ["delta", "label"],
+    [-42, "-SUM(A1:A2)"],
+  ]);
+  assert.equal(csv.split("\n")[1], "-42,\t-SUM(A1:A2)");
+});

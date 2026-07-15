@@ -13,10 +13,9 @@ globalThis.__npmtraffic_cache__ = store;
 // Map preserves insertion order; we refresh access by delete+set.
 const MAX_CACHE_ENTRIES = 1000;
 
-// FIX: Periodically purge fully expired entries (past staleAt) to
-// prevent the store from filling up with dead entries that only get
-// cleaned on individual access. O(n) with n ≤ 1000 — safe to run
-// inline during normal cache operations.
+// Periodically purge fully expired entries so dead cache keys do not
+// accumulate until their next individual access. O(n) with n <= 1000
+// is small enough to run inline during normal cache operations.
 const PURGE_INTERVAL_MS = 60_000 * 5; // every 5 minutes
 let lastPurge = Date.now();
 

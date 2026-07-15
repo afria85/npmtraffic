@@ -61,12 +61,14 @@ function isAbortError(err: unknown): boolean {
 /**
  * Check Web Share API support at runtime.
  */
-function canUseNativeShare(_title: string, url: string): boolean {
+function canUseNativeShare(title: string, url: string): boolean {
   if (typeof window === "undefined") return false;
   if (!window.isSecureContext) return false;
   if (!url) return false;
 
   const nav = navigator as NavigatorWithShare;
+  const payload = { title, text: title, url };
+  if (typeof nav.canShare === "function" && !nav.canShare(payload)) return false;
   return typeof nav.share === "function";
 }
 
@@ -74,8 +76,8 @@ function canUseNativeShare(_title: string, url: string): boolean {
  * ShareMenu - Simplified share button
  * 
  * Behavior:
- * 1. Click → Try native share (if available) → Opens OS share sheet
- * 2. If native share not available or fails → Copy link + show feedback
+ * 1. Click -> try native share when available.
+ * 2. If native share is unavailable or fails, copy the link and show feedback.
  * 
  * Always shows "Share" label - handles fallback gracefully.
  */
@@ -94,7 +96,7 @@ export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuPro
     
     if (nativeShareAvailable && typeof nav.share === "function") {
       try {
-        await nav.share({ title, url });
+        await nav.share({ title, text: title, url });
         setStatus("shared");
         resetSoon(1200);
         return;
@@ -159,6 +161,9 @@ export default function ShareMenu({ url, title, iconOnlyOnMobile }: ShareMenuPro
       onClick={handleClick}
     >
       {buttonContent}
+      <span aria-live="polite" className="sr-only">
+        {status === "idle" ? "" : labelText}
+      </span>
     </button>
   );
 }

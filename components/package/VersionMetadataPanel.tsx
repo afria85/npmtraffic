@@ -79,7 +79,7 @@ export default function VersionMetadataPanel({
                 href={latestLink ?? undefined}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-semibold text-[var(--accent)] hover:underline"
+                className="inline-flex min-h-8 items-center text-sm font-semibold text-[var(--accent)] hover:underline"
               >
                 v{latestVersion}
               </a>
@@ -121,7 +121,7 @@ export default function VersionMetadataPanel({
               href={`https://www.npmjs.com/package/${encodeURIComponent(pkgName)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--surface-hover)]"
+              className="inline-flex min-h-8 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--surface-hover)]"
             >
               npm page
             </a>
@@ -130,7 +130,7 @@ export default function VersionMetadataPanel({
                 href={repoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--surface-hover)]"
+                className="inline-flex min-h-8 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--surface-hover)]"
               >
                 repo
               </a>

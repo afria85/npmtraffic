@@ -24,10 +24,8 @@ export function getClientIp(req: Request) {
     return cleaned;
   };
 
-  // FIX: Prefer platform-verified headers over x-forwarded-for.
-  // x-forwarded-for can be spoofed by clients when not behind a trusted
-  // proxy. Vercel's x-vercel-forwarded-for and Cloudflare's
-  // cf-connecting-ip are set by the platform and are not spoofable.
+  // Prefer platform-managed headers before x-forwarded-for, which can be
+  // client-controlled when a trusted reverse proxy does not overwrite it.
   const platformCandidates = [
     req.headers.get("cf-connecting-ip"),
     req.headers.get("x-vercel-forwarded-for"),
@@ -56,9 +54,6 @@ async function memoryRateLimit(
   const entries = memoryStore.get(key) ?? [];
   const recent = entries.filter((ts) => ts > windowStart);
 
-  // FIX: Check count BEFORE pushing the current request.
-  // Previously, denied requests were still added to the array, causing
-  // unbounded memory growth under sustained attack.
   const count = recent.length;
   const allowed = count < limit;
 

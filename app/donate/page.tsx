@@ -4,7 +4,7 @@ import { config } from "@/lib/config";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
 export const metadata: Metadata = {
-  title: "Donate | npmtraffic",
+  title: "Donate",
   description: "Support npmtraffic with optional donations that keep the project fast, free, and reliable.",
 };
 

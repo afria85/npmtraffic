@@ -18,7 +18,7 @@ const EMPTY_SNAPSHOT: string[] = [];
 const getEmptySnapshot = () => EMPTY_SNAPSHOT;
 
 const LIST_REMOVAL_CLASS =
-  "inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] pl-3 pr-2 py-1.5 text-xs text-[var(--foreground)] transition hover:bg-[var(--surface-hover)] hover:border-[var(--border-hover)]";
+  "inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] pl-3 pr-2 py-1.5 text-xs text-[var(--foreground)] transition hover:bg-[var(--surface-hover)] hover:border-[var(--border-hover)]";
 
 type CompareTrayProps = {
   pathname?: string;
@@ -152,9 +152,9 @@ export default function CompareTray({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <span className="text-sm text-[var(--foreground-tertiary)]">{selectionLabel}</span>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="flex w-full min-w-0 flex-wrap items-center justify-start gap-2 sm:ml-auto sm:w-auto sm:justify-end">
               {packages.length ? (
                 <button
                   type="button"

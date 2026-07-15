@@ -29,17 +29,17 @@ export default function Footer() {
             <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--foreground-tertiary)]">
               Product
             </h3>
-            <nav className="flex flex-col gap-2 text-sm">
-              <Link href="/" className="text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
+            <nav className="flex flex-col gap-1 text-sm">
+              <Link href="/" className="inline-flex min-h-8 items-center text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
                 Home
               </Link>
-              <Link href="/compare" className="text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
+              <Link href="/compare" className="inline-flex min-h-8 items-center text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
                 Compare
               </Link>
-              <Link href="/about" className="text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
+              <Link href="/about" className="inline-flex min-h-8 items-center text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
                 About
               </Link>
-              <Link href="/roadmap" className="text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
+              <Link href="/roadmap" className="inline-flex min-h-8 items-center text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
                 Roadmap
               </Link>
             </nav>
@@ -50,11 +50,11 @@ export default function Footer() {
             <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--foreground-tertiary)]">
               Resources
             </h3>
-            <nav className="flex flex-col gap-2 text-sm">
-              <Link href="/transparency" className="text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
+            <nav className="flex flex-col gap-1 text-sm">
+              <Link href="/transparency" className="inline-flex min-h-8 items-center text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
                 Transparency
               </Link>
-              <Link href="/status" className="text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
+              <Link href="/status" className="inline-flex min-h-8 items-center text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
                 Status
               </Link>
               {projectGithubUrl && (
@@ -62,7 +62,7 @@ export default function Footer() {
                   href={projectGithubUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]"
+                  className="inline-flex min-h-8 items-center gap-1 text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]"
                 >
                   GitHub
                   <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,8 +78,8 @@ export default function Footer() {
             <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--foreground-tertiary)]">
               Support
             </h3>
-            <nav className="flex flex-col gap-2 text-sm">
-              <Link href="/donate" className="text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
+            <nav className="flex flex-col gap-1 text-sm">
+              <Link href="/donate" className="inline-flex min-h-8 items-center text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
                 Donate
               </Link>
             </nav>

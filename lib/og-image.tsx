@@ -302,15 +302,15 @@ function createHomeLayout(logoSrc?: string) {
             Daily data, full metadata.
           </div>
           <div style={{ marginTop: 10, color: MUTED, fontSize: 22, lineHeight: 1.35, maxWidth: 900 }}>
-            UTC-anchored daily tables. Deterministic exports with traceable metadata. Event markers for correlation.
+            UTC-anchored daily tables. Compare insights. Release context. Traceable exports.
           </div>
         </div>
 
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 30 }}>
           <Pill text="Daily tables" />
-          <Pill text="CSV/JSON export" />
+          <Pill text="CSV/Excel/JSON" />
           <Pill text="Compare packages" />
-          <Pill text="Event markers" />
+          <Pill text="Release markers" />
         </div>
       </div>
 

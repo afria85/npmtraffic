@@ -1,36 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createRoot, type Root } from "react-dom/client";
-import { act } from "react-dom/test-utils";
-import { JSDOM } from "jsdom";
+import { act } from "react";
 import CompareChart from "../components/compare/CompareChart";
+import { renderComponent, setupDom } from "./support/dom";
 
 test("compare chart style panel keeps scrollable content inside panel", () => {
-  const dom = new JSDOM("<!doctype html><html><body></body></html>", {
-    url: "http://localhost",
-  });
-  const originalWindow = globalThis.window;
-  const originalDocument = globalThis.document;
-  const originalNavigator = globalThis.navigator;
-  const originalHTMLElement = globalThis.HTMLElement;
-  const originalNode = globalThis.Node;
-  const originalRAF = globalThis.requestAnimationFrame;
-  const originalCAF = globalThis.cancelAnimationFrame;
-
-  globalThis.window = dom.window as unknown as Window;
-  globalThis.document = dom.window.document;
-  globalThis.navigator = dom.window.navigator;
-  globalThis.HTMLElement = dom.window.HTMLElement;
-  globalThis.Node = dom.window.Node;
-  globalThis.requestAnimationFrame = dom.window.requestAnimationFrame;
-  globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame;
-
-  const container = dom.window.document.createElement("div");
-  dom.window.document.body.appendChild(container);
-  const root: Root = createRoot(container);
-
-  act(() => {
-    root.render(
+  const { dom, cleanup } = setupDom();
+  const { unmount } = renderComponent(
+    dom,
       <CompareChart
         days={30}
         packageNames={["react", "vue", "svelte", "solid-js", "preact"]}
@@ -47,8 +24,7 @@ test("compare chart style panel keeps scrollable content inside panel", () => {
           },
         ]}
       />
-    );
-  });
+  );
 
   try {
     const buttons = Array.from(dom.window.document.querySelectorAll("button"));
@@ -67,16 +43,7 @@ test("compare chart style panel keeps scrollable content inside panel", () => {
     const scrollArea = dialog?.querySelector("div.overflow-y-auto");
     assert.ok(scrollArea, "Panel should include a scrollable area");
   } finally {
-    act(() => {
-      root.unmount();
-    });
-    globalThis.window = originalWindow;
-    globalThis.document = originalDocument;
-    globalThis.navigator = originalNavigator;
-    globalThis.HTMLElement = originalHTMLElement;
-    globalThis.Node = originalNode;
-    globalThis.requestAnimationFrame = originalRAF;
-    globalThis.cancelAnimationFrame = originalCAF;
-    dom.window.close();
+    unmount();
+    cleanup();
   }
 });
