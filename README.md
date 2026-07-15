@@ -2,190 +2,169 @@
 
 Daily npm download analytics built for package maintainers.
 
+[![CI](https://github.com/afria85/npmtraffic/actions/workflows/ci.yml/badge.svg)](https://github.com/afria85/npmtraffic/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
-
-## What is this?
-
-npmtraffic helps you track npm package downloads with daily precision. It pulls data directly from npm's public APIs, displays trends with event markers, and lets you export datasets with full metadata for reproducible analysis.
 
 **Live site:** [npmtraffic.com](https://npmtraffic.com)
 
+## Overview
+
+npmtraffic helps package maintainers inspect npm download changes with daily precision. It pulls from npm's public APIs, normalizes ranges to UTC reporting windows, adds release/event context, and exports traceable datasets for reproducible analysis.
+
+The project intentionally avoids accounts, paid tiers, and dashboard-heavy tracking. Event annotations stay local by default and are shared only when a user explicitly copies a URL with embedded event data.
+
 ## Features
 
-- **Day-by-day tables** &ndash; Browse downloads by date, catch inflection points, and see exactly when changes happened
-- **Insights and derived metrics** &ndash; Scan trends, peak days, active rate, MA3/MA7, and MAD-based outliers
-- **Reproducible exports** &ndash; CSV, Excel-friendly CSV, and JSON files include UTC timestamps, date ranges, request IDs, and cache/stale status
-- **Event and release markers** &ndash; Pin local notes, import npm releases, and show publish markers on charts
-- **Package comparison** &ndash; Compare 2-5 packages side-by-side with aligned date ranges, shares, leaders, and fastest movers
-- **Privacy-friendly telemetry** &ndash; Minimal, aggregate usage analytics via Vercel Web Analytics. No user accounts, profiling, or ad pixels.
+- **UTC daily tables** - date-by-date downloads with deltas, MA3/MA7, and MAD-based outlier signals.
+- **Package insights** - latest trend, peak day, active rate, consistency, and strongest outlier summaries.
+- **Package comparison** - compare 2-5 packages with aligned ranges, shares, leaders, fastest movers, and closest-race context.
+- **Release and event context** - import npm publish markers, add local notes, and show markers on charts and tables.
+- **Deterministic exports** - CSV, Excel-friendly CSV, JSON, chart SVG, and chart PNG exports with metadata where relevant.
+- **Stale-aware reliability** - cache status, stale warnings, retry controls, and status/transparency pages for operational context.
+- **Privacy-conscious telemetry** - aggregate Vercel Web Analytics only; no user accounts, ad pixels, or profiling.
 
 ## Tech Stack
 
-- **Framework:** [Next.js 16](https://nextjs.org/) (App Router, React Server Components)
-- **Styling:** [Tailwind CSS 4](https://tailwindcss.com/)
-- **Language:** [TypeScript 5](https://www.typescriptlang.org/) (strict mode)
-- **Deployment:** [Vercel](https://vercel.com/) (Next.js server routes and CDN caching)
-- **Data source:** npm downloads API (`api.npmjs.org`) + package metadata (`registry.npmjs.org`)
+- **Framework:** [Next.js 16](https://nextjs.org/) App Router
+- **UI:** React 19, Tailwind CSS 4, custom SVG charts
+- **Language:** TypeScript 5
+- **Runtime/deploy:** Vercel with Next.js server routes and CDN caching
+- **Data sources:** `api.npmjs.org` for downloads, `registry.npmjs.org` for package metadata, search, dist-tags, and release markers
 
-## Getting Started
+## Requirements
 
-### Prerequisites
+- Node.js 24 recommended. The CI workflow runs on Node 24.
+- Node.js >=20.19 is supported by the current dependency set.
+- npm 10+
 
-- Node.js 20+
-- npm or pnpm
-
-### Installation
+## Local Development
 
 ```bash
-# Clone the repository
 git clone https://github.com/afria85/npmtraffic.git
 cd npmtraffic
-
-# Install dependencies
 npm install
-
-# Run development server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000).
 
-### Build for Production
+Useful scripts:
 
-```bash
-npm run build
-npm start
-```
-
-## Project Structure
-
-```
-npmtraffic/
-├── app/                # Next.js app directory
-│   ├── p/[name]/       # Package detail pages
-│   ├── compare/        # Package comparison
-│   ├── api/            # API routes
-│   └── ...
-├── components/         # React components
-│   ├── charts/         # Chart components
-│   ├── compare/        # Comparison UI
-│   └── ...
-├── lib/                # Utilities and business logic
-│   ├── npm-client.ts   # npm API wrapper
-│   ├── cache.ts        # Caching layer
-│   └── ...
-├── public/             # Static assets
-└── tests/              # Test files
-```
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the local Next.js dev server |
+| `npm test` | Run the Node test suite |
+| `npm run lint` | Run ESLint |
+| `npm run build` | Build the production app |
+| `npm start` | Start the production build locally |
 
 ## Configuration
 
-Key settings are in `lib/config.ts`:
+See [.env.example](.env.example) for optional environment variables.
 
-```typescript
-export const config = {
-  site: {
-    name: "npmtraffic",
-    tagline: "...",
-    url: "https://npmtraffic.com",
-  },
-  cache: {
-    dailyTTLSeconds: 900, // 15 minutes
-    metadataTTLSeconds: 604800, // 7 days
-  },
-  limits: {
-    compareMax: 5, // Max packages in comparison
-  },
-};
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_BASE_URL`, `NEXT_PUBLIC_SITE_URL`, `BASE_URL`, `SITE_URL` | Canonical URL and OG metadata generation outside Vercel |
+| `NEXT_PUBLIC_PROJECT_GITHUB` | Header/footer repository link |
+| `NEXT_PUBLIC_DONATE_*` | Optional donation links shown on `/donate` |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Optional distributed rate limiting |
+| `CRON_SECRET` | Required in production for `/api/cron/prewarm` authorization |
+| `CSP_REPORT_ONLY=1` | Emit stricter CSP in report-only mode |
+| `NPMTRAFFIC_TEST_UPSTREAM_FAIL` | Test helper for simulated upstream failures |
+
+Application defaults live in [lib/config.ts](lib/config.ts), including cache TTLs and the compare package limit.
+
+## Public API
+
+Supported ranges are `7`, `14`, `30`, `90`, `180`, and `365` days. Ranges end at yesterday UTC to match npm's reporting lag.
+
+| Endpoint | Description |
+| --- | --- |
+| `/api/v1/package/{name}/daily.json?days=30` | Daily package downloads with range, totals, derived metrics, and export metadata |
+| `/api/v1/package/{name}/daily.csv?days=30` | CSV export with metadata comments |
+| `/api/v1/package/{name}/daily.excel.csv?days=30` | Semicolon-delimited spreadsheet CSV |
+| `/api/v1/compare.json?packages=react,vue&days=30` | Compare totals, shares, aligned daily values, deltas, and metadata |
+| `/api/v1/compare.csv?packages=react,vue&days=30` | Wide compare CSV |
+| `/api/v1/compare.excel.csv?packages=react,vue&days=30` | Spreadsheet-friendly compare CSV |
+| `/api/v1/search?q=react&limit=10` | npm search proxy used by package search controls |
+| `/api/v1/validate/{name}/exists` | Package existence check |
+
+Examples:
+
+```bash
+curl "https://npmtraffic.com/api/v1/package/react/daily.json?days=30"
+curl "https://npmtraffic.com/api/v1/compare.json?packages=react,vue&days=30"
 ```
 
-## API
+## Data Behavior
 
-npmtraffic uses npm's public registry API:
+- Download counts come from `api.npmjs.org` and represent total downloads, not unique users.
+- Search, repository links, dist-tags, and release markers come from `registry.npmjs.org`.
+- Short traffic windows cache for 15 minutes; longer traffic windows cache for 12 hours.
+- Stale traffic can be served for up to 24 hours when npm is unavailable.
+- Successful data responses are CDN-cacheable with `Cache-Control`; invalid requests and errors are not cached.
+- Status health is runtime-local and intentionally not a historical uptime monitor.
 
-- Downloads: `https://api.npmjs.org/downloads/range/{start}:{end}/{package}`
-- Metadata: `https://registry.npmjs.org/{package}`
+## Project Structure
 
-See `lib/npm-client.ts` for implementation details.
+```text
+npmtraffic/
+├── app/                # Next.js app routes and API routes
+│   ├── p/[name]/       # Package detail pages
+│   ├── compare/        # Package comparison
+│   └── api/            # Public API, OG image, cron routes
+├── components/         # React components
+│   ├── charts/         # Chart helpers
+│   ├── compare/        # Compare UI
+│   └── package/        # Package detail UI
+├── lib/                # Data fetching, caching, exports, validation, business logic
+├── public/             # Static assets
+└── tests/              # Node test suite
+```
 
-## Caching Strategy
+## Quality
 
-npmtraffic uses an explicit server-side in-memory cache (`lib/cache.ts`) with stale fallback:
+Before pushing changes, run:
 
-1. **Daily downloads (traffic):** cached for 15 minutes for ≤30-day ranges, and 12 hours for longer ranges, with up to 24 hours of stale fallback if the npm API errors.
-2. **Package metadata (repo URL):** cached for up to 7 days.
-3. **Validation results:** cached for 24 hours (positive) or 1 hour (negative).
+```bash
+npm test
+npm run lint
+npm run build
+```
 
-Exports (`*.csv`) are additionally cached at the edge via `Cache-Control` response headers.
+The GitHub Actions CI workflow runs install, tests, lint, and build on Node 24.
 
-## Contributing
+## Privacy
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
-
-### Development Guidelines
-
-- **TypeScript strict mode** &ndash; No `any` types
-- **ESLint clean** &ndash; Run `npm run lint` before committing
-- **Tests required** &ndash; Add tests for new features (`npm test`)
-- **Responsive design** &ndash; Test on mobile, tablet, desktop
-- **Accessibility** &ndash; Follow WCAG AA standards
-
-### Reporting Issues
-
-Found a bug or have a feature request? [Open an issue](https://github.com/afria85/npmtraffic/issues) with:
-
-1. Clear description
-2. Steps to reproduce (for bugs)
-3. Expected vs actual behavior
-4. Screenshots (if applicable)
+- No accounts, sign-in, user profiles, or paid dashboard tier.
+- Event markers are stored in browser storage by default.
+- Event URL sharing is opt-in and embeds the shared payload in the copied URL.
+- Theme preference uses first-party browser storage.
+- Vercel Web Analytics is used for aggregate usage measurement without ad pixels or cross-site tracking cookies.
 
 ## Roadmap
 
-See [/roadmap](https://npmtraffic.com/roadmap) for planned work and longer-term ideas.
-
-Near-term focus:
-
-- Persist operational health beyond the current server runtime
-- Broaden browser/device visual regression coverage for chart and table states
-- Improve API documentation examples for stale responses, export filenames, and Excel CSV
-- Clarify event sharing limits and imported release marker behavior
-
-Longer-term ideas (non-commitment):
-
-- Long-range exports (>365 days) with explicit cost/latency tradeoffs
-- Deeper release-to-traffic attribution beyond simple publish markers
-- Saved comparison presets without requiring user accounts
-- Optional alerts (email/webhook) if there is clear demand
-
-## Privacy & Data
-
-- **No accounts** &ndash; No sign-in, dashboards, or user profiles
-- **No tracking profiles** &ndash; We avoid ad pixels and cross-site tracking
-- **Theme preference** &ndash; Stored via a first-party cookie plus localStorage
-- **Aggregate analytics** &ndash; Vercel Web Analytics for basic usage measurement
-
-All package data comes from npm's public APIs. We don't sell user data.
-
-## License
-
-This project is licensed under the Apache License 2.0 - see [LICENSE](LICENSE) for details.
-
-## Acknowledgments
-
-- Data provided by [npm, Inc.](https://www.npmjs.com/)
-- Charts rendered with custom SVG (no charting dependency)
-- Hosted on [Vercel](https://vercel.com/)
+See [npmtraffic.com/roadmap](https://npmtraffic.com/roadmap) for current shipped items, near-term work, and longer-term ideas.
 
 ## Support
 
 - **Documentation:** [npmtraffic.com/about](https://npmtraffic.com/about)
+- **Data notes:** [npmtraffic.com/data](https://npmtraffic.com/data)
 - **Status:** [npmtraffic.com/status](https://npmtraffic.com/status)
 - **Issues:** [GitHub Issues](https://github.com/afria85/npmtraffic/issues)
+- **Optional support:** [npmtraffic.com/donate](https://npmtraffic.com/donate)
 
-Optional donations help cover hosting and maintenance: [npmtraffic.com/donate](https://npmtraffic.com/donate)
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).
+
+## Acknowledgments
+
+- Data provided by npm's public APIs.
+- Hosted on [Vercel](https://vercel.com/).
 
 ---
 
-**Note:** npmtraffic is not affiliated with npm, Inc. This is an independent project built to help package maintainers understand their download trends.
+npmtraffic is not affiliated with npm, Inc.
