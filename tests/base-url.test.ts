@@ -46,3 +46,9 @@ test("ignores arbitrary request host in production", () => {
   });
   assert.equal(result, "https://npmtraffic.com");
 });
+
+for (const url of ['http://localhost:3000','https://preview.vercel.app','http://127.0.0.1:3000','javascript:alert(1)']) {
+ test(`production canonical ignores unsafe configured origin ${url}`, () => {
+  assert.equal(resolveBaseUrl({env:{NODE_ENV:'production',BASE_URL:url}}),'https://npmtraffic.com');
+ });
+}

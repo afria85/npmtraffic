@@ -302,13 +302,27 @@ export default function SearchBox({
   triggerLabel = "Search npm packages",
 }: SearchBoxProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const sheetId = "searchbox-sheet";
+  const sheetId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     const handler = (event: globalThis.KeyboardEvent) => {
       if (event.key === "Escape") {
         setIsOpen(false);
+        triggerRef.current?.focus();
+      }
+      if (event.key === "Tab") {
+        const targets = dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input, a[href], [tabindex="0"]');
+        if (!targets?.length) return;
+        const first = targets[0];
+        const last = targets[targets.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault(); last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault(); first.focus();
+        }
       }
     };
     window.addEventListener("keydown", handler);
@@ -323,6 +337,7 @@ export default function SearchBox({
     <div className={className}>
       <button
         type="button"
+        ref={triggerRef}
         onClick={() => setIsOpen(true)}
         className="h-11 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-left text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--surface-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]/40 inline-flex items-center justify-between gap-2"
         aria-expanded={isOpen}
@@ -334,10 +349,12 @@ export default function SearchBox({
         <div className="fixed inset-0 z-40">
           <div
             className="absolute inset-0 bg-black/60"
-            onClick={() => setIsOpen(false)}
+            onClick={() => { setIsOpen(false); triggerRef.current?.focus(); }}
           />
           <div
             id={sheetId}
+            ref={dialogRef}
+            aria-label="Search packages"
             role="dialog"
             aria-modal="true"
             className="fixed bottom-0 left-0 right-0 h-[70vh] rounded-t-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl"
@@ -346,7 +363,7 @@ export default function SearchBox({
               <p className="text-sm font-semibold text-[var(--foreground)]">Search packages</p>
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
+                onClick={() => { setIsOpen(false); triggerRef.current?.focus(); }}
                 className="h-9 rounded-lg border border-[var(--border)] px-3 text-xs text-[var(--foreground-tertiary)]"
               >
                 Close
