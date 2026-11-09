@@ -1,3 +1,5 @@
+import DataQuality from "@/components/DataQuality";
+import SavedComparisons from "@/components/compare/SavedComparisons";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -144,6 +146,7 @@ export default async function ComparePage({ searchParams }: Props) {
             Add at least two packages to compare daily downloads, deltas, and trends.
           </p>
         </div>
+        <SavedComparisons />
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
           <p className="text-xs uppercase tracking-[0.3em] text-[var(--foreground-tertiary)]">Start here</p>
           <p className="mt-2 text-sm text-[var(--foreground-tertiary)]">
@@ -305,7 +308,9 @@ export default async function ComparePage({ searchParams }: Props) {
   return (
     <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-6">
       <CompareUrlSync packages={pkgs} />
+      <SavedComparisons packages={pkgs} days={days} />
       {header}
+      <DataQuality endDate={data.range.endDate} isStale={data.meta.isStale} />
       {data.meta.isStale ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
           <span>Showing cached data (upstream error).</span>

@@ -1,3 +1,4 @@
+import DataQuality from "@/components/DataQuality";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
@@ -295,6 +296,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
   return (
     <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 px-4 py-6">
       {header}
+      <DataQuality endDate={traffic.range.endDate} isStale={traffic.meta.isStale} />
       {traffic.meta.isStale ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
           <span>{traffic.warning ?? "Showing cached data (upstream error)."}</span>
