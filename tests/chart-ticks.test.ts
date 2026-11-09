@@ -34,7 +34,7 @@ test("365-day timeline labels reach the final month on mobile and desktop", () =
     const ticks = buildMonthTicks(dates, maxTicks, "first-or-change", maxTicks === 3);
     assert.equal(ticks.length, maxTicks);
     assert.equal(ticks[0]?.label, "Nov 2025");
-    assert.equal(ticks.at(-1)?.label, "Nov");
+    assert.equal(ticks.at(-1)?.label, maxTicks === 3 ? "Nov 2026" : "Nov");
     assert.ok(ticks.at(-1)!.index > 300, "last tick must cover the end of the year");
     assert.ok(ticks.some((tick) => tick.label.includes("2026")), "year transition must remain visible");
     assert.ok(ticks.every((tick, index) => index === 0 || tick.index > ticks[index - 1].index));
