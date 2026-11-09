@@ -1,0 +1,26 @@
+name: Live npm API verification (audit)
+
+on:
+  push:
+    branches: ["audit/engineering-2026-11"]
+    paths:
+      - ".github/workflows/live-npm-verification.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-npm:
+    name: Validate real npm downloads API
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Run six live upstream checks without fixtures
+        run: npm run verify:live-npm
