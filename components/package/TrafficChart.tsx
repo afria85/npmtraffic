@@ -428,7 +428,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
     return Math.max(1, ...candidateValues);
   }, [series, derived]);
 
-  const width = 1000;
+  const width = isMobile ? 420 : 1000;
   const height = 260;
   const axisFontSize = isMobile ? 14 : 13;
   const yLabelOffset = isMobile ? 10 : 8;
@@ -489,7 +489,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
   }, [maxValue, innerH, pad.t]);
 
   const xTicks = useMemo(() => {
-    const maxTicks = isMobile ? 4 : 6;
+    const maxTicks = isMobile ? 3 : 6;
     return adjustMonthTicksForOverlap(series.map((row) => row.date), buildMonthTicks(series.map((row) => row.date), maxTicks, "first-or-change", isMobile), { minIndexGap: isMobile ? 2 : 2 });
   }, [isMobile, series]);
 
