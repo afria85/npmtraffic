@@ -59,3 +59,18 @@ Follow-up changes are limited to verification scripts, npm script entries, preci
 ## Review gate
 
 Keep the PR draft and merge/deployment blocked until live npm range semantics, Upstash permissions/concurrency and Vercel ingress are verified in staging, and the GitHub workflow for the reviewed head passes. Local success alone does not satisfy those gates. Use the deployment and rollback checklist in the original audit only after owner review.
+
+## GitHub publication evidence
+
+`git push -u origin HEAD:refs/heads/audit/engineering-2026-11` succeeded for follow-up commit `a833eb83a1c831bf6fba87a00507173fc8b54c58`. A subsequent `git ls-remote` confirmed that exact branch SHA and unchanged main `233d84e18aed92dfb46e83171b035a732b35d9d0`.
+
+The public GitHub Actions page independently confirmed [CI run #157](https://github.com/afria85/npmtraffic/actions/runs/42683129626) was triggered by that push for the correct branch/SHA. Its observed status at inspection was **In progress**, not passed. This proves remote CI started, not its final conclusion. Authenticated logs and PR creation still need the API route. An unauthenticated curl to api.github.com independently confirmed a CONNECT 403 from the proxy, distinguishing policy denial from GitHub token rejection.
+
+The prepared Draft PR title is `Harden npm data integrity and security; add staging verification gates`; its complete body is [draft-pr-2026-11.md](draft-pr-2026-11.md). Once api.github.com is applied to the runtime policy, use the existing GitHub binding and check for an existing head-branch PR before creating one:
+
+```sh
+gh pr list --repo afria85/npmtraffic --head audit/engineering-2026-11 --json number,url,isDraft
+gh pr create --repo afria85/npmtraffic --base main --head audit/engineering-2026-11 --draft --title 'Harden npm data integrity and security; add staging verification gates' --body-file docs/draft-pr-2026-11.md
+```
+
+No PR has been created in this session. Do not substitute a compare/create URL for evidence of an actual Draft PR. No merge or deployment was invoked. The documentation publication record is committed after `a833eb8`; use remote HEAD and the latest matching CI run to review the final branch.
