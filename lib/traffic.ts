@@ -63,24 +63,19 @@ function computeTotals(series: TrafficSeriesRow[]) {
 }
 
 function normalizeSeries(rows: NpmRangeRow[], range: RangeForDaysResult) {
-  if (!rows.length) {
-    const empty = listDatesBetween(range.startDate, range.endDate);
-    return empty.map((date) => ({ date, downloads: 0 }));
-  }
-
   const timeline = listDatesBetween(range.startDate, range.endDate);
-  if (!timeline.length) {
-    return rows.map((row) => ({
-      date: row.day,
-      downloads: row.downloads ?? 0,
-    }));
+  const lookup = new Map<string, number>();
+  for (const row of rows) {
+    if (!timeline.includes(row.day) || lookup.has(row.day) ||
+        !Number.isSafeInteger(row.downloads) || row.downloads < 0) {
+      throw new UpstreamError(502, "Invalid npm daily observations");
+    }
+    lookup.set(row.day, row.downloads);
   }
-
-  const lookup = new Map(rows.map((row) => [row.day, row.downloads ?? 0]));
-  return timeline.map((date) => ({
-    date,
-    downloads: lookup.get(date) ?? 0,
-  }));
+  if (lookup.size !== timeline.length) {
+    throw new UpstreamError(502, "Incomplete npm daily observations");
+  }
+  return timeline.map((date) => ({ date, downloads: lookup.get(date)! }));
 }
 
 function buildResponse(
@@ -114,7 +109,7 @@ function getStaleReason(error: unknown) {
     if (error.status === 429) return "UPSTREAM_429";
     if (error.status >= 500 && error.status <= 599) return "UPSTREAM_5XX";
   }
-  if (error instanceof Error && error.name === "AbortError") {
+  if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) {
     return "TIMEOUT";
   }
   return "UNKNOWN";

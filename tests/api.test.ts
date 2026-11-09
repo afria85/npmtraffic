@@ -15,7 +15,7 @@ test("daily API returns traffic response shape", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(30);
   globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
         `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
@@ -26,10 +26,10 @@ test("daily API returns traffic response shape", async (t) => {
         start: expectedRange.startDate,
         end: expectedRange.endDate,
           package: "react",
-          downloads: [
-            { day: "2024-01-31", downloads: 10 },
-            { day: "2024-02-01", downloads: 12 },
-          ],
+          downloads: Array.from({ length: expectedRange.days }, (_, index) => ({
+            day: new Date(Date.parse(`${expectedRange.startDate}T00:00:00Z`) + index * 86400000).toISOString().slice(0, 10),
+            downloads: index === 0 ? 5 : index === expectedRange.days - 1 ? 20 : 0,
+          })),
         }),
         { status: 200, headers: { "content-type": "application/json" } }
       );
@@ -67,7 +67,7 @@ test("daily API supports long-range normalization", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(90);
   globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
         `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
@@ -78,10 +78,10 @@ test("daily API supports long-range normalization", async (t) => {
           start: expectedRange.startDate,
           end: expectedRange.endDate,
           package: "react",
-          downloads: [
-            { day: expectedRange.startDate, downloads: 5 },
-            { day: expectedRange.endDate, downloads: 7 },
-          ],
+          downloads: Array.from({ length: expectedRange.days }, (_, index) => ({
+            day: new Date(Date.parse(`${expectedRange.startDate}T00:00:00Z`) + index * 86400000).toISOString().slice(0, 10),
+            downloads: index === 0 ? 5 : index === expectedRange.days - 1 ? 20 : 0,
+          })),
         }),
         { status: 200, headers: { "content-type": "application/json" } }
       );
@@ -110,7 +110,7 @@ test("daily CSV export includes metadata comments", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(30);
   globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
         `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
@@ -121,10 +121,10 @@ test("daily CSV export includes metadata comments", async (t) => {
           start: expectedRange.startDate,
           end: expectedRange.endDate,
           package: "react",
-          downloads: [
-            { day: "2024-01-31", downloads: 10 },
-            { day: "2024-02-01", downloads: 12 },
-          ],
+          downloads: Array.from({ length: expectedRange.days }, (_, index) => ({
+            day: new Date(Date.parse(`${expectedRange.startDate}T00:00:00Z`) + index * 86400000).toISOString().slice(0, 10),
+            downloads: index === 0 ? 5 : index === expectedRange.days - 1 ? 20 : 0,
+          })),
         }),
         { status: 200, headers: { "content-type": "application/json" } }
       );
@@ -160,7 +160,7 @@ test("daily CSV export matches long-range row count", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(90);
   globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
         `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
@@ -171,10 +171,10 @@ test("daily CSV export matches long-range row count", async (t) => {
           start: expectedRange.startDate,
           end: expectedRange.endDate,
           package: "react",
-          downloads: [
-            { day: expectedRange.startDate, downloads: 5 },
-            { day: expectedRange.endDate, downloads: 7 },
-          ],
+          downloads: Array.from({ length: expectedRange.days }, (_, index) => ({
+            day: new Date(Date.parse(`${expectedRange.startDate}T00:00:00Z`) + index * 86400000).toISOString().slice(0, 10),
+            downloads: index === 0 ? 5 : index === expectedRange.days - 1 ? 20 : 0,
+          })),
         }),
         { status: 200, headers: { "content-type": "application/json" } }
       );
@@ -199,17 +199,17 @@ test("daily CSV export attachment header sanitizes scoped names", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(30);
   globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url.includes("/@scope/name") || url.includes("/%40scope%2Fname")) {
       return new Response(
         JSON.stringify({
           start: expectedRange.startDate,
           end: expectedRange.endDate,
           package: "@scope/name",
-          downloads: [
-            { day: expectedRange.startDate, downloads: 5 },
-            { day: expectedRange.endDate, downloads: 5 },
-          ],
+          downloads: Array.from({ length: expectedRange.days }, (_, index) => ({
+            day: new Date(Date.parse(`${expectedRange.startDate}T00:00:00Z`) + index * 86400000).toISOString().slice(0, 10),
+            downloads: index === 0 ? 5 : index === expectedRange.days - 1 ? 20 : 0,
+          })),
         }),
         { status: 200, headers: { "content-type": "application/json" } }
       );
@@ -233,7 +233,7 @@ test("daily JSON export returns audit metadata", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(14);
   globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
         `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
@@ -244,10 +244,10 @@ test("daily JSON export returns audit metadata", async (t) => {
           start: expectedRange.startDate,
           end: expectedRange.endDate,
           package: "react",
-          downloads: [
-            { day: "2024-01-01", downloads: 5 },
-            { day: "2024-01-02", downloads: 7 },
-          ],
+          downloads: Array.from({ length: expectedRange.days }, (_, index) => ({
+            day: new Date(Date.parse(`${expectedRange.startDate}T00:00:00Z`) + index * 86400000).toISOString().slice(0, 10),
+            downloads: index === 0 ? 5 : index === expectedRange.days - 1 ? 20 : 0,
+          })),
         }),
         { status: 200, headers: { "content-type": "application/json" } }
       );
@@ -286,17 +286,17 @@ test("compare JSON export includes metadata block", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(30);
   globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url.includes("/react")) {
       return new Response(
         JSON.stringify({
           start: expectedRange.startDate,
           end: expectedRange.endDate,
           package: "react",
-          downloads: [
-            { day: expectedRange.startDate, downloads: 5 },
-            { day: expectedRange.endDate, downloads: 7 },
-          ],
+          downloads: Array.from({ length: expectedRange.days }, (_, index) => ({
+            day: new Date(Date.parse(`${expectedRange.startDate}T00:00:00Z`) + index * 86400000).toISOString().slice(0, 10),
+            downloads: index === 0 ? 5 : index === expectedRange.days - 1 ? 20 : 0,
+          })),
         }),
         { status: 200, headers: { "content-type": "application/json" } }
       );
@@ -307,10 +307,10 @@ test("compare JSON export includes metadata block", async (t) => {
           start: expectedRange.startDate,
           end: expectedRange.endDate,
           package: "vue",
-          downloads: [
-            { day: expectedRange.startDate, downloads: 8 },
-            { day: expectedRange.endDate, downloads: 9 },
-          ],
+          downloads: Array.from({ length: expectedRange.days }, (_, index) => ({
+            day: new Date(Date.parse(`${expectedRange.startDate}T00:00:00Z`) + index * 86400000).toISOString().slice(0, 10),
+            downloads: index === 0 ? 5 : index === expectedRange.days - 1 ? 20 : 0,
+          })),
         }),
         { status: 200, headers: { "content-type": "application/json" } }
       );
@@ -343,17 +343,17 @@ test("compare CSV export includes metadata comments", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(30);
   globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url.includes("/react") || url.includes("/vue")) {
       return new Response(
         JSON.stringify({
           start: expectedRange.startDate,
           end: expectedRange.endDate,
           package: url.includes("/react") ? "react" : "vue",
-          downloads: [
-            { day: expectedRange.startDate, downloads: 5 },
-            { day: expectedRange.endDate, downloads: 7 },
-          ],
+          downloads: Array.from({ length: expectedRange.days }, (_, index) => ({
+            day: new Date(Date.parse(`${expectedRange.startDate}T00:00:00Z`) + index * 86400000).toISOString().slice(0, 10),
+            downloads: index === 0 ? 5 : index === expectedRange.days - 1 ? 20 : 0,
+          })),
         }),
         { status: 200, headers: { "content-type": "application/json" } }
       );
@@ -388,7 +388,7 @@ test("daily Excel CSV export uses semicolon delimiter", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(30);
   globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
         `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
@@ -399,10 +399,10 @@ test("daily Excel CSV export uses semicolon delimiter", async (t) => {
           start: expectedRange.startDate,
           end: expectedRange.endDate,
           package: "react",
-          downloads: [
-            { day: expectedRange.startDate, downloads: 5 },
-            { day: expectedRange.endDate, downloads: 7 },
-          ],
+          downloads: Array.from({ length: expectedRange.days }, (_, index) => ({
+            day: new Date(Date.parse(`${expectedRange.startDate}T00:00:00Z`) + index * 86400000).toISOString().slice(0, 10),
+            downloads: index === 0 ? 5 : index === expectedRange.days - 1 ? 20 : 0,
+          })),
         }),
         { status: 200, headers: { "content-type": "application/json" } }
       );
@@ -428,17 +428,17 @@ test("compare Excel CSV export uses semicolon delimiter", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(30);
   globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url.includes("/react") || url.includes("/vue")) {
       return new Response(
         JSON.stringify({
           start: expectedRange.startDate,
           end: expectedRange.endDate,
           package: url.includes("/react") ? "react" : "vue",
-          downloads: [
-            { day: expectedRange.startDate, downloads: 8 },
-            { day: expectedRange.endDate, downloads: 9 },
-          ],
+          downloads: Array.from({ length: expectedRange.days }, (_, index) => ({
+            day: new Date(Date.parse(`${expectedRange.startDate}T00:00:00Z`) + index * 86400000).toISOString().slice(0, 10),
+            downloads: index === 0 ? 5 : index === expectedRange.days - 1 ? 20 : 0,
+          })),
         }),
         { status: 200, headers: { "content-type": "application/json" } }
       );
@@ -466,7 +466,7 @@ test("search API returns normalized results", async (t) => {
   let sawAbortSignal = false;
   globalThis.fetch = async (input, init) => {
     sawAbortSignal = init?.signal instanceof AbortSignal;
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url.startsWith("https://registry.npmjs.org/-/v1/search")) {
       return new Response(
         JSON.stringify({
@@ -504,7 +504,7 @@ test("search API returns normalized results", async (t) => {
 test("validate API returns request id and cache headers", async (t) => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url === "https://registry.npmjs.org/react") {
       return new Response(JSON.stringify({ name: "react" }), {
         status: 200,

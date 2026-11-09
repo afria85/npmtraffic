@@ -43,6 +43,7 @@ export async function loadOgLogoDataUrl(
       const fetchInit: RequestInit & { next?: { revalidate?: number } } = {
         // Allow Vercel/Next to cache the static asset fetch.
         next: { revalidate: 60 * 60 * 24 },
+        signal: AbortSignal.timeout(3000),
       };
       const res = await fetch(url, fetchInit);
       if (!res.ok) continue;

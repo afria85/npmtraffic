@@ -172,7 +172,7 @@ export async function GET(request: NextRequest) {
         // The backend logs use `package=...` (comma-separated). Keep aliases compatible.
         compareUrl.searchParams.set("packages", packages.join(","));
         compareUrl.searchParams.set("days", String(days));
-        const resp = await fetch(compareUrl.toString(), { cache: "no-store" });
+        const resp = await fetch(compareUrl.toString(), { cache: "no-store", signal: AbortSignal.timeout(8000) });
         const json = (await resp.json()) as unknown;
         rawCompare = json;
         // Keep a minimal rollup in case normalization fails.
@@ -192,7 +192,7 @@ export async function GET(request: NextRequest) {
         const name = packages[0] || "react";
         const dailyUrl = new URL(`/api/v1/package/${encodeURIComponent(name)}/daily`, url.origin);
         dailyUrl.searchParams.set("days", String(days));
-        const resp = await fetch(dailyUrl.toString(), { cache: "no-store" });
+        const resp = await fetch(dailyUrl.toString(), { cache: "no-store", signal: AbortSignal.timeout(8000) });
         const json = (await resp.json()) as unknown;
         const dateRange = pickDateRange(json);
         const total = pickTotal(json);

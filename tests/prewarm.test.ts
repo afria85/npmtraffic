@@ -25,3 +25,8 @@ test("prewarmTraffic captures failures with error code", async () => {
   assert.equal(result.failedCount, 1);
   assert.equal(result.failures[0].errorCode, error.code);
 });
+
+test('prewarm bounds and deduplicates fan-out', async () => {
+  const result = await prewarmTraffic({ packages: [...Array.from({length: 50},(_,i)=>`pkg-${i}`), 'bad name'], days: [7,7,14,30], fetchFn: async () => undefined });
+  assert.equal(result.warmedCount,36);
+});

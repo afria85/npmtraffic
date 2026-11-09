@@ -39,6 +39,7 @@ export async function getPackageGithubRepo(pkgInput: string) {
 
   try {
     const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkg)}`, {
+      signal: AbortSignal.timeout(5000),
       headers: {
         accept: "application/json",
         "user-agent": USER_AGENT,

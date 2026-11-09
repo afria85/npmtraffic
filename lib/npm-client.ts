@@ -25,45 +25,36 @@ export class UpstreamError extends Error {
   }
 }
 
-function withTimeout(ms: number) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), ms);
-  return { ctrl, clear: () => clearTimeout(t) };
-}
-
-async function fetchJson(url: string, timeoutMs: number): Promise<Response> {
-  const { ctrl, clear } = withTimeout(timeoutMs);
-  try {
-    return await fetch(url, {
-      signal: ctrl.signal,
-      headers: {
-        accept: "application/json",
-        "user-agent": USER_AGENT,
-      },
-    });
-  } finally {
-    clear();
-  }
-}
-
 export async function fetchDailyDownloadsRange(
   pkg: string,
   range: NpmDateRange
 ): Promise<NpmRangeResponse> {
-  const safePkg = encodeURIComponent(pkg);
-  const url = `https://api.npmjs.org/downloads/range/${range.start}:${range.end}/${safePkg}`;
-
-  const res = await fetchJson(url, 5000);
-
-  if (res.ok) {
-    return (await res.json()) as NpmRangeResponse;
+  const url = `https://api.npmjs.org/downloads/range/${range.start}:${range.end}/${encodeURIComponent(pkg)}`;
+  // Keep the deadline active through body consumption, not just response headers.
+  const signal = AbortSignal.timeout(5000);
+  const res = await fetch(url, {
+    signal,
+    headers: { accept: "application/json", "user-agent": USER_AGENT },
+  });
+  if (!res.ok) {
+    // A downloads 404 alone does not prove that a package does not exist.
+    if (res.status === 404) {
+      const registry = await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkg)}`, {
+        signal, headers: { accept: "application/json", "user-agent": USER_AGENT },
+      });
+      const absent = registry.status === 404;
+      await registry.body?.cancel();
+      if (absent) throw new Error("NPM_NOT_FOUND: Package not found");
+    }
+    throw new UpstreamError(res.status, "npm downloads unavailable");
   }
-
-  if (res.status === 404) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`NPM_NOT_FOUND: ${body || "Package not found"}`);
+  const data: unknown = await res.json();
+  if (!data || typeof data !== "object") throw new UpstreamError(502, "Invalid npm response");
+  const value = data as NpmRangeResponse;
+  if (value.package !== pkg || value.start !== range.start || value.end !== range.end ||
+      !Array.isArray(value.downloads) || value.downloads.some((row) =>
+        !row || typeof row.day !== "string" || typeof row.downloads !== "number")) {
+    throw new UpstreamError(502, "Invalid npm response schema or range");
   }
-
-  const text = await res.text().catch(() => "");
-  throw new UpstreamError(res.status, text || "Upstream unavailable");
+  return value;
 }

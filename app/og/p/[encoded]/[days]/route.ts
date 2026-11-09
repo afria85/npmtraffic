@@ -29,6 +29,6 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ encoded
     if (!og.searchParams.has(k)) og.searchParams.set(k, v);
   }
 
-  const resp = await fetch(og.toString(), { cache: "no-store" });
+  const resp = await fetch(og.toString(), { cache: "no-store", signal: AbortSignal.timeout(8000) });
   return new Response(resp.body, { status: resp.status, headers: resp.headers });
 }
