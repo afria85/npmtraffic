@@ -4,12 +4,13 @@ import { getDonateLinks } from "../lib/donate";
 
 describe("donate links", () => {
   test("returns empty when no env vars", () => {
-    const links = getDonateLinks({});
+    const links = getDonateLinks({ NODE_ENV: "test" });
     assert.equal(links.length, 0);
   });
 
   test("includes configured links", () => {
     const links = getDonateLinks({
+      NODE_ENV: "test",
       NEXT_PUBLIC_DONATE_KOFI: "https://ko-fi.com/example",
       NEXT_PUBLIC_DONATE_PAYPAL: "https://paypal.me/example",
     });
