@@ -8,7 +8,7 @@ const range = rangeForDays(7);
 const complete = () => Array.from({length: 7}, (_, i) => ({
   day: new Date(Date.parse(range.startDate) + i * 86400000).toISOString().slice(0,10), downloads: i,
 }));
-for (const kind of ['middle', 'final', 'empty', 'duplicate', 'outside', 'negative', 'fraction', 'null', 'wrong-range', 'wrong-package']) {
+for (const kind of ['middle', 'final', 'empty', 'duplicate', 'outside', 'negative', 'fraction', 'null', 'wrong-range', 'wrong-package', 'overflow']) {
   test(`rejects ${kind} observations without manufacturing zeroes`, async (t) => {
     const original = globalThis.fetch;
     t.after(() => { globalThis.fetch = original; cacheClear(); });
@@ -20,6 +20,7 @@ for (const kind of ['middle', 'final', 'empty', 'duplicate', 'outside', 'negativ
     if (kind === 'outside') rows[0].day = '2000-01-01';
     if (kind === 'negative') rows[0].downloads = -1;
     if (kind === 'fraction') rows[0].downloads = 0.5;
+    if (kind === 'overflow') rows.forEach(row => {row.downloads = Number.MAX_SAFE_INTEGER;});
     globalThis.fetch = async () => Response.json({
       package: kind === 'wrong-package' ? 'vue' : 'react',
       start: kind === 'wrong-range' ? '2000-01-01' : range.startDate, end: range.endDate,

@@ -45,7 +45,7 @@ Reviewed manifests/lockfile, CI, Next headers, metadata/robots/sitemap/canonical
 
 Baseline `npm ci` installed 412 packages, and **108 tests passed**. Node 24.22.1 and npm 11.9.0 match the documented Node 24 workflow. HTTPS Git read of origin HEAD succeeded using existing platform authentication. No GitHub token was requested.
 
-**Final results:** 142 unit/integration tests passed; 8 browser/axe tests passed; lint, TypeScript and production build passed. Zero failed, skipped or cancelled unit tests in final run. Production audit: zero advisories. Full audit: eight moderate development-only entries.
+**Final results:** 143 unit/integration tests passed; 8 browser/axe tests passed; lint, TypeScript and production build passed. Zero failed, skipped or cancelled unit tests in final run. Production audit: zero advisories. Full audit: eight moderate development-only entries.
 
 Final commands (run in `/workspace/npmtraffic`):
 
@@ -126,3 +126,5 @@ These are single-machine lab samples, not p75 field measurements, Lighthouse sco
 ## Cloud onboarding persistence
 
 Saved `install_script`, `start_skill` and custom network requirements for `api.npmjs.org`, `cdn.playwright.dev`, `storage.googleapis.com` in the environment draft. No secrets requested or stored. Settings review/save and Publish are user actions; the draft save is confirmed, application/publication and restoration in a fresh task are not. Current instance supports install/build/test and deterministic browser workflows, while live npm-data workflow remains blocked until network policy is applied and retested.
+
+Final data review also rejects safe-integer overflow in accumulated totals, covered by an explicit regression.

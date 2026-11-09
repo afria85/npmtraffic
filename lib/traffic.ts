@@ -65,11 +65,14 @@ function computeTotals(series: TrafficSeriesRow[]) {
 function normalizeSeries(rows: NpmRangeRow[], range: RangeForDaysResult) {
   const timeline = listDatesBetween(range.startDate, range.endDate);
   const lookup = new Map<string, number>();
+  let total = 0;
   for (const row of rows) {
     if (!timeline.includes(row.day) || lookup.has(row.day) ||
         !Number.isSafeInteger(row.downloads) || row.downloads < 0) {
       throw new UpstreamError(502, "Invalid npm daily observations");
     }
+    total += row.downloads;
+    if (!Number.isSafeInteger(total)) throw new UpstreamError(502, "Unsafe npm download total");
     lookup.set(row.day, row.downloads);
   }
   if (lookup.size !== timeline.length) {
