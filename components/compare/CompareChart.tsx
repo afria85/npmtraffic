@@ -330,6 +330,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     return Math.max(1, ...values);
   }, [series, packageNames]);
 
+  const width = isMobile ? 420 : WIDTH;
   const axisFontSize = isMobile ? 13 : 12;
   const yLabelOffset = isMobile ? 10 : 8;
   const leftPad = useMemo(
@@ -337,7 +338,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     [maxValue, axisFontSize]
   );
   const pad = { l: leftPad, r: 20, t: 16, b: isMobile ? 48 : 40 };
-  const innerW = WIDTH - pad.l - pad.r;
+  const innerW = width - pad.l - pad.r;
   const innerH = HEIGHT - pad.t - pad.b;
 
   const pointsByPkg = useMemo(() => {
@@ -367,7 +368,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   }, [maxValue, innerH, pad.t]);
 
   const xTicks = useMemo(() => {
-    const maxTicks = isMobile ? 4 : 6;
+    const maxTicks = isMobile ? 3 : 6;
     return adjustMonthTicksForOverlap(series.map((row) => row.date), buildMonthTicks(series.map((row) => row.date), maxTicks, "first-or-change", isMobile), { minIndexGap: isMobile ? 2 : 2 });
   }, [isMobile, series]);
 
@@ -383,7 +384,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     const svgRect = svgRef.current.getBoundingClientRect();
     const containerRect = chartContainerRef.current.getBoundingClientRect();
     const tooltipRect = tooltipRef.current.getBoundingClientRect();
-    const scaleX = svgRect.width / WIDTH;
+    const scaleX = svgRect.width / width;
     const scaleY = svgRect.height / HEIGHT;
     const pointX = svgRect.left - containerRect.left + hoverPoint.x * scaleX;
     const pointY = svgRect.top - containerRect.top + hoverPoint.y * scaleY;
@@ -481,7 +482,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   const updateHoverIndexFromClientPoint = (clientX: number, clientY: number, svg: SVGSVGElement) => {
     const svgX = clientPointToSvgX(clientX, clientY, svg);
     if (svgX == null) return;
-    const viewX = clamp(svgX, 0, WIDTH);
+    const viewX = clamp(svgX, 0, width);
     const normalized = clamp((viewX - pad.l) / innerW, 0, 1);
     // Keep this math aligned with pointsByPkg so the crosshair follows the cursor precisely.
     setHoverIndex(pickClosestIndex(normalized, series.length));
@@ -503,7 +504,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
       <div ref={chartContainerRef} className="relative mt-4">
         <svg
           ref={svgRef}
-          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+          viewBox={`0 0 ${width} ${HEIGHT}`}
           className="h-64 w-full touch-pan-y"
           role="img"
           aria-label={`Compare daily downloads line chart${days ? ` (${days} days)` : ""}`}
