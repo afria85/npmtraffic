@@ -193,7 +193,17 @@ export function buildMonthTicks(
     }
   }
 
-  const unique = Array.from(new Set(candidateIndices)).sort((a, b) => a - b).slice(0, maxTicks);
+  const sortedCandidates = Array.from(new Set(candidateIndices)).sort((a, b) => a - b);
+  // Keep the full time span visible: slicing the first N month boundaries
+  // previously made a 365-day chart stop labeling around March/April.
+  const tickLimit = Math.max(1, Math.floor(maxTicks));
+  const unique = sortedCandidates.length <= tickLimit
+    ? sortedCandidates
+    : tickLimit === 1
+      ? [sortedCandidates[0]]
+      : Array.from({ length: tickLimit }, (_, slot) =>
+          sortedCandidates[Math.round(slot * (sortedCandidates.length - 1) / (tickLimit - 1))]
+        );
 
   // Emit labels; include full year on the first tick and whenever the year changes.
   let prevYear: number | null = null;
