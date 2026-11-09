@@ -247,7 +247,7 @@ export default async function Home() {
           <p className="mb-8 text-lg text-[var(--foreground-secondary)]">
             Up to 5 packages. Aligned date ranges. Leader and fastest-mover insights. Shareable URLs.
           </p>
-          <Link href="/compare" className="inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] disabled:pointer-events-none disabled:opacity-50 bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] focus-visible:ring-[var(--accent)] shadow-sm h-12 px-6 text-base">Start Comparing</Link>
+          <Link href="/compare" className="inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] disabled:pointer-events-none disabled:opacity-50 bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] focus-visible:ring-[var(--accent)] shadow-sm h-12 px-6 text-base">Start Comparing</Link>
         </div>
       </section>
 

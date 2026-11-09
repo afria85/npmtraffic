@@ -2,38 +2,23 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { buildCompareData } from "../lib/compare";
 import { cacheClear } from "../lib/cache";
-import { rangeForDays } from "../lib/query";
 
-function nextDate(value: string) {
-  const date = new Date(`${value}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + 1);
-  return date.toISOString().slice(0, 10);
-}
-
-const makeResponse = (downloads: Array<{ day: string; downloads: number }>) =>
-  new Response(
-    JSON.stringify({
-      start: downloads[0]?.day ?? "2024-01-01",
-      end: downloads[downloads.length - 1]?.day ?? "2024-01-02",
-      package: "stub",
-      downloads,
-    }),
-    { status: 200, headers: { "content-type": "application/json" } }
-  );
-
-const makeRangeResponse = (start: string, end: string) =>
-  makeResponse([
-    { day: start, downloads: 5 },
-    { day: end, downloads: 7 },
-  ]);
+const completeResponse = (input: string | URL | Request) => {
+  const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+  const match = url.pathname.match(/range\/([0-9-]+):([0-9-]+)\/(.+)$/)!;
+  const [start, end, pkg] = match.slice(1);
+  const count = (Date.parse(end) - Date.parse(start)) / 86400000 + 1;
+  return new Response(JSON.stringify({ start, end, package: decodeURIComponent(pkg),
+    downloads: Array.from({ length: count }, (_, i) => ({
+      day: new Date(Date.parse(start) + i * 86400000).toISOString().slice(0,10),
+      downloads: pkg === "react" ? (i === 0 ? 10 : 15) : (i === 0 ? 6 : 4),
+    })),
+  }));
+};
 
 test("buildCompareData trims to max packages and warns", async (t) => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () =>
-    makeResponse([
-      { day: "2024-01-01", downloads: 10 },
-      { day: "2024-01-02", downloads: 12 },
-    ]);
+  globalThis.fetch = async (input) => completeResponse(input);
 
   t.after(() => {
     globalThis.fetch = originalFetch;
@@ -50,11 +35,7 @@ test("buildCompareData trims to max packages and warns", async (t) => {
 
 test("buildCompareData drops invalid packages and keeps valid ones", async (t) => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () =>
-    makeResponse([
-      { day: "2024-01-01", downloads: 5 },
-      { day: "2024-01-02", downloads: 6 },
-    ]);
+  globalThis.fetch = async (input) => completeResponse(input);
 
   t.after(() => {
     globalThis.fetch = originalFetch;
@@ -68,24 +49,7 @@ test("buildCompareData drops invalid packages and keeps valid ones", async (t) =
 
 test("buildCompareData aligns series and computes deltas", async (t) => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
-    const expectedRange = rangeForDays(30);
-    const secondDay = nextDate(expectedRange.startDate);
-    if (url.includes("/react")) {
-      return makeResponse([
-        { day: expectedRange.startDate, downloads: 10 },
-        { day: secondDay, downloads: 15 },
-      ]);
-    }
-    if (url.includes("/vue")) {
-      return makeResponse([
-        { day: expectedRange.startDate, downloads: 6 },
-        { day: secondDay, downloads: 4 },
-      ]);
-    }
-    return new Response("not found", { status: 404 });
-  };
+  globalThis.fetch = async (input) => completeResponse(input);
 
   t.after(() => {
     globalThis.fetch = originalFetch;
@@ -103,14 +67,7 @@ test("buildCompareData aligns series and computes deltas", async (t) => {
 
 test("buildCompareData supports 90-day ranges", async (t) => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
-    const match = url.match(/downloads\/range\/([0-9-]+):([0-9-]+)\//);
-    if (!match) {
-      return new Response("not found", { status: 404 });
-    }
-    return makeRangeResponse(match[1], match[2]);
-  };
+  globalThis.fetch = async (input) => completeResponse(input);
 
   t.after(() => {
     globalThis.fetch = originalFetch;

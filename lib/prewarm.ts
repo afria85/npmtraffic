@@ -1,5 +1,5 @@
 import { POPULAR_PACKAGES } from "@/lib/constants";
-import { normalizePackageInput } from "@/lib/package-name";
+import { normalizePackageInput, validatePackageName } from "@/lib/package-name";
 import { fetchTraffic, TrafficError } from "@/lib/traffic";
 
 export type PrewarmFailure = {
@@ -27,13 +27,12 @@ function normalizePackages(list?: string[]) {
   if (!list || !list.length) {
     return POPULAR_PACKAGES.slice(0, 12);
   }
-  return list
-    .map((item) => normalizePackageInput(item))
-    .filter(Boolean);
+  return [...new Set(list.map(normalizePackageInput))]
+    .filter((pkg) => validatePackageName(pkg).ok).slice(0, 12);
 }
 
 export async function prewarmTraffic(options: PrewarmOptions = {}): Promise<PrewarmResult> {
-  const days = options.days?.filter((value) => [7, 14, 30].includes(value)) ?? DEFAULT_DAYS;
+  const days = (options.days ? [...new Set(options.days.filter((value) => [7, 14, 30].includes(value)))] : undefined) ?? DEFAULT_DAYS;
   const pkgs = normalizePackages(options.packages);
   const tasks = pkgs.flatMap((pkg) => days.map((day) => ({ pkg, day })));
   const failures: PrewarmFailure[] = [];

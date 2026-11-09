@@ -19,7 +19,7 @@ test("dropdown controller closes on outside pointer", () => {
 
   const outsideEvent = {
     target: {} as Node,
-  } as PointerEvent;
+  } as unknown as PointerEvent;
   controller.handlePointerDown(outsideEvent);
   assert.equal(closed, true);
 });
@@ -37,7 +37,7 @@ test("dropdown controller ignores inside pointer", () => {
     },
   });
 
-  controller.handlePointerDown({ target: inside } as PointerEvent);
+  controller.handlePointerDown({ target: inside } as unknown as PointerEvent);
   assert.equal(closed, false);
 });
 
@@ -67,11 +67,11 @@ test("dropdown controller supports multiple containers", () => {
     },
   });
 
-  controller.handlePointerDown({ target: insideA } as PointerEvent);
+  controller.handlePointerDown({ target: insideA } as unknown as PointerEvent);
   assert.equal(closed, false);
-  controller.handlePointerDown({ target: insideB } as PointerEvent);
+  controller.handlePointerDown({ target: insideB } as unknown as PointerEvent);
   assert.equal(closed, false);
-  controller.handlePointerDown({ target: {} as Node } as PointerEvent);
+  controller.handlePointerDown({ target: {} as Node } as unknown as PointerEvent);
   assert.equal(closed, true);
 });
 
@@ -86,10 +86,10 @@ test("dropdown controller supports dynamic getContainers", () => {
     },
   });
 
-  controller.handlePointerDown({ target: inside } as PointerEvent);
+  controller.handlePointerDown({ target: inside } as unknown as PointerEvent);
   assert.equal(closed, false);
   // Simulate menu unmounting / ref becoming null
   current = null;
-  controller.handlePointerDown({ target: inside } as PointerEvent);
+  controller.handlePointerDown({ target: inside } as unknown as PointerEvent);
   assert.equal(closed, true);
 });

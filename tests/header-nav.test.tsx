@@ -7,6 +7,7 @@ import { STORAGE_KEY } from "../lib/compare-store";
 import { renderComponent, setupDom } from "./support/dom";
 
 const router = {
+  bfcacheId: "test",
   back() {},
   forward() {},
   refresh() {},

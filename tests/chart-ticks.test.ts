@@ -3,8 +3,8 @@ import { test } from "node:test";
 import { buildMonthTicks, formatMonthLabel, formatMonthLabelFromDate } from "../components/charts/time-ticks";
 
 test("formatMonthLabel uses full year when requested", () => {
-  assert.equal(formatMonthLabel(2026, 0, true, true), "Jan 2026");
-  assert.equal(formatMonthLabel(2026, 0, false, true), "Jan");
+  assert.equal(formatMonthLabel(2026, 0, true), "Jan 2026");
+  assert.equal(formatMonthLabel(2026, 0, false), "Jan");
 });
 
 test("formatMonthLabelFromDate uses UTC month and full year", () => {

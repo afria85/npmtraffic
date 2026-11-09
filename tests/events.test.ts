@@ -49,21 +49,21 @@ test("event validation accepts allowed types and date", () => {
   assert.ok(
     isValidEvent({
       date_utc: "2025-12-01",
-      event_type: "release",
+      event_type: "release" as const,
       label: "Release v1.0",
     })
   );
   assert.ok(!isValidEvent({ date_utc: "2025-12-01", event_type: "unknown", label: "bad" }));
-  assert.ok(!isValidEvent({ date_utc: "not-a-date", event_type: "release", label: "bad" }));
+  assert.ok(!isValidEvent({ date_utc: "not-a-date", event_type: "release" as const, label: "bad" }));
 
-  assert.ok(!isValidEvent({ date_utc: "2025-12-01", event_type: "release", label: "bad", url: "javascript:alert(1)" }));
-  assert.ok(isValidEvent({ date_utc: "2025-12-01", event_type: "release", label: "ok", url: "https://example.com" }));
+  assert.ok(!isValidEvent({ date_utc: "2025-12-01", event_type: "release" as const, label: "bad", url: "javascript:alert(1)" }));
+  assert.ok(isValidEvent({ date_utc: "2025-12-01", event_type: "release" as const, label: "ok", url: "https://example.com" }));
 });
 
 test("load/save events sorts entries and respects schema version", () => {
   const events = [
-    { date_utc: "2025-01-02", event_type: "docs", label: "Docs" },
-    { date_utc: "2025-01-01", event_type: "release", label: "Release" },
+    { date_utc: "2025-01-02", event_type: "docs" as const, label: "Docs" },
+    { date_utc: "2025-01-01", event_type: "release" as const, label: "Release" },
   ];
   saveEvents("Pkg", events);
   const loaded = loadEvents("Pkg");
@@ -73,8 +73,8 @@ test("load/save events sorts entries and respects schema version", () => {
 
 test("group events by date works", () => {
   const events = [
-    { date_utc: "2025-01-01", event_type: "release", label: "a" },
-    { date_utc: "2025-01-01", event_type: "docs", label: "b" },
+    { date_utc: "2025-01-01", event_type: "release" as const, label: "a" },
+    { date_utc: "2025-01-01", event_type: "docs" as const, label: "b" },
   ];
   const grouped = groupEventsByDate(events);
   const dayEvents = grouped.get("2025-01-01");
@@ -82,7 +82,7 @@ test("group events by date works", () => {
 });
 
 test("add and delete events update storage", () => {
-  const event = { date_utc: "2025-02-01", event_type: "blog", label: "Post" };
+  const event = { date_utc: "2025-02-01", event_type: "blog" as const, label: "Post" };
   addEvent("Pkg", event);
   let stored = loadEvents("Pkg");
   assert.equal(stored.length, 1);
@@ -92,11 +92,11 @@ test("add and delete events update storage", () => {
 });
 
 test("merge events updates missing metadata", () => {
-  const existing = { date_utc: "2025-03-01", event_type: "release", label: "Release" };
+  const existing = { date_utc: "2025-03-01", event_type: "release" as const, label: "Release" };
   saveEvents("Pkg", [existing]);
   const payload = JSON.stringify([
-    { date_utc: "2025-03-01", event_type: "release", label: "Release", url: "https://example.com" },
-    { date_utc: "2025-04-01", event_type: "docs", label: "Docs" },
+    { date_utc: "2025-03-01", event_type: "release" as const, label: "Release", url: "https://example.com" },
+    { date_utc: "2025-04-01", event_type: "docs" as const, label: "Docs" },
   ]);
   const result = importEventsFromPayload("Pkg", payload);
   assert.equal(result.added, 1);
@@ -108,8 +108,8 @@ test("merge events updates missing metadata", () => {
 
 test("parseImportPayload rejects invalid entries", () => {
   const payload = JSON.stringify([
-    { date_utc: "not-date", event_type: "release", label: "Bad" },
-    { date_utc: "2025-05-01", event_type: "release", label: "Good" },
+    { date_utc: "not-date", event_type: "release" as const, label: "Bad" },
+    { date_utc: "2025-05-01", event_type: "release" as const, label: "Good" },
   ]);
   const result = parseImportPayload(payload);
   assert.equal(result.events.length, 1);
@@ -118,14 +118,14 @@ test("parseImportPayload rejects invalid entries", () => {
 
 test("share encode/decode roundtrip and cap enforcement", () => {
   const events = [
-    { date_utc: "2025-06-01", event_type: "release", label: "Release", url: "https://example.com" },
+    { date_utc: "2025-06-01", event_type: "release" as const, label: "Release", url: "https://example.com" },
   ];
   const encoded = encodeSharePayload(events);
   const roundtrip = decodeSharePayload(encoded);
   assert.equal(roundtrip.events.length, 1);
   assert.equal(roundtrip.error, null);
   const longLabel = "x".repeat(SHARE_MAX_LENGTH);
-  const bigPayload = encodeSharePayload([{ date_utc: "2025-06-02", event_type: "docs", label: longLabel }]);
+  const bigPayload = encodeSharePayload([{ date_utc: "2025-06-02", event_type: "docs" as const, label: longLabel }]);
   assert.ok(bigPayload.length > SHARE_MAX_LENGTH);
   assert.equal(decodeSharePayload(bigPayload).error, "share payload too large");
 });

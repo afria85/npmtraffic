@@ -168,3 +168,18 @@ Apache License 2.0. See [LICENSE](LICENSE).
 ---
 
 npmtraffic is not affiliated with npm, Inc.
+
+## Audit and deterministic browser checks
+
+See [the November 2026 engineering audit](docs/engineering-audit-2026-11.md) for
+verified findings, remaining deployment checks, and deployment/rollback steps.
+`npm run test:smoke` runs production-mode browser and accessibility checks with
+deterministic npm fixtures; run `npm run build` first. Install Chromium with
+`npx playwright install chromium`, or select an existing browser using
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium`.
+
+Incomplete or malformed npm daily data returns an upstream error (or previously
+complete stale cache), rather than inventing zero observations. Saved comparisons
+are local to your browser. Without Redis, rate limits are instance-local; outside
+Vercel all requests share an anonymous bucket until a trusted ingress is configured.
+A configured Redis failure deliberately denies requests temporarily.

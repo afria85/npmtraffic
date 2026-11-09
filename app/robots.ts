@@ -1,15 +1,8 @@
 import type { MetadataRoute } from "next";
-import { config } from "@/lib/config";
-
-function normalizeBaseUrl(url: string) {
-  if (!url.startsWith("http")) return `https://${url}`;
-  return url.replace(/\/$/, "");
-}
+import { resolveBaseUrl } from "@/lib/base-url";
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = normalizeBaseUrl(
-    process.env.BASE_URL ?? process.env.VERCEL_URL ?? config.site.url
-  );
+  const baseUrl = resolveBaseUrl({ env: { ...process.env, NODE_ENV: "production" } });
 
   return {
     rules: [

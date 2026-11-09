@@ -19,7 +19,14 @@ function getEnvUrl(env: NodeJS.ProcessEnv) {
 
   if (!envUrl) return null;
   const withProtocol = envUrl.startsWith("http") ? envUrl : `https://${envUrl}`;
-  return normalizeBaseUrl(withProtocol);
+  try {
+    const parsed = new URL(withProtocol);
+    if (!['https:', 'http:'].includes(parsed.protocol) || parsed.username || parsed.password) return null;
+    if (env.NODE_ENV === "production" &&
+        (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1' ||
+         parsed.hostname === '[::1]' || parsed.hostname.endsWith('.vercel.app'))) return null;
+    return parsed.origin;
+  } catch { return null; }
 }
 
 export function resolveBaseUrl(options: ResolveBaseUrlOptions = {}) {

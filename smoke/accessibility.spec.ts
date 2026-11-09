@@ -1,0 +1,38 @@
+import {test,expect} from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+for (const theme of ['light','dark']) {
+ test(`representative pages have no serious accessibility violations (${theme})`, async ({page}) => {
+  await page.context().addCookies([{name:'npmtraffic_theme',value:theme,url:'http://127.0.0.1:3000'}]);
+  await page.addInitScript(theme=>localStorage.setItem('npmtraffic_theme',theme),theme);
+  await page.setViewportSize({width:390,height:844});
+  for (const path of ['/','/compare','/p/react?days=7','/compare?packages=react,vue&days=7']) {
+   await page.goto(path);
+   await page.getByRole('button',{name:'Toggle theme'}).waitFor();
+   await expect(page.locator('html')).toHaveAttribute('data-theme',theme);
+   const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
+   expect(results.violations.filter(v=>v.impact==='serious'||v.impact==='critical').map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))).toEqual([]);
+  }
+ });
+}
+test('keyboard focus is visible in the document',async ({page})=>{
+ await page.goto('/');
+ await page.keyboard.press('Tab');
+ const focused=await page.evaluate(()=>document.activeElement?.tagName);
+ expect(focused).not.toBe('BODY');
+});
+
+test('mobile search traps focus, has a name and restores focus on Escape',async ({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('/p/react?days=7');
+ const trigger=page.getByRole('button',{name:'Search another package'});
+ await trigger.click();
+ const dialog=page.getByRole('dialog',{name:'Search packages'});
+ await expect(dialog).toBeVisible();
+ const close=dialog.getByRole('button',{name:'Close',exact:true});
+ await close.focus();
+ await page.keyboard.press('Shift+Tab');
+ await expect(dialog.locator(':focus')).toHaveCount(1);
+ await page.keyboard.press('Escape');
+ await expect(dialog).toHaveCount(0);
+ await expect(trigger).toBeFocused();
+});

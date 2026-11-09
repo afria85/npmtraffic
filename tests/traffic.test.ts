@@ -4,18 +4,13 @@ import { cacheClear, cacheSetWithStale } from "../lib/cache";
 import { fetchTraffic, TrafficError } from "../lib/traffic";
 import { rangeForDays } from "../lib/query";
 
-function nextDate(value: string) {
-  const date = new Date(`${value}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + 1);
-  return date.toISOString().slice(0, 10);
-}
 
 test("serves stale cache when upstream fails", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(14);
 
   globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
         `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
@@ -26,10 +21,10 @@ test("serves stale cache when upstream fails", async (t) => {
           start: expectedRange.startDate,
           end: expectedRange.endDate,
           package: "react",
-          downloads: [
-            { day: expectedRange.startDate, downloads: 10 },
-            { day: nextDate(expectedRange.startDate), downloads: 12 },
-          ],
+          downloads: Array.from({ length: expectedRange.days }, (_, index) => ({
+            day: new Date(Date.parse(`${expectedRange.startDate}T00:00:00Z`) + index * 86400000).toISOString().slice(0, 10),
+            downloads: index === 0 ? 5 : index === expectedRange.days - 1 ? 20 : 0,
+          })),
         }),
         { status: 200, headers: { "content-type": "application/json" } }
       );
@@ -83,12 +78,12 @@ test("returns upstream error without cache", async () => {
   }
 });
 
-test("normalizes missing dates and totals for the requested range", async (t) => {
+test("preserves explicit zero observations and totals for the requested range", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(14);
 
   globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
         `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`
@@ -99,10 +94,10 @@ test("normalizes missing dates and totals for the requested range", async (t) =>
           start: expectedRange.startDate,
           end: expectedRange.endDate,
           package: "react",
-          downloads: [
-            { day: expectedRange.startDate, downloads: 5 },
-            { day: expectedRange.endDate, downloads: 20 },
-          ],
+          downloads: Array.from({ length: expectedRange.days }, (_, index) => ({
+            day: new Date(Date.parse(`${expectedRange.startDate}T00:00:00Z`) + index * 86400000).toISOString().slice(0, 10),
+            downloads: index === 0 ? 5 : index === expectedRange.days - 1 ? 20 : 0,
+          })),
         }),
         { status: 200, headers: { "content-type": "application/json" } }
       );
@@ -131,7 +126,7 @@ test("fetchTraffic only calls npm downloads endpoint and returns totals", async 
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(7);
   globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     assert.ok(!url.includes("/api/v1/"), "should not request internal API");
     if (
       url.startsWith(
@@ -194,7 +189,7 @@ test("deduplicates concurrent traffic requests", async (t) => {
     );
 
   globalThis.fetch = async (input) => {
-    const url = typeof input === "string" ? input : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
         `https://api.npmjs.org/downloads/range/${expectedRange.startDate}:${expectedRange.endDate}/react`

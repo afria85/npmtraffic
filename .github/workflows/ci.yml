@@ -2,8 +2,11 @@ name: CI
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "audit/**"]
   pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -17,4 +20,8 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run lint
+      - run: npx tsc --noEmit
+      - run: npm audit --omit=dev --audit-level=high
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:smoke
