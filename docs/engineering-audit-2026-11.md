@@ -121,7 +121,10 @@ These are single-machine lab samples, not p75 field measurements, Lighthouse sco
 - `c8c81a0`: SEO/canonical and accessibility fixes.
 - `c9026d9`: local saved comparisons and data-quality explanation.
 - `df22b1d`: production fixture and accessibility smoke/CI gates.
-- Documentation commit follows these changes; `git log audit/engineering-2026-11` identifies its exact SHA. No remote PR was created; the deliverable is local commits.
+- `65edf0e`: audit evidence, dependency report and deployment/rollback documentation.
+- `2388cbb`: reject unsafe-integer accumulated totals and add regression coverage.
+
+These are exactly the seven commits from baseline `233d84e` through `2388cbb`, in chronological order. Follow-up verification and publication status is recorded in [final-verification-2026-11.md](final-verification-2026-11.md).
 
 ## Cloud onboarding persistence
 
