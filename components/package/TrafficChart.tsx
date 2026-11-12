@@ -9,6 +9,7 @@ import type { VersionTimelineMarker } from "@/lib/npm-versions";
 import ActionMenu from "@/components/ui/ActionMenu";
 import { IconChevronDown } from "@/components/ui/icons";
 import { computeLeftPad } from "@/components/charts/axis-padding";
+import { toObservationPath } from "@/components/charts/observation-path";
 import { TimelineAxis } from "@/components/charts/TimelineAxis";
 import { useChartViewport } from "@/components/charts/use-chart-viewport";
 
@@ -110,7 +111,6 @@ function ChartSelect({
 
 const CHART_BUTTON_CLASSES = "inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold leading-none text-[var(--foreground)] transition-colors hover:bg-[var(--surface-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]";
 
-type Point = { x: number; y: number };
 type ChartEvent = { id?: string; label?: string; title?: string; type?: string };
 
 type Props = {
@@ -158,14 +158,6 @@ const PALETTE: { key: PaletteKey; label: string; cssVar: string }[] = [
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
-}
-
-function toPath(points: Point[]) {
-  if (!points.length) return "";
-  const [first, ...rest] = points;
-  return `M ${first.x.toFixed(2)} ${first.y.toFixed(2)} ${rest
-    .map((p) => `L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
-    .join(" ")}`;
 }
 
 function pickClosestIndex(x: number, count: number) {
@@ -419,7 +411,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
   }, [versionMarkers]);
 
   const maxValue = useMemo(() => {
-    const downloads = series.map((row) => row.downloads);
+    const downloads = series.flatMap((row) => row.downloads === null ? [] : [row.downloads]);
     const ma7 = derived?.ma7?.map((v) => v?.value ?? null) ?? [];
     const ma3 = derived?.ma3?.map((v) => v?.value ?? null) ?? [];
 
@@ -445,7 +437,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
     const xFor = (i: number) => pad.l + innerW * (series.length <= 1 ? 0 : i / (series.length - 1));
     const yFor = (v: number) => pad.t + innerH * (1 - v / maxValue);
 
-    const downloadsPoints = series.map((row, i) => ({ x: xFor(i), y: yFor(row.downloads) }));
+    const downloadsPoints = series.map((row, i) => ({ x: xFor(i), y: row.downloads === null ? null : yFor(row.downloads) }));
     const ma7Points = series.map((_, i) => {
       const value = ma7[i];
       if (typeof value !== "number" || !Number.isFinite(value)) return null;
@@ -460,18 +452,18 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
     return { downloadsPoints, ma7Points, ma3Points };
   }, [series, derived, innerH, innerW, maxValue, pad.l, pad.t]);
 
-  const downloadsPath = useMemo(() => toPath(downloadsPoints), [downloadsPoints]);
-  const ma7Path = useMemo(() => toPath(ma7Points.filter(Boolean) as Point[]), [ma7Points]);
-  const ma3Path = useMemo(() => toPath(ma3Points.filter(Boolean) as Point[]), [ma3Points]);
+  const downloadsPath = useMemo(() => toObservationPath(downloadsPoints), [downloadsPoints]);
+  const ma7Path = useMemo(() => toObservationPath(ma7Points), [ma7Points]);
+  const ma3Path = useMemo(() => toObservationPath(ma3Points), [ma3Points]);
 
   const outlierPoints = useMemo(() => {
     const outliers = derived?.outliers ?? [];
     const pts: { index: number; x: number; y: number; score: number }[] = [];
     for (let i = 0; i < outliers.length; i += 1) {
       const o = outliers[i];
-      if (!o || !o.is_outlier) continue;
+      if (!o?.is_outlier || o.score === null) continue;
       const p = downloadsPoints[i];
-      if (!p) continue;
+      if (p?.y == null) continue;
       pts.push({ index: i, x: p.x, y: p.y, score: o.score });
     }
     return pts;
@@ -502,7 +494,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
     const scaleX = svgRect.width / width;
     const scaleY = svgRect.height / height;
     const pointX = svgRect.left - containerRect.left + hoverPoint.x * scaleX;
-    const pointY = svgRect.top - containerRect.top + hoverPoint.y * scaleY;
+    const pointY = svgRect.top - containerRect.top + (hoverPoint.y ?? pad.t + innerH / 2) * scaleY;
     const containerWidth = containerRect.width;
     const containerHeight = containerRect.height;
     const tooltipWidth = tooltipRect.width;
@@ -551,7 +543,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
     }
     tooltipRef.current.style.left = `${finalLeft}px`;
     tooltipRef.current.style.top = `${finalTop}px`;
-  }, [hoverPoint, width, height, isMobile]);
+  }, [hoverPoint, width, height, isMobile, pad.t, innerH]);
 
   const tooltipClassName =
     "absolute z-30 pointer-events-none w-max max-w-full rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
@@ -774,22 +766,22 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
             ) : null}
 
             {/* hover */}
-            {hoverIndex != null ? (
+            {hoverPoint ? (
               <g>
                 <line
-                  x1={downloadsPoints[hoverIndex].x}
-                  x2={downloadsPoints[hoverIndex].x}
+                  x1={hoverPoint.x}
+                  x2={hoverPoint.x}
                   y1={pad.t}
                   y2={pad.t + innerH}
                   stroke="var(--chart-grid)"
                   strokeWidth={crosshairStrokeWidth}
                 />
-                <circle
-                  cx={downloadsPoints[hoverIndex].x}
-                  cy={downloadsPoints[hoverIndex].y}
+                {hoverPoint.y !== null ? <circle
+                  cx={hoverPoint.x}
+                  cy={hoverPoint.y}
                   r={hoverRadius}
                   fill={paletteValue(settings.downloadsColor)}
-                />
+                /> : null}
               </g>
             ) : null}
           </svg>
@@ -893,7 +885,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
               <div className="mt-2 space-y-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[var(--foreground-tertiary)]">Downloads</span>
-                  <span className="font-mono">{numberFormatter.format(hovered.downloads)}</span>
+                  <span className="font-mono">{hovered.downloads === null ? hovered.status === "unverified" ? "Unverified" : "Missing" : numberFormatter.format(hovered.downloads)}</span>
                 </div>
 
                 {settings.showMA3 && typeof hoveredMA3 === "number" ? (

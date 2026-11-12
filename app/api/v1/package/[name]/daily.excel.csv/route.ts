@@ -5,10 +5,9 @@ import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
 import { clampDays, rangeForDays } from "@/lib/query";
 import { fetchTraffic, getCachedTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
-import { buildExportCommentHeader, buildExportMeta } from "@/lib/export";
+import { buildExportCommentHeader, buildExportMeta, packageCsvRows } from "@/lib/export";
 import { buildExportFilename } from "@/lib/export-filename";
 
-export const revalidate = 900;
 
 export async function GET(req: Request, ctx: { params: Promise<{ name: string }> }) {
   const requestId = crypto.randomUUID();
@@ -42,25 +41,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
         isStale = cached.meta.isStale;
         staleReason = cached.meta.staleReason ?? undefined;
         const range = cached.range;
-        const derived = cached.derived;
         const generatedAt = cached.meta.fetchedAt;
-        const rows: Array<Array<string | number | null>> = [
-          ["date", "downloads", "ma3", "ma7", "is_outlier", "outlier_score"],
-          ...cached.series.map((row, index) => {
-            const ma3 = derived?.ma3?.[index]?.value ?? null;
-            const ma7 = derived?.ma7?.[index]?.value ?? null;
-            const outlier = derived?.outliers?.[index];
-            const isOutlierCell = outlier?.is_outlier ? "true" : "false";
-            return [
-              row.date,
-              row.downloads,
-              ma3,
-              ma7,
-              isOutlierCell,
-              outlier?.score ?? null,
-            ];
-          }),
-        ];
+        const rows = packageCsvRows(cached);
         const exportMeta = buildExportMeta(
           range,
           generatedAt,
@@ -76,7 +58,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
           format: "excel.csv",
         });
         const csv =
-          ["sep=;"].concat(buildExportCommentHeader(exportMeta).split("\n")).join("\n") +
+          ["sep=;"].concat(buildExportCommentHeader(exportMeta, cached.coverage, cached.meta.registryFetchedAt).split("\n")).join("\n") +
           "\n" +
           buildCsv(rows, ";", { excelSafe: true });
         logApiEvent({
@@ -94,7 +76,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
           status: 200,
           headers: {
             "Content-Type": "text/csv; charset=utf-8",
-            "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
+            "Cache-Control": "no-store",
             "Retry-After": String(limit.retryAfter),
             "x-request-id": requestId,
             "X-Content-Type-Options": "nosniff",
@@ -143,25 +125,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
     isStale = data.meta.isStale;
     staleReason = data.meta.staleReason ?? undefined;
     const range = data.range;
-    const derived = data.derived;
     const generatedAt = data.meta.fetchedAt;
-    const rows: Array<Array<string | number | null>> = [
-      ["date", "downloads", "ma3", "ma7", "is_outlier", "outlier_score"],
-      ...data.series.map((row, index) => {
-        const ma3 = derived?.ma3?.[index]?.value ?? null;
-        const ma7 = derived?.ma7?.[index]?.value ?? null;
-        const outlier = derived?.outliers?.[index];
-        const isOutlierCell = outlier?.is_outlier ? "true" : "false";
-        return [
-          row.date,
-          row.downloads,
-          ma3,
-          ma7,
-          isOutlierCell,
-          outlier?.score ?? null,
-        ];
-      }),
-    ];
+    const rows = packageCsvRows(data);
 
     const exportMeta = buildExportMeta(
       range,
@@ -178,14 +143,14 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
       format: "excel.csv",
     });
     const csv =
-      ["sep=;"].concat(buildExportCommentHeader(exportMeta).split("\n")).join("\n") +
+      ["sep=;"].concat(buildExportCommentHeader(exportMeta, data.coverage, data.meta.registryFetchedAt).split("\n")).join("\n") +
       "\n" +
       buildCsv(rows, ";", { excelSafe: true });
     const response = new NextResponse(csv, {
       status: 200,
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
+        "Cache-Control": "no-store",
         "x-request-id": requestId,
         "X-Content-Type-Options": "nosniff",
         "Content-Disposition": `attachment; filename="${filename}"`,

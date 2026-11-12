@@ -28,7 +28,8 @@ type Props = {
 const ALLOWED_DAYS = new Set(["7", "14", "30", "90", "180", "365"]);
 const numberFormatter = new Intl.NumberFormat("en-US");
 
-function formatNumber(value: number) {
+function formatNumber(value: number | null) {
+  if (value === null) return "Unavailable";
   return numberFormatter.format(value);
 }
 
@@ -296,7 +297,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
   return (
     <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 px-4 py-6">
       {header}
-      <DataQuality endDate={traffic.range.endDate} isStale={traffic.meta.isStale} />
+      <DataQuality endDate={traffic.range.endDate} isStale={traffic.meta.isStale} coverage={traffic.coverage} />
       {traffic.meta.isStale ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
           <span>{traffic.warning ?? "Showing cached data (upstream error)."}</span>
@@ -307,14 +308,14 @@ export default async function PackagePage({ params, searchParams }: Props) {
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div className="min-w-0 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
           <p className="whitespace-nowrap text-xs font-medium text-[var(--foreground-secondary)]">
-            Total downloads ({days}d)
+            Total downloads ({traffic.coverage.includedDays}/{days} days)
           </p>
           <p className="mt-1 text-lg font-semibold tabular-nums text-[color:var(--foreground)] sm:text-xl">
             {formatNumber(traffic.totals.sum)}
           </p>
         </div>
         <div className="min-w-0 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
-          <p className="whitespace-nowrap text-xs font-medium text-[var(--foreground-secondary)]">Avg per day</p>
+          <p className="whitespace-nowrap text-xs font-medium text-[var(--foreground-secondary)]">Avg per available day</p>
           <p className="mt-1 text-lg font-semibold tabular-nums text-[color:var(--foreground)] sm:text-xl">
             {formatNumber(traffic.totals.avgPerDay)}
           </p>

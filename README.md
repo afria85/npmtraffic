@@ -102,9 +102,9 @@ curl "https://npmtraffic.com/api/v1/compare.json?packages=react,vue&days=30"
 
 - Download counts come from `api.npmjs.org` and represent total downloads, not unique users.
 - Search, repository links, dist-tags, and release markers come from `registry.npmjs.org`.
-- Short traffic windows cache for 15 minutes; longer traffic windows cache for 12 hours.
-- Stale traffic can be served for up to 24 hours when npm is unavailable.
-- Successful data responses are CDN-cacheable with `Cache-Control`; invalid requests and errors are not cached.
+- Traffic snapshots refresh after five minutes. A same-window stale snapshot can be served for up to 24 hours when npm is unavailable.
+- Package metrics use available observations. Comparisons use dates available for every package. See the [observation policy and formulas](docs/npm-observation-integrity.md).
+- Download data and export responses use `Cache-Control: no-store`.
 - Status health is runtime-local and intentionally not a historical uptime monitor.
 
 ## Project Structure

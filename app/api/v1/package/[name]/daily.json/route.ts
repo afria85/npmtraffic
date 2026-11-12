@@ -7,7 +7,6 @@ import { fetchTraffic, getCachedTraffic, TrafficError } from "@/lib/traffic";
 import { makeJsonExportPayload } from "@/lib/export";
 import { buildExportFilename } from "@/lib/export-filename";
 
-export const revalidate = 900;
 
 export async function GET(req: Request, ctx: { params: Promise<{ name: string }> }) {
   const requestId = crypto.randomUUID();
@@ -63,7 +62,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
           status: 200,
           headers: {
             "Content-Type": "application/json; charset=utf-8",
-            "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
+            "Cache-Control": "no-store",
             "Retry-After": String(limit.retryAfter),
             "x-request-id": requestId,
             "Content-Disposition": `attachment; filename="${filename}"`,
@@ -123,7 +122,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ name: string }>
       status: 200,
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
+        "Cache-Control": "no-store",
         "x-request-id": requestId,
         "Content-Disposition": `attachment; filename="${filename}"`,
       },

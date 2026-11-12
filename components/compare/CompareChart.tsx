@@ -1,19 +1,17 @@
 "use client";
 
+import type { CompareSeriesRow } from "@/lib/compare";
+
 import {useEffect, useLayoutEffect, useMemo, useRef, useState, useId} from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import ActionMenu from "@/components/ui/ActionMenu";
 import { IconChevronDown } from "@/components/ui/icons";
 import { computeLeftPad } from "@/components/charts/axis-padding";
+import { toObservationPath } from "@/components/charts/observation-path";
 import { TimelineAxis } from "@/components/charts/TimelineAxis";
 import { useChartViewport } from "@/components/charts/use-chart-viewport";
 
 const CHART_BUTTON_CLASSES = "inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold leading-none text-[var(--foreground)] transition-colors hover:bg-[var(--surface-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]";
-
-type CompareSeriesRow = {
-  date: string;
-  values: Record<string, { downloads: number; delta: number | null }>;
-};
 
 type Props = {
   series: CompareSeriesRow[];
@@ -21,7 +19,7 @@ type Props = {
   days?: number;
 };
 
-type Point = { x: number; y: number };
+type Point = { x: number; y: number | null };
 
 type PaletteKey = "accent" | "slate" | "blue" | "emerald" | "violet" | "amber" | "orange" | "pink" | "cyan";
 type LineStyleKey = "solid" | "dashed" | "dotted";
@@ -89,14 +87,6 @@ function ChartSelect({
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
-}
-
-function toPath(points: Point[]) {
-  if (!points.length) return "";
-  const [first, ...rest] = points;
-  return `M ${first.x.toFixed(2)} ${first.y.toFixed(2)} ${rest
-    .map((p) => `L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
-    .join(" ")}`;
 }
 
 function pickClosestIndex(x: number, count: number) {
@@ -347,7 +337,10 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     for (const pkg of packageNames) {
       pointsByPkg.set(
         pkg,
-        series.map((row, i) => ({ x: xFor(i), y: yFor(row.values[pkg]?.downloads ?? 0) }))
+        series.map((row, i) => {
+          const value = row.values[pkg]?.downloads;
+          return { x: xFor(i), y: value == null ? null : yFor(value) };
+        })
       );
     }
     return pointsByPkg;
@@ -380,7 +373,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     const scaleX = svgRect.width / width;
     const scaleY = svgRect.height / height;
     const pointX = svgRect.left - containerRect.left + hoverPoint.x * scaleX;
-    const pointY = svgRect.top - containerRect.top + hoverPoint.y * scaleY;
+    const pointY = svgRect.top - containerRect.top + (hoverPoint.y ?? pad.t + innerH / 2) * scaleY;
     const containerWidth = containerRect.width;
     const containerHeight = svgRect.height;
     const tooltipWidth = tooltipRect.width;
@@ -429,7 +422,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     }
     tooltipRef.current.style.left = `${finalLeft}px`;
     tooltipRef.current.style.top = `${finalTop}px`;
-  }, [hoverPoint, width, height, isMobile]);
+  }, [hoverPoint, width, height, isMobile, pad.t, innerH]);
 
   const tooltipClassName =
     "absolute z-30 pointer-events-none w-max max-w-full rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
@@ -527,7 +520,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
 
           {packageNames.map((pkg) => {
             const points = pointsByPkg.get(pkg) ?? [];
-            const path = toPath(points);
+            const path = toObservationPath(points);
             if (!path) return null;
             const color = paletteValue(settings.colors[pkg] ?? "slate");
             const style = settings.lineStyles[pkg] ?? "solid";
@@ -667,12 +660,13 @@ export default function CompareChart({ series, packageNames, days }: Props) {
               <span className="text-[var(--foreground-tertiary)]">UTC</span>
             </div>
             <div className="mt-2 space-y-1">
-              {packageNames.map((pkg) => (
-                <div key={pkg} className="flex items-center justify-between gap-2">
+              {packageNames.map((pkg) => {
+                const value = hovered.values[pkg];
+                return <div key={pkg} className="flex items-center justify-between gap-2">
                   <span className="min-w-0 [overflow-wrap:anywhere] text-[var(--foreground-tertiary)]">{pkg}</span>
-                  <span className="font-mono">{numberFormatter.format(hovered.values[pkg]?.downloads ?? 0)}</span>
-                </div>
-              ))}
+                  <span className="font-mono">{value?.downloads != null ? numberFormatter.format(value.downloads) : value?.status === "available" ? "Excluded" : value?.status === "unverified" ? "Unverified" : "Missing"}</span>
+                </div>;
+              })}
             </div>
           </div>
         ) : null}

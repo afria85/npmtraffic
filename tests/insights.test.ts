@@ -2,6 +2,19 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { buildCompareInsights, buildPackageInsights, buildWindowTrend } from "../lib/insights";
 
+test("unavailable days break trend windows and leave activity based on available days", () => {
+  const counts = [10, 0, null, 20, 30, null, 40];
+  const series = counts.map((downloads, i) => ({ date: "2026-01-0" + (i + 1), downloads }));
+  const insights = buildPackageInsights(series);
+  assert.ok(insights);
+  assert.equal(insights.trend.direction, "none");
+  assert.equal(insights.trend.percent, null);
+  assert.equal(insights.latest?.delta, null);
+  assert.equal(insights.availableDays, 5);
+  assert.equal(insights.activeRate, 80);
+  assert.equal(insights.peak?.downloads, 40);
+});
+
 test("buildWindowTrend compares the latest week with the prior week", () => {
   const trend = buildWindowTrend([10, 10, 10, 10, 10, 10, 10, 20, 20, 20, 20, 20, 20, 20]);
 

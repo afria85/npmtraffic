@@ -3,6 +3,5 @@
 
 export { GET } from "../compare/route";
 
-// Match the canonical compare route cache policy for identical JSON data.
-export const revalidate = 900;
+// Keep the alias dynamic like the canonical compare route.
 export const dynamic = "force-dynamic";

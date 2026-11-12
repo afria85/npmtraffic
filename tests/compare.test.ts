@@ -1,9 +1,12 @@
+import { registryFixture } from "./support/npm-observations";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { buildCompareData } from "../lib/compare";
 import { cacheClear } from "../lib/cache";
 
 const completeResponse = (input: string | URL | Request) => {
+  const registry = registryFixture(input);
+  if (registry) return registry;
   const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
   const match = url.pathname.match(/range\/([0-9-]+):([0-9-]+)\/(.+)$/)!;
   const [start, end, pkg] = match.slice(1);
@@ -77,4 +80,30 @@ test("buildCompareData supports 90-day ranges", async (t) => {
   const data = await buildCompareData(["react", "vue"], 90);
   assert.equal(data.series.length, 90);
   assert.equal(data.range.days, 90);
+});
+
+test("comparison totals and deltas use shared days and retain excluded raw values", async (t) => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const response = completeResponse(input);
+    const payload = await response.json();
+    if (payload.package === "vue") payload.downloads.splice(1, 1);
+    return Response.json(payload);
+  };
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+    cacheClear();
+  });
+
+  const data = await buildCompareData(["react", "vue"], 7);
+  assert.equal(data.coverage.includedDays, 6);
+  assert.equal(data.observations.react.coverage.includedDays, 7);
+  assert.equal(data.series[1].included, false);
+  assert.equal(data.series[1].values.react.downloads, null);
+  assert.equal(data.series[1].values.react.upstreamDownloads, 15);
+  assert.equal(data.series[1].values.react.status, "available");
+  assert.equal(data.series[1].values.vue.status, "missing");
+  assert.equal(data.series[2].values.react.delta, null);
+  assert.equal(data.packages[0].total, 85);
+  assert.equal(data.packages[1].total, 26);
 });

@@ -1,6 +1,7 @@
 import type { RangeForDaysResult } from "@/lib/query";
 import type { TrafficResponse } from "@/lib/traffic";
 import { DERIVED_METHOD_DESCRIPTION } from "@/lib/derived";
+import type { CompareData } from "@/lib/compare";
 
 export const EXPORT_TIMEZONE = "UTC";
 export const EXPORT_SOURCE = "npm downloads API";
@@ -38,7 +39,11 @@ export function buildExportMeta(
   };
 }
 
-export function buildExportCommentHeader(meta: ExportMeta) {
+export function buildExportCommentHeader(
+  meta: ExportMeta,
+  coverage?: TrafficResponse["coverage"] | CompareData["coverage"],
+  registryFetchedAt?: string | null,
+) {
   return [
     `# from=${meta.from}`,
     `# to=${meta.to}`,
@@ -49,7 +54,38 @@ export function buildExportCommentHeader(meta: ExportMeta) {
     `# cache_status=${meta.cacheStatus}`,
     `# is_stale=${meta.isStale}`,
     `# stale_reason=${meta.staleReason ?? ""}`,
+    ...(coverage ? [
+      `# requested_days=${coverage.requestedDays}`,
+      `# included_days=${coverage.includedDays}`,
+      `# latest_included_date=${coverage.latestIncludedDate ?? ""}`,
+    ] : []),
+    ...(registryFetchedAt ? [`# registry_fetched_at=${registryFetchedAt}`] : []),
   ].join("\n");
+}
+
+export function packageCsvRows({ series, derived }: TrafficResponse) {
+  return [
+    ["date", "downloads", "ma3", "ma7", "is_outlier", "outlier_score",
+      "observation_status", "upstream_downloads", "registry_downloads"],
+    ...series.map((row, index) => [
+      row.date, row.downloads, derived.ma3[index].value, derived.ma7[index].value,
+      derived.outliers[index].is_outlier?.toString() ?? null, derived.outliers[index].score,
+      row.status, row.upstreamDownloads, row.registryDownloads,
+    ]),
+  ];
+}
+
+export function compareCsvRows({ series, packages }: CompareData) {
+  const names = packages.map(({ name }) => name);
+  return [
+    ["date", ...names.flatMap((name) => [`${name} downloads`, `${name} delta`]), "included",
+      ...names.flatMap((name) => [`${name} status`, `${name} upstream downloads`, `${name} registry downloads`])],
+    ...series.map(({ date, values, included }) => [
+      date, ...names.flatMap((name) => [values[name].downloads, values[name].delta]),
+      String(included),
+      ...names.flatMap((name) => [values[name].status, values[name].upstreamDownloads, values[name].registryDownloads]),
+    ]),
+  ];
 }
 
 export function makeJsonExportPayload(
@@ -71,10 +107,13 @@ export function makeJsonExportPayload(
     range: data.range,
     series: data.series,
     totals: data.totals,
+    coverage: data.coverage,
     derived: data.derived,
     meta: {
       timezone: EXPORT_TIMEZONE,
       generatedAt,
+      fetchedAt: data.meta.fetchedAt,
+      registryFetchedAt: data.meta.registryFetchedAt,
       source: EXPORT_SOURCE,
       cacheStatus: data.meta.cacheStatus,
       isStale: data.meta.isStale,

@@ -127,16 +127,17 @@ export default async function DataPage() {
       <section className="space-y-4 text-[var(--foreground-secondary)]">
         <p>
           Download counts come directly from <code>api.npmjs.org</code>. Search, repository links, dist-tags,
-          and release markers come from <code>registry.npmjs.org</code>. Each table reflects the last day ending
-          on {endDate}{" "}(yesterday UTC), as npm&#39;s download counters lag for the current day.
+          and release markers come from <code>registry.npmjs.org</code>. The requested window ends on {endDate}{" "}
+          (yesterday UTC). A day can remain unavailable while npm publishes or revises its counts.
         </p>
         <p>
-          Short traffic windows cache for 15 minutes; longer windows cache for 12 hours. Stale traffic can be
-          served for up to 24 hours when npm is unavailable. Totals, averages, insights, and series always represent the normalized range.
+          Traffic snapshots refresh after five minutes. When npm is unavailable, a snapshot for the same range
+          can be served for up to 24 hours with a stale label.
         </p>
         <p>
-          Supported ranges include 7, 14, 30, 90, 180, and 365 days. Package pages also expose derived columns
-          such as MA3, MA7, and MAD-based outlier scores without changing the raw download counts.
+          Package totals and averages use available days. Comparisons use dates available for every package.
+          Moving averages require consecutive available days. Missing and unverified counts are null in JSON
+          and blank in CSV. Both formats retain the upstream count and observation status.
         </p>
       </section>
 
@@ -144,7 +145,7 @@ export default async function DataPage() {
         <div>
           <h2 className="text-lg font-semibold text-[var(--foreground)]">API endpoints</h2>
           <p className="mt-1 text-sm text-[var(--foreground-tertiary)]">
-            Public API responses include <code>x-request-id</code>. Successful data responses are edge-cacheable; errors and invalid requests are not cached.
+            Public API responses include <code>x-request-id</code>. Download data and export responses use <code>Cache-Control: no-store</code>.
           </p>
         </div>
         <div className="grid min-w-0 gap-3 lg:grid-cols-3">

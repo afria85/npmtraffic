@@ -4,10 +4,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
-import { clampDays, canonicalizePackages, parsePackageList, rangeForDays } from "@/lib/query";
+import { clampDays, canonicalizePackages, parsePackageList } from "@/lib/query";
 import { validatePackageName } from "@/lib/package-name";
-import { buildCompareData } from "@/lib/compare";
-import { TrafficError, type TrafficResponse } from "@/lib/traffic";
+import { buildCompareData, type CompareData } from "@/lib/compare";
+import { TrafficError } from "@/lib/traffic";
 import { buildCompareCanonical } from "@/lib/canonical";
 import RangeSelector from "@/components/RangeSelector";
 import ExportDropdown from "@/components/ExportDropdown";
@@ -30,20 +30,6 @@ import { encodePkg } from "@/lib/og-encode";
 
 type Props = {
   searchParams?: Promise<{ packages?: string; pkgs?: string; days?: string }>;
-};
-
-type CompareResponse = {
-  days: number;
-  range: ReturnType<typeof rangeForDays>;
-  packages: { name: string; total: number; share: number }[];
-  series: { date: string; values: Record<string, { downloads: number; delta: number | null }> }[];
-  warnings?: string[];
-  meta: {
-    cacheStatus: TrafficResponse["meta"]["cacheStatus"];
-    isStale: boolean;
-    staleReason: TrafficResponse["meta"]["staleReason"] | null;
-    fetchedAt: string;
-  };
 };
 
 const numberFormatter = new Intl.NumberFormat("en-US");
@@ -181,7 +167,7 @@ export default async function ComparePage({ searchParams }: Props) {
     />
   );
 
-  let data: CompareResponse | null = null;
+  let data: CompareData | null = null;
   let errorText: string | null = null;
   try {
     data = await buildCompareData(pkgs, days);
@@ -310,7 +296,7 @@ export default async function ComparePage({ searchParams }: Props) {
       <CompareUrlSync packages={pkgs} />
       <SavedComparisons packages={pkgs} days={days} />
       {header}
-      <DataQuality endDate={data.range.endDate} isStale={data.meta.isStale} />
+      <DataQuality endDate={data.range.endDate} isStale={data.meta.isStale} coverage={data.coverage} shared />
       {data.meta.isStale ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
           <span>Showing cached data (upstream error).</span>
@@ -336,12 +322,12 @@ export default async function ComparePage({ searchParams }: Props) {
                 <p className="mt-2 text-xl font-semibold text-[var(--foreground)]">
                   {formatNumber(pkg.total)}
                 </p>
-                <p className="mt-1 text-xs text-[var(--foreground-tertiary)]">Total downloads ({days} days)</p>
+                <p className="mt-1 text-xs text-[var(--foreground-tertiary)]">Total downloads ({data.coverage.includedDays}/{days} shared days)</p>
                 <p
                   className="text-xs text-[var(--foreground-tertiary)]"
                   title="Share of total downloads among the compared packages for the selected range"
                 >
-                  {pkg.share.toFixed(2)}% of total
+                  {pkg.share === null ? "Share unavailable" : pkg.share.toFixed(2) + "% of shared total"}
                 </p>
               </div>
               <Link

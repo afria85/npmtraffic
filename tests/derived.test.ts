@@ -28,7 +28,7 @@ test("computeOutliersMAD flags spikes with non-zero MAD", () => {
   const spike = result.find((item) => item.date === "2024-01-04");
   assert.ok(spike);
   assert.ok(spike?.is_outlier);
-  assert.ok(spike?.score > 3);
+  assert.ok(spike.score !== null && spike.score > 3);
   const normal = result.find((item) => item.date === "2024-01-02");
   assert.ok(normal);
   assert.equal(normal?.is_outlier, false);

@@ -5,7 +5,6 @@ import { rateLimit } from "@/lib/rate-limit";
 import { clampDays, rangeForDays } from "@/lib/query";
 import { fetchTraffic, getCachedTraffic, TrafficError } from "@/lib/traffic";
 
-export const revalidate = 900;
 
 export async function GET(
   req: Request,
@@ -46,7 +45,7 @@ export async function GET(
         const response = NextResponse.json(cached, {
           status: 200,
           headers: {
-            "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
+            "Cache-Control": "no-store",
             "Retry-After": String(limit.retryAfter),
             "x-request-id": requestId,
           },
@@ -96,7 +95,7 @@ export async function GET(
     const response = NextResponse.json(data, {
       status: 200,
       headers: {
-        "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
+        "Cache-Control": "no-store",
         "x-request-id": requestId,
       },
     });

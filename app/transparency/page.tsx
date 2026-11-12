@@ -60,7 +60,7 @@ export default function TransparencyPage() {
         <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
           <h2 className="mb-3 text-lg font-semibold text-[var(--foreground)]">Caching &amp; freshness</h2>
           <p className="text-sm leading-6 text-[var(--foreground-secondary)]">
-            Short traffic windows cache for 15 minutes; longer traffic windows cache for 12 hours. Stale traffic can be served for up to 24 hours when npm is unavailable, and stale state is shown in the UI and export metadata. Package metadata can cache longer because it changes less often.
+            Traffic snapshots refresh after five minutes. When npm is unavailable, a snapshot for the same date range can be served for up to 24 hours, with its stale status in the UI and exports. Package metadata can cache longer because it changes less often.
           </p>
         </section>
 

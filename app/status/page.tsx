@@ -5,7 +5,7 @@ import BrandText from "@/components/BrandText";
 import { getBaseUrl } from "@/lib/base-url";
 import { getStatusOverview } from "@/lib/status";
 
-const CACHE_TTL_SUMMARY = "Traffic cache: 15m for short ranges, 12h for long ranges, with up to 24h stale fallback.";
+const CACHE_TTL_SUMMARY = "Traffic snapshots refresh after five minutes, with up to 24 hours of stale fallback.";
 
 function formatCommit(commit: string) {
   if (!commit || commit === "unknown") return "Not available locally";
