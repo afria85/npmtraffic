@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ChangeEvent } from "react";
-import type { RangeForDaysResult } from "@/lib/query";
+import type { ReleaseImports } from "@/lib/npm-versions";
 import {
   EVENT_TYPES,
   addEvent,
@@ -28,7 +28,7 @@ import { SelectField } from "@/components/ui/SelectField";
 type Props = {
   pkgName: string;
   encoded?: string; // from URL search param ?events=...
-  range?: Pick<RangeForDaysResult, "startDate" | "endDate">;
+  releaseImports?: ReleaseImports;
 };
 
 type ImportBanner =
@@ -112,23 +112,11 @@ function downloadText(filename: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-const SEMVER_LIKE_RE = /^\d+\.\d+\.\d+(?:[-+].+)?$/;
-
-function isSemverLike(value: string) {
-  return SEMVER_LIKE_RE.test(value);
-}
-
-function toUtcDay(iso: string): string | null {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toISOString().slice(0, 10);
-}
-
-export default function EventsPanel({ pkgName, encoded, range }: Props) {
+export default function EventsPanel({ pkgName, encoded, releaseImports }: Props) {
   const [events, setEvents] = useState<EventEntry[]>([]);
   const [storageIssue, setStorageIssue] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
-  const [isImportingReleases, setIsImportingReleases] = useState(false);
+  const [includePrereleases, setIncludePrereleases] = useState(false);
 
   const [draftDate, setDraftDate] = useState<string>("");
   const [draftType, setDraftType] = useState<EventType>("release");
@@ -318,61 +306,28 @@ export default function EventsPanel({ pkgName, encoded, range }: Props) {
     }
   }
 
-  async function onImportReleases() {
-    if (!range) {
-      setStatusFor("No range available for release import.");
+  const releaseSelection = includePrereleases ? releaseImports?.all : releaseImports?.stable;
+
+  function onImportReleases() {
+    if (!releaseSelection?.entries.length) {
+      setStatusFor("No matching releases in the current range.");
       return;
     }
-    if (!pkgName) return;
+    const entries = releaseSelection.entries.map(({ version, publishedAt, date }): EventEntry => ({
+      date_utc: date,
+      event_type: "release",
+      label: "v" + version,
+      url: "https://www.npmjs.com/package/" + encodeURIComponent(pkgName) + "/v/" + encodeURIComponent(version),
+      published_at: publishedAt,
+    }));
 
-    setIsImportingReleases(true);
     try {
-      const url = `https://registry.npmjs.org/${encodeURIComponent(pkgName)}?fields=time`;
-      const res = await fetch(url, { headers: { accept: "application/json" } });
-      if (!res.ok) throw new Error(`Upstream HTTP ${res.status}`);
-      const data = (await res.json()) as { time?: Record<string, string> };
-      const time = data.time ?? {};
-
-      const releases: EventEntry[] = [];
-      for (const [key, iso] of Object.entries(time)) {
-        if (key === "created" || key === "modified") continue;
-        if (!isSemverLike(key)) continue;
-        if (typeof iso !== "string") continue;
-        const day = toUtcDay(iso);
-        if (!day) continue;
-        if (day < range.startDate || day > range.endDate) continue;
-
-        releases.push({
-          date_utc: day,
-          event_type: "release",
-          label: `v${key}`,
-          url: `https://www.npmjs.com/package/${encodeURIComponent(pkgName)}/v/${encodeURIComponent(key)}`,
-        });
-      }
-
-      if (!releases.length) {
-        setStatusFor("No releases found in the current range.");
-        return;
-      }
-
-      // Cap to avoid overwhelming local storage for packages with huge version histories.
-      const capped = releases
-        .sort((a, b) => (a.date_utc !== b.date_utc ? b.date_utc.localeCompare(a.date_utc) : a.label.localeCompare(b.label)))
-        .slice(0, 500);
-
-      const result = importEventsFromPayload(pkgName, JSON.stringify(capped));
+      const result = importEventsFromPayload(pkgName, JSON.stringify(entries));
       setEvents(result.events);
-
-      const trimmed = releases.length > capped.length ? ` (trimmed to ${capped.length})` : "";
-      if (result.errors?.length) {
-        setStatusFor(`Imported releases with warnings${trimmed}: ${result.errors.join("; ")}`);
-      } else {
-        setStatusFor(`Imported releases${trimmed}: +${result.added} / updated ${result.updated}.`);
-      }
+      const count = "Imported " + result.added + " releases. Updated " + result.updated + ".";
+      setStatusFor(result.errors?.length ? result.errors.join(" ") : count);
     } catch (error) {
       setStatusFor(error instanceof Error ? error.message : "Failed to import releases from registry.");
-    } finally {
-      setIsImportingReleases(false);
     }
   }
 
@@ -398,17 +353,17 @@ export default function EventsPanel({ pkgName, encoded, range }: Props) {
         <div>
           <h2 className="text-sm font-semibold text-[var(--foreground)]">Event markers (local-first)</h2>
           <p className="mt-1 text-xs text-[var(--foreground-tertiary)]">
-            Add contextual markers (releases, posts, docs changes) to explain spikes. Stored locally in your browser.
+            Add releases, posts, and docs changes for context. Markers are stored locally in your browser.
           </p>
         </div>
         <div className="ml-auto flex flex-nowrap items-center justify-end gap-2">
           <button
             type="button"
             onClick={onImportReleases}
-            disabled={isImportingReleases || !range}
+            disabled={!releaseImports}
             className={`${ACTION_BUTTON_CLASSES} gap-2 h-11 w-11 px-0 sm:h-10 sm:w-auto sm:px-4 border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-hover)] disabled:opacity-50 disabled:cursor-not-allowed`}
             aria-label="Import releases"
-            title={range ? "Import releases from npm registry into local markers" : "Release import unavailable"}
+            title={releaseImports ? "Import releases from npm registry into local markers" : "Release import unavailable"}
           >
             <TagIcon />
             <span className="hidden sm:inline">Releases</span>
@@ -444,6 +399,22 @@ export default function EventsPanel({ pkgName, encoded, range }: Props) {
           />
         </div>
       </div>
+
+      {releaseImports && releaseSelection ? (
+        <div className="mt-2 text-xs text-[var(--foreground-secondary)]">
+          <label className="inline-flex min-h-8 cursor-pointer items-center gap-2">
+            <input type="checkbox" checked={includePrereleases}
+              onChange={(event) => setIncludePrereleases(event.target.checked)} />
+            Include prereleases
+          </label>
+          <p>
+            {releaseSelection.total > releaseSelection.entries.length
+              ? "Import limited to the latest " + releaseSelection.entries.length + " of " + releaseSelection.total + " matching releases."
+              : releaseSelection.total + (releaseSelection.total === 1 ? " matching release in this range." : " matching releases in this range.")}
+            {releaseImports.isStale ? " Publication history is cached and may be out of date." : ""}
+          </p>
+        </div>
+      ) : <p className="mt-2 text-xs text-[var(--foreground-secondary)]">Registry release history is unavailable.</p>}
 
       {showBanner && importBanner.kind === "ready" ? (
         <div className="mt-3 flex flex-col gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100 sm:flex-row sm:items-center sm:justify-between">

@@ -17,6 +17,7 @@ export type EventEntry = {
   label: string;
   url?: string;
   strength?: 1 | 2 | 3;
+  published_at?: string;
 };
 
 export const EVENT_TYPES: EventType[] = [
@@ -56,6 +57,13 @@ export function isValidDate(value: unknown): value is string {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
+export function publicationUtcDay(value: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) return null;
+  if (!isValidDate(value.slice(0, 10))) return null;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toISOString().slice(0, 10) : null;
+}
+
 export function isSafeHttpUrl(value: unknown): value is string {
   if (typeof value !== "string" || value.length > EVENT_URL_MAX_LENGTH) return false;
   try {
@@ -71,16 +79,20 @@ function normalizeEvent(event: unknown): EventEntry | null {
   const prototype = Object.getPrototypeOf(event);
   if (prototype !== Object.prototype && prototype !== null) return null;
   if (["__proto__", "constructor", "prototype"].some((key) => Object.hasOwn(event, key))) return null;
-  const { date_utc, event_type, label, url, strength } = event as Record<string, unknown>;
+  const { date_utc, event_type, label, url, strength, published_at } = event as Record<string, unknown>;
   if (!isValidDate(date_utc) || typeof event_type !== "string" || !isValidEventType(event_type)) return null;
   if (typeof label !== "string" || !label.trim() || label.length > EVENT_LABEL_MAX_LENGTH) return null;
   // Empty optional URLs were written by earlier event forms.
   if (url !== undefined && url !== "" && !isSafeHttpUrl(url)) return null;
   if (strength !== undefined && strength !== 1 && strength !== 2 && strength !== 3) return null;
+  if (published_at !== undefined) {
+    if (event_type !== "release" || typeof published_at !== "string" || publicationUtcDay(published_at) !== date_utc) return null;
+  }
   return {
     date_utc, event_type, label,
     ...(typeof url === "string" && url ? { url } : {}),
     ...(strength !== undefined ? { strength } : {}),
+    ...(published_at !== undefined ? { published_at } : {}),
   };
 }
 
@@ -380,9 +392,13 @@ export function replaceEvent(pkg: string, previousKey: string, event: EventEntry
   const incoming = normalizeEvent(event);
   if (!incoming) throw new Error("Invalid event. Check the date, label, and optional fields.");
   const current = editableEvents(pkg);
-  if (!current.some((item) => eventKey(item) === previousKey)) throw new Error("This event was removed in another tab.");
+  const previous = current.find((item) => eventKey(item) === previousKey);
+  if (!previous) throw new Error("This event was removed in another tab.");
   if (current.some((item) => eventKey(item) !== previousKey && eventKey(item) === eventKey(incoming))) {
     throw new Error("An event with this date, type, and label already exists.");
+  }
+  if (previous.published_at && !incoming.published_at && incoming.event_type === "release" && incoming.date_utc === previous.date_utc) {
+    incoming.published_at = previous.published_at;
   }
   const next = current.map((item) => eventKey(item) === previousKey ? incoming : item).sort(sortEvents);
   saveEvents(pkg, next);
@@ -447,8 +463,14 @@ export function mergeEvents(pkg: string, imported: EventEntry[]) {
 
     const url = existing.url ?? incoming.url;
     const strength = existing.strength ?? incoming.strength;
-    if (url !== existing.url || strength !== existing.strength) {
-      map.set(key, { ...existing, ...(url ? { url } : {}), ...(strength ? { strength } : {}) });
+    const published_at = existing.published_at ?? incoming.published_at;
+    if (url !== existing.url || strength !== existing.strength || published_at !== existing.published_at) {
+      map.set(key, {
+        ...existing,
+        ...(url ? { url } : {}),
+        ...(strength ? { strength } : {}),
+        ...(published_at ? { published_at } : {}),
+      });
       updated += 1;
     }
   }

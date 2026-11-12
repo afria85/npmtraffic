@@ -1,6 +1,9 @@
 import { cacheGetWithStale, cacheSetWithStale } from "@/lib/cache";
 import { config } from "@/lib/config";
-import { normalizePackageInput } from "@/lib/package-name";
+import { readBoundedBytes } from "@/lib/bounded-bytes";
+import { EVENT_LABEL_MAX_LENGTH, publicationUtcDay } from "@/lib/events";
+import { classifyVersion } from "@/lib/npm-semver";
+import { normalizePackageInput, validatePackageName } from "@/lib/package-name";
 import type { RangeForDaysResult } from "@/lib/query";
 import { USER_AGENT } from "@/lib/version";
 
@@ -23,10 +26,26 @@ type VersionTimeCacheValue = {
 const CACHE_FRESH_SECONDS = 60 * 60 * 6; // 6h
 const CACHE_STALE_SECONDS = config.cache.metadataTTLSeconds; // 7d by default
 
-const SEMVER_LIKE_RE = /^\d+\.\d+\.\d+(?:[-+].+)?$/;
+const MAX_PACKUMENT_BYTES = 48 * 1024 * 1024;
+const MAX_IMPORT_RELEASES = 500;
 
-function isSemverLike(value: string) {
-  return SEMVER_LIKE_RE.test(value);
+type VersionPublication = { version: string; publishedAt: string; date: string; kind: "stable" | "prerelease" };
+type ReleaseSelection = { entries: VersionPublication[]; total: number };
+export type ReleaseImports = { stable: ReleaseSelection; all: ReleaseSelection; isStale: boolean };
+
+export function buildReleaseImports(
+  time: Record<string, string>, range: Pick<RangeForDaysResult, "startDate" | "endDate">,
+  isStale = false,
+): ReleaseImports {
+  const all = Object.entries(time).flatMap(([version, publishedAt]): VersionPublication[] => {
+    const kind = classifyVersion(version);
+    const date = typeof publishedAt === "string" ? publicationUtcDay(publishedAt) : null;
+    return kind && version.length < EVENT_LABEL_MAX_LENGTH && date && date >= range.startDate && date <= range.endDate
+      ? [{ version, publishedAt, date, kind }] : [];
+  }).sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt) || a.version.localeCompare(b.version));
+  const stable = all.filter((entry) => entry.kind === "stable");
+  const limit = (entries: VersionPublication[]) => ({ entries: entries.slice(0, MAX_IMPORT_RELEASES), total: entries.length });
+  return { stable: limit(stable), all: limit(all), isStale };
 }
 
 function buildCacheKey(pkg: string) {
@@ -54,12 +73,6 @@ function pickEvenlyIndices(indices: number[], count: number) {
   return Array.from(new Set(picked)).sort((a, b) => a - b);
 }
 
-function toUtcDay(iso: string): string | null {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return null;
-  return date.toISOString().slice(0, 10);
-}
-
 function analyzeTime(
   time: Record<string, string>,
   distTags: Record<string, string>,
@@ -69,31 +82,36 @@ function analyzeTime(
   let releasesInRange = 0;
 
   let mostRecentIso = "";
+  let mostRecentTime = -Infinity;
   let mostRecentVersion: string | null = null;
 
   for (const [key, iso] of Object.entries(time)) {
     if (key === "created" || key === "modified") continue;
-    if (!isSemverLike(key)) continue;
+    const kind = classifyVersion(key);
+    if (!kind) continue;
     if (typeof iso !== "string") continue;
 
-    const day = toUtcDay(iso);
+    const day = publicationUtcDay(iso);
     if (!day) continue;
 
     totalVersions += 1;
 
-    if (iso > mostRecentIso) {
+    const publishedTime = Date.parse(iso);
+    if (publishedTime > mostRecentTime) {
       mostRecentIso = iso;
+      mostRecentTime = publishedTime;
       mostRecentVersion = key;
     }
 
-    if (day >= range.startDate && day <= range.endDate) {
+    if (day >= range.startDate && day <= range.endDate && kind === "stable") {
       releasesInRange += 1;
     }
   }
 
   const distTagLatest = typeof distTags.latest === "string" ? distTags.latest : null;
-  const latestVersion = distTagLatest && typeof time[distTagLatest] === "string" ? distTagLatest : mostRecentVersion;
-  const latestPublishedDateUtc = latestVersion ? toUtcDay(time[latestVersion] ?? "") : null;
+  const latestVersion = distTagLatest ?? mostRecentVersion;
+  const publication = distTagLatest ? time[distTagLatest] : mostRecentIso;
+  const latestPublishedDateUtc = typeof publication === "string" ? publicationUtcDay(publication) : null;
 
   return {
     totalVersions,
@@ -161,10 +179,10 @@ export function extractVersionMarkersFromTime(
 
   for (const [key, iso] of Object.entries(time)) {
     if (key === "created" || key === "modified") continue;
-    if (!isSemverLike(key)) continue;
+    if (classifyVersion(key) !== "stable") continue;
     if (typeof iso !== "string") continue;
 
-    const day = toUtcDay(iso);
+    const day = publicationUtcDay(iso);
     if (!day) continue;
 
     // Range dates are YYYY-MM-DD (UTC). Lexicographic comparison works.
@@ -191,6 +209,7 @@ export async function getPackageVersionTimeline(
 ): Promise<{
   package: string;
   markers: VersionTimelineMarker[];
+  releaseImports: ReleaseImports;
   fetchedAt: string;
   cacheStatus: "HIT" | "MISS" | "STALE";
   isStale: boolean;
@@ -201,7 +220,7 @@ export async function getPackageVersionTimeline(
   totalVersions: number;
 } | null> {
   const pkg = normalizePackageInput(pkgInput);
-  if (!pkg) return null;
+  if (!validatePackageName(pkg).ok) return null;
 
   const key = buildCacheKey(pkg);
   const cached = cacheGetWithStale<VersionTimeCacheValue>(key);
@@ -212,6 +231,7 @@ export async function getPackageVersionTimeline(
     return {
       package: pkg,
       markers: extractVersionMarkersFromTime(cached.value.time, range),
+      releaseImports: buildReleaseImports(cached.value.time, range),
       fetchedAt: cached.value.fetchedAt,
       cacheStatus: "HIT",
       isStale: false,
@@ -220,7 +240,7 @@ export async function getPackageVersionTimeline(
   }
 
   async function fetchMeta(): Promise<{ time: Record<string, string>; distTags: Record<string, string> }> {
-    const url = `https://registry.npmjs.org/${encodeURIComponent(pkg)}?fields=time,dist-tags`;
+    const url = `https://registry.npmjs.org/${encodeURIComponent(pkg)}`;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 5000);
     try {
@@ -231,12 +251,16 @@ export async function getPackageVersionTimeline(
         },
         signal: controller.signal,
       });
-      if (!res.ok) {
+      if (!res.ok || !res.body) {
         throw new Error(`Upstream HTTP ${res.status}`);
       }
-      const data = (await res.json()) as RegistryMetaResponse;
+      const bytes = await readBoundedBytes(res.body, MAX_PACKUMENT_BYTES);
+      const data = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as RegistryMetaResponse;
+      if (!data?.time || typeof data.time !== "object" || Array.isArray(data.time)) {
+        throw new Error("Publication history unavailable");
+      }
       return {
-        time: data.time ?? {},
+        time: data.time,
         distTags: data["dist-tags"] ?? {},
       };
     } finally {
@@ -254,6 +278,7 @@ export async function getPackageVersionTimeline(
     return {
       package: pkg,
       markers: extractVersionMarkersFromTime(time, range),
+      releaseImports: buildReleaseImports(time, range),
       fetchedAt,
       cacheStatus: "MISS",
       isStale: false,
@@ -267,6 +292,7 @@ export async function getPackageVersionTimeline(
       return {
         package: pkg,
         markers: extractVersionMarkersFromTime(cached.value.time, range),
+        releaseImports: buildReleaseImports(cached.value.time, range, true),
         fetchedAt: cached.value.fetchedAt,
         cacheStatus: "STALE",
         isStale: true,

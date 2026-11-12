@@ -350,7 +350,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
       <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
 
-      <EventsPanel key={`${name}:${sp.events ?? ""}`} pkgName={name} encoded={sp.events} range={traffic.range} />
+      <EventsPanel key={`${name}:${sp.events ?? ""}`} pkgName={name} encoded={sp.events} releaseImports={versionTimeline?.releaseImports} />
 
       <p className="text-xs text-[var(--foreground-tertiary)]">Data from api.npmjs.org.</p>
     </main>
