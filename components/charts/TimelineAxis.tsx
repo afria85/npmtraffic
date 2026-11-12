@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
-import { buildMonthTicks } from "./time-ticks";
+import { buildMonthTicks, formatMonthLabelFromDate } from "./time-ticks";
 
 type Props = {
   series: { date: string }[];
@@ -14,7 +14,13 @@ const EDGE_PADDING = 2;
 
 export function TimelineAxis({ series, left, plotWidth, y, fontSize }: Props) {
   const groupRef = useRef<SVGGElement>(null);
-  const ticks = useMemo(() => buildMonthTicks(series, 6, "first-or-change", true), [series]);
+  const ticks = useMemo(() => {
+    const candidates = buildMonthTicks(series, 6, "first-or-change");
+    const last = candidates.at(-1);
+    // The last tick can be the only visible label for its year on a narrow chart.
+    if (last) last.label = formatMonthLabelFromDate(series[last.index].date, true);
+    return candidates;
+  }, [series]);
 
   useLayoutEffect(() => {
     const group = groupRef.current;
