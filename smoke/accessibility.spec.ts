@@ -59,11 +59,17 @@ test('mobile search traps focus, has a name and restores focus on Escape',async 
  await trigger.click();
  const dialog=page.getByRole('dialog',{name:'Search packages'});
  await expect(dialog).toBeVisible();
+ const field=dialog.getByRole('combobox');
+ await expect(field).toBeFocused();
  const close=dialog.getByRole('button',{name:'Close',exact:true});
  await close.focus();
  await page.keyboard.press('Shift+Tab');
- await expect(dialog.locator(':focus')).toHaveCount(1);
+ await expect(field).toBeFocused();
  await page.keyboard.press('Escape');
  await expect(dialog).toHaveCount(0);
+ await expect(trigger).toBeFocused();
+ await trigger.press('Enter');
+ await expect(field).toBeFocused();
+ await close.click();
  await expect(trigger).toBeFocused();
 });

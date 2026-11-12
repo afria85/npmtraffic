@@ -2,7 +2,7 @@
 
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useHydrated } from "@/lib/hydrated";
-import { useEffect, useCallback, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useCallback, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { POPULAR_PACKAGES } from "@/lib/constants";
 import { addRecentSearch, loadRecentSearches, subscribeRecentSearches } from "@/lib/recent-searches";
@@ -66,10 +66,8 @@ function SearchPanel({
   const normalizedQuery = normalizePackageInput(query);
   const queryLower = normalizedQuery.toLowerCase();
 
-  useEffect(() => {
-    if (!autoFocus) return;
-    const id = window.setTimeout(() => inputRef.current?.focus(), 0);
-    return () => window.clearTimeout(id);
+  useLayoutEffect(() => {
+    if (autoFocus) inputRef.current?.focus();
   }, [autoFocus]);
 
   useEffect(() => {
@@ -202,6 +200,7 @@ function SearchPanel({
     }
     if (event.key === "Escape") {
       if (onClose) {
+        event.stopPropagation();
         onClose();
         return;
       }
@@ -263,6 +262,7 @@ function SearchPanel({
                   type="button"
                   id={option.id}
                   role="option"
+                  tabIndex={-1}
                   aria-selected={activeOption?.id === option.id}
                   className={[
                     "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition",
@@ -305,16 +305,28 @@ export default function SearchBox({
   const sheetId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const restoreTriggerFocus = useRef(false);
+
+  const closeDialog = useCallback(() => {
+    restoreTriggerFocus.current = true;
+    setIsOpen(false);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isOpen && restoreTriggerFocus.current) {
+      restoreTriggerFocus.current = false;
+      triggerRef.current?.focus();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
     const handler = (event: globalThis.KeyboardEvent) => {
       if (event.key === "Escape") {
-        setIsOpen(false);
-        triggerRef.current?.focus();
+        closeDialog();
       }
       if (event.key === "Tab") {
-        const targets = dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input, a[href], [tabindex="0"]');
+        const targets = dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled):not([tabindex="-1"]), input, a[href], [tabindex="0"]');
         if (!targets?.length) return;
         const first = targets[0];
         const last = targets[targets.length - 1];
@@ -327,7 +339,7 @@ export default function SearchBox({
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [isOpen]);
+  }, [closeDialog, isOpen]);
 
   if (variant === "inline") {
     return <SearchPanel className={className} />;
@@ -349,7 +361,7 @@ export default function SearchBox({
         <div className="fixed inset-0 z-40">
           <div
             className="absolute inset-0 bg-black/60"
-            onClick={() => { setIsOpen(false); triggerRef.current?.focus(); }}
+            onClick={closeDialog}
           />
           <div
             id={sheetId}
@@ -363,14 +375,14 @@ export default function SearchBox({
               <p className="text-sm font-semibold text-[var(--foreground)]">Search packages</p>
               <button
                 type="button"
-                onClick={() => { setIsOpen(false); triggerRef.current?.focus(); }}
+                onClick={closeDialog}
                 className="h-9 rounded-lg border border-[var(--border)] px-3 text-xs text-[var(--foreground-tertiary)]"
               >
                 Close
               </button>
             </div>
             <div className="mt-4">
-              <SearchPanel autoFocus onClose={() => setIsOpen(false)} />
+              <SearchPanel autoFocus onClose={closeDialog} />
             </div>
           </div>
         </div>
