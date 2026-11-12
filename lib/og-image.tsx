@@ -333,7 +333,9 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats) {
         width: "100%",
         height: "100%",
         background: BG,
-        padding: 72,
+        padding: 48,
+        paddingLeft: 64,
+        paddingRight: 64,
         justifyContent: "space-between",
       }}
     >
@@ -341,7 +343,7 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats) {
 
       <div
         style={{
-          marginTop: 34,
+          marginTop: 22,
           borderRadius: 28,
           border: `1px solid ${BORDER}`,
           background: BG_CARD,
@@ -359,6 +361,9 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats) {
             fontWeight: 950,
             letterSpacing: -2.2,
             lineHeight: 1.02,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
           }}
         >
           {safePkg}
@@ -369,14 +374,14 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats) {
 
         {/* 4-up stat grid (matches share-preview style) */}
         <div style={{ marginTop: 24, display: "flex", gap: 14 }}>
-          <StatCell label="Observed downloads" value={formatNumber(stats?.total)}
+          <StatCell label="Downloads" value={formatNumber(stats?.total)}
             sub={stats ? `${stats.coverage.includedDays}/${stats.coverage.requestedDays} available days` : "data unavailable"} />
           <StatCell label="Vs previous period" value={pctText} sub={pctSub} accent={pctAccent} />
           <StatCell
             label="Date range"
             value={rangeText}
             sub="UTC"
-            valueStyle={{ fontSize: 32, letterSpacing: -1.1 }}
+            valueStyle={{ fontSize: 22, letterSpacing: -0.4 }}
           />
           <StatCell
             label="Trend"
