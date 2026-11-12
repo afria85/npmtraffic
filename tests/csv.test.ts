@@ -23,5 +23,17 @@ test("buildCsv keeps negative numbers numeric while protecting formula-like stri
     ["delta", "label"],
     [-42, "-SUM(A1:A2)"],
   ]);
-  assert.equal(csv.split("\n")[1], "-42,\t-SUM(A1:A2)");
+  assert.equal(csv.split("\n")[1], "-42,'-SUM(A1:A2)");
+});
+
+test("standard and Excel CSV guard text after ignored whitespace and preserve numeric negatives", () => {
+  for (const [delimiter, excelSafe] of [[",", false], [";", true]] as const) {
+    for (const prefix of ["=", "+", "-", "@", "\t", "\r", "  \t="]) {
+      const csv = buildCsv([[-42, prefix + "1"]], delimiter, { excelSafe });
+      assert.ok(csv.startsWith("-42" + delimiter));
+      assert.match(csv.slice(4), /^"?'/);
+    }
+    assert.equal(buildCsv([["literal" + delimiter + "text"]], delimiter, { excelSafe }),
+      '"literal' + delimiter + 'text"');
+  }
 });

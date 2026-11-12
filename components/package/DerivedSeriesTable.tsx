@@ -15,6 +15,9 @@ import { DateField } from "@/components/ui/DateField";
 import { SelectField } from "@/components/ui/SelectField";
 import {
   addEvent,
+  replaceEvent,
+  EVENT_LABEL_MAX_LENGTH,
+  EVENT_URL_MAX_LENGTH,
   deleteEvent,
   EVENT_TYPES,
   eventIdentifier,
@@ -23,6 +26,8 @@ import {
   groupEventsByDate,
   importEventsFromPayload,
   loadEvents,
+  mergeEvents,
+  readEventImportFile,
   subscribeEvents,
   SHARE_MAX_LENGTH,
   decodeSharePayloadV2,
@@ -140,14 +145,15 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
     setStatusMessage({ text, tone });
 
   const statusContent = (() => {
-    if (!statusMessage) return null;
     const isWarning = statusMessage?.tone === "warning";
 
     return (
       <div
         role="status"
         className={
-          isWarning
+          !statusMessage
+            ? "sr-only"
+            : isWarning
             ? "nt-note-warning"
             : "rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--foreground)]"
         }
@@ -316,13 +322,13 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
       url: form.url,
       strength: form.strength,
     };
-    if (editingKey) {
-      deleteEvent(pkgName, editingKey);
-      addEvent(pkgName, entry);
-      showStatus("Event updated.");
-    } else {
-      addEvent(pkgName, entry);
-      showStatus("Event added.");
+    try {
+      if (editingKey) replaceEvent(pkgName, editingKey, entry);
+      else addEvent(pkgName, entry);
+      showStatus(editingKey ? "Event updated." : "Event added.");
+    } catch (error) {
+      showStatus(error instanceof Error ? error.message : "Could not save event.", "warning");
+      return;
     }
     refreshEvents();
     setForm({ ...DEFAULT_FORM, date_utc: todayUtcDate() });
@@ -339,7 +345,12 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
   const handleDelete = (entry: EventEntry) => {
     if (!pkgName) return;
-    deleteEvent(pkgName, eventIdentifier(entry));
+    try {
+      deleteEvent(pkgName, eventIdentifier(entry));
+    } catch (error) {
+      showStatus(error instanceof Error ? error.message : "Could not remove event.", "warning");
+      return;
+    }
     showStatus("Event removed.");
     refreshEvents();
     refresh();
@@ -347,7 +358,13 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
   const handleExport = () => {
     if (!pkgName) return;
-    const content = exportEvents(pkgName);
+    let content: string;
+    try {
+      content = exportEvents(pkgName);
+    } catch (error) {
+      showStatus(error instanceof Error ? error.message : "Could not export events.", "warning");
+      return;
+    }
     const blob = new Blob([content], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -359,14 +376,20 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
   const handleImportFile = async (file: File) => {
     if (!pkgName) return;
-    const text = await file.text();
+    const text = await readEventImportFile(file);
     const result = importEventsFromPayload(pkgName, text);
-    showStatus(
-      `Imported ${result.added} new, ${result.updated} updated.` +
-        (result.errors.length ? ` ${result.errors.join(" ")}` : "")
-    );
+    if (result.errors.length) {
+      const prefix = result.added || result.updated ? "Imported with warnings" : "No events saved";
+      showStatus(`${prefix}: ${result.errors.join("; ")}`, "warning");
+    } else {
+      showStatus(`Imported ${result.added} new, ${result.updated} updated.`);
+    }
     refreshEvents();
     refresh();
+  };
+
+  const showImportError = (error: unknown) => {
+    showStatus(error instanceof Error ? "Import failed. " + error.message : "Import failed.", "warning");
   };
 
   const updateShareToastPosition = useCallback(() => {
@@ -476,11 +499,13 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
   const handleImportShared = () => {
     if (!pkgName || !sharedParam || !sharedData.events.length) return;
-    const result = importEventsFromPayload(pkgName, JSON.stringify(sharedData.events));
-    showStatus(
-      `Imported ${result.added} new, ${result.updated} updated.` +
-        (result.errors.length ? ` ${result.errors.join(" ")}` : "")
-    );
+    try {
+      const result = mergeEvents(pkgName, sharedData.events);
+      showStatus(`Imported ${result.added} new, ${result.updated} updated.`);
+    } catch (error) {
+      showImportError(error);
+      return;
+    }
     refreshEvents();
     refresh();
   };
@@ -556,7 +581,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
             ) : null}
           </div>
         </div>
-        {statusContent && !showEventsList ? <div className="px-4 py-3">{statusContent}</div> : null}
+        {statusMessage && !showEventsList ? <div className="px-4 py-3">{statusContent}</div> : null}
         <ScrollHintContainer
           className="max-h-[60vh] overflow-auto bg-[var(--surface)]"
           leftHintOffset={showDerived ? "var(--nt-date-col-w)" : undefined}
@@ -754,6 +779,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   <input
                     id="event_label"
                     name="label"
+                    maxLength={EVENT_LABEL_MAX_LENGTH}
                     value={form.label}
                     onChange={(event) => setForm((prev) => ({ ...prev, label: event.target.value }))}
                     className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
@@ -767,6 +793,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                     <input
                       id="event_url"
                       name="url"
+                      maxLength={EVENT_URL_MAX_LENGTH}
                       value={form.url ?? ""}
                       onChange={(event) => setForm((prev) => ({ ...prev, url: event.target.value || undefined }))}
                       className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
@@ -871,17 +898,16 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   ref={importFileRef}
                   type="file"
                   accept="application/json"
+                  aria-label="Import timeline events JSON file"
                   className="hidden"
                   onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (file) {
-                      handleImportFile(file);
-                    }
-                    event.target.value = "";
+                    const file = event.currentTarget.files?.[0];
+                    event.currentTarget.value = "";
+                    if (file) void handleImportFile(file).catch(showImportError);
                   }}
                 />
 
-                {statusContent ? <div className="mt-3">{statusContent}</div> : null}
+                <div className={statusMessage ? "mt-3" : undefined}>{statusContent}</div>
 
                 <p className="text-xs text-[var(--foreground-tertiary)]">
                   Conflicts keep existing entries unless the import provides missing URL/strength.

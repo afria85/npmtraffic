@@ -7,18 +7,14 @@ function escapeCsvValue(
   let str = String(value);
   const delimiter = opts.delimiter ?? ",";
 
-  // Mitigate CSV/Excel formula injection for Excel-friendly exports.
-  // If a cell begins with one of the characters below, Excel may interpret it
-  // as a formula when opening CSV.
-  if (!isNumeric && /^[=+\-@|%]/.test(str)) {
+  // Some spreadsheet importers skip leading whitespace before recognizing a formula.
+  if (!isNumeric && /^(?:[\t\r\n]|\s*[=+\-@|%])/.test(str)) {
     if (opts.excelSafe) {
       // Excel-friendly export: prefix with a single quote to force literal interpretation.
       // Escape any existing single quotes to keep the cell content stable.
       str = `'${str.replace(/'/g, "''")}`;
     } else {
-      // Standard CSV export: prefix with a tab to avoid formulas in Excel/Sheets
-      // while remaining visually non-invasive in most CSV viewers.
-      str = `\t${str}`;
+      str = `'${str}`;
     }
   }
   if (str.includes(delimiter) || str.includes("\"") || str.includes("\n") || str.includes("\r")) {

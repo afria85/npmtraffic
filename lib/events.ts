@@ -1,3 +1,5 @@
+import { ByteLimitError, readBoundedBytes } from "@/lib/bounded-bytes";
+
 export type EventType =
   | "release"
   | "reddit"
@@ -31,8 +33,6 @@ export const EVENT_TYPES: EventType[] = [
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const STORAGE_NAMESPACE = "npmtraffic:events";
-const SCHEMA_VERSION_KEY = "npmtraffic:events_schema_version";
-const SCHEMA_VERSION = "1";
 
 const EVENTS_CHANGED_EVENT = "npmtraffic:events-changed";
 
@@ -40,48 +40,56 @@ type EventsChangedDetail = { pkg?: string };
 
 // Keep below typical 2k URL limits (and room for other query params).
 export const SHARE_MAX_LENGTH = 1500;
+export const EVENT_SHARE_MAX_BYTES = 64 * 1024;
+export const EVENT_IMPORT_MAX_BYTES = 512 * 1024;
+export const EVENT_MAX_COUNT = 1000;
+export const EVENT_LABEL_MAX_LENGTH = 240;
+export const EVENT_URL_MAX_LENGTH = 2048;
 
 export function isValidEventType(value: string): value is EventType {
   return EVENT_TYPES.includes(value as EventType);
 }
 
-export function isValidDate(value: string) {
-  return DATE_RE.test(value);
+export function isValidDate(value: unknown): value is string {
+  if (typeof value !== "string" || !DATE_RE.test(value)) return false;
+  const date = new Date(value + "T00:00:00Z");
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
-export function isSafeHttpUrl(value: string) {
+export function isSafeHttpUrl(value: unknown): value is string {
+  if (typeof value !== "string" || value.length > EVENT_URL_MAX_LENGTH) return false;
   try {
     const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
+    return (url.protocol === "http:" || url.protocol === "https:") && !url.username && !url.password;
   } catch {
     return false;
   }
 }
 
+function normalizeEvent(event: unknown): EventEntry | null {
+  if (event === null || typeof event !== "object" || Array.isArray(event)) return null;
+  const prototype = Object.getPrototypeOf(event);
+  if (prototype !== Object.prototype && prototype !== null) return null;
+  if (["__proto__", "constructor", "prototype"].some((key) => Object.hasOwn(event, key))) return null;
+  const { date_utc, event_type, label, url, strength } = event as Record<string, unknown>;
+  if (!isValidDate(date_utc) || typeof event_type !== "string" || !isValidEventType(event_type)) return null;
+  if (typeof label !== "string" || !label.trim() || label.length > EVENT_LABEL_MAX_LENGTH) return null;
+  // Empty optional URLs were written by earlier event forms.
+  if (url !== undefined && url !== "" && !isSafeHttpUrl(url)) return null;
+  if (strength !== undefined && strength !== 1 && strength !== 2 && strength !== 3) return null;
+  return {
+    date_utc, event_type, label,
+    ...(typeof url === "string" && url ? { url } : {}),
+    ...(strength !== undefined ? { strength } : {}),
+  };
+}
+
 export function isValidEvent(event: unknown): event is EventEntry {
-  if (!event || typeof event !== "object") return false;
-  const candidate = event as Partial<EventEntry>;
-  if (!candidate.date_utc || !isValidDate(candidate.date_utc)) return false;
-  if (!candidate.label || typeof candidate.label !== "string") return false;
-  if (!candidate.event_type || !isValidEventType(candidate.event_type)) return false;
-  if (candidate.url) {
-    if (typeof candidate.url !== "string") return false;
-    if (!isSafeHttpUrl(candidate.url)) return false;
-  }
-  if (candidate.strength && ![1, 2, 3].includes(candidate.strength)) return false;
-  return true;
+  return normalizeEvent(event) !== null;
 }
 
 function storageKey(pkg: string) {
-  return `${STORAGE_NAMESPACE}:${pkg.toLowerCase()}`;
-}
-
-function ensureSchemaVersion() {
-  if (typeof window === "undefined") return;
-  const current = window.localStorage.getItem(SCHEMA_VERSION_KEY);
-  if (current !== SCHEMA_VERSION) {
-    window.localStorage.setItem(SCHEMA_VERSION_KEY, SCHEMA_VERSION);
-  }
+  return STORAGE_NAMESPACE + ":" + pkg.toLowerCase();
 }
 
 function sortEvents(a: EventEntry, b: EventEntry) {
@@ -90,37 +98,51 @@ function sortEvents(a: EventEntry, b: EventEntry) {
   return a.label.localeCompare(b.label);
 }
 
-export function loadEvents(pkg: string) {
-  if (typeof window === "undefined") return [];
-  ensureSchemaVersion();
-  const raw = window.localStorage.getItem(storageKey(pkg));
-  if (!raw) return [];
+type EventSnapshot = { events: EventEntry[]; issue: string | null; original: string | null };
+
+export function readEventSnapshot(pkg: string): EventSnapshot {
+  if (typeof window === "undefined") return { events: [], issue: null, original: null };
+  let raw: string | null;
   try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    const valid = parsed.filter((entry) => isValidEvent(entry));
-    return valid.sort(sortEvents);
+    raw = window.localStorage.getItem(storageKey(pkg));
   } catch {
-    return [];
+    return { events: [], issue: "Browser storage is unavailable.", original: null };
   }
+  if (raw === null) return { events: [], issue: null, original: null };
+
+  const parsed = parseImportPayload(raw);
+  return {
+    events: parsed.events.sort(sortEvents),
+    issue: parsed.errors.length ? "Stored events need recovery. Export the original JSON before editing." : null,
+    original: raw,
+  };
 }
 
-function persistEvents(pkg: string, events: EventEntry[]) {
-  if (typeof window === "undefined") return;
-  ensureSchemaVersion();
-  const filtered = events.filter(isValidEvent);
-  window.localStorage.setItem(storageKey(pkg), JSON.stringify(filtered.sort(sortEvents)));
-  try {
-    window.dispatchEvent(
-      new CustomEvent<EventsChangedDetail>(EVENTS_CHANGED_EVENT, { detail: { pkg: pkg.toLowerCase() } })
-    );
-  } catch {
-    // ignore
-  }
+export function loadEvents(pkg: string) {
+  return readEventSnapshot(pkg).events;
+}
+
+function editableEvents(pkg: string) {
+  const snapshot = readEventSnapshot(pkg);
+  if (snapshot.issue) throw new Error(snapshot.issue);
+  return snapshot.events;
 }
 
 export function saveEvents(pkg: string, events: EventEntry[]) {
-  persistEvents(pkg, events);
+  if (typeof window === "undefined") return;
+  if (events.length > EVENT_MAX_COUNT) throw new Error("Too many events for this package.");
+  const valid = events.map(normalizeEvent);
+  if (valid.some((event) => event === null)) throw new Error("Invalid event. Check the date, label, and optional fields.");
+  const serialized = JSON.stringify((valid as EventEntry[]).sort(sortEvents), null, 2);
+  if (isTooLarge(serialized, EVENT_IMPORT_MAX_BYTES)) throw new Error("Saved events exceed the byte limit.");
+  try {
+    window.localStorage.setItem(storageKey(pkg), serialized);
+  } catch {
+    throw new Error("Could not save events. Browser storage is unavailable or full.");
+  }
+  window.dispatchEvent?.(new CustomEvent<EventsChangedDetail>(EVENTS_CHANGED_EVENT, {
+    detail: { pkg: pkg.toLowerCase() },
+  }));
 }
 
 export function subscribeEvents(pkg: string, listener: () => void) {
@@ -182,10 +204,11 @@ function utf8Encode(value: string): Uint8Array {
 }
 
 function utf8Decode(bytes: Uint8Array): string {
-  if (typeof TextDecoder !== "undefined") return new TextDecoder().decode(bytes);
-  const B = getNodeBufferCtor();
-  if (!B) throw new Error("utf8 decoding unavailable");
-  return B.from(bytes).toString("utf-8");
+  return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+}
+
+function isTooLarge(value: string, limit: number) {
+  return value.length > limit || utf8Encode(value).byteLength > limit;
 }
 
 function base64EncodeBytes(bytes: Uint8Array): string {
@@ -217,6 +240,7 @@ function base64urlEncodeBytes(bytes: Uint8Array) {
 }
 
 function base64urlDecodeToBytes(value: string) {
+  if (!/^[A-Za-z0-9_-]+$/.test(value) || value.length % 4 === 1) throw new Error("Invalid base64url");
   let padded = value.replace(/-/g, "+").replace(/_/g, "/");
   const mod = padded.length % 4;
   if (mod === 2) padded += "==";
@@ -251,16 +275,8 @@ async function gzipCompress(bytes: Uint8Array): Promise<Uint8Array> {
   const CS = getCompressionStreamCtor();
   if (!CS) throw new Error("compression unavailable");
 
-  const stream = new CS("gzip");
-  const writer = stream.writable.getWriter();
-
-  // Force ArrayBuffer-backed view to satisfy TS DOM typings.
-  const safeBytes = new Uint8Array(bytes);
-  await writer.write(safeBytes);
-
-  await writer.close();
-  const ab = await new Response(stream.readable).arrayBuffer();
-  return new Uint8Array(ab);
+  const stream = new Blob([new Uint8Array(bytes)]).stream().pipeThrough(new CS("gzip"));
+  return readBoundedBytes(stream, EVENT_SHARE_MAX_BYTES);
 }
 
 async function gzipCompressWithTimeout(bytes: Uint8Array, timeoutMs: number): Promise<Uint8Array> {
@@ -285,15 +301,8 @@ async function gzipDecompress(bytes: Uint8Array): Promise<Uint8Array> {
   const DS = getDecompressionStreamCtor();
   if (!DS) throw new Error("decompression unavailable");
 
-  const stream = new DS("gzip");
-  const writer = stream.writable.getWriter();
-
-  const safeBytes = new Uint8Array(bytes);
-  await writer.write(safeBytes);
-
-  await writer.close();
-  const ab = await new Response(stream.readable).arrayBuffer();
-  return new Uint8Array(ab);
+  const stream = new Blob([new Uint8Array(bytes)]).stream().pipeThrough(new DS("gzip"));
+  return readBoundedBytes(stream, EVENT_SHARE_MAX_BYTES);
 }
 
 // ---------- Share encoding / decoding ----------
@@ -314,20 +323,22 @@ export function decodeSharePayload(encoded: string) {
     return { events: [], error: "compressed share payload requires a modern browser" };
   }
   try {
-    const decoded = base64urlDecode(encoded);
-    const parsed = JSON.parse(decoded);
-    if (!Array.isArray(parsed)) return { events: [], error: "invalid share format" };
-    const events = parsed.filter((entry) => isValidEvent(entry));
-    if (!events.length) return { events: [], error: "no valid events in share" };
-    return { events, error: null };
+    return parseSharedEvents(base64urlDecode(encoded));
   } catch {
     return { events: [], error: "invalid share payload" };
   }
 }
 
+function parseSharedEvents(json: string): { events: EventEntry[]; error: string | null } {
+  const result = parseImportPayload(json, EVENT_SHARE_MAX_BYTES);
+  if (result.errors.length) return { events: [], error: result.errors[0] };
+  return result.events.length ? { events: result.events, error: null } : { events: [], error: "no valid events in share" };
+}
+
 // V2 (async) encoding with gzip when available.
 export async function encodeSharePayloadV2(events: EventEntry[]) {
   const payload = JSON.stringify(events);
+  if (events.length > EVENT_MAX_COUNT || isTooLarge(payload, EVENT_SHARE_MAX_BYTES)) throw new ByteLimitError();
   const bytes = utf8Encode(payload);
   try {
     // Compression should be near-instant for small payloads. If it hangs (broken implementation),
@@ -346,58 +357,40 @@ export async function decodeSharePayloadV2(encoded: string): Promise<{ events: E
     return { events: [], error: "share payload too large" };
   }
 
+  if (!encoded.startsWith("gz:")) return decodeSharePayload(encoded);
   try {
-    if (encoded.startsWith("gz:")) {
-      const raw = encoded.slice(3);
-      const compressed = base64urlDecodeToBytes(raw);
-      const decompressed = await gzipDecompress(compressed);
-      const decoded = utf8Decode(decompressed);
-      const parsed = JSON.parse(decoded);
-      if (!Array.isArray(parsed)) return { events: [], error: "invalid share format" };
-      const events = parsed.filter((entry) => isValidEvent(entry));
-      if (!events.length) return { events: [], error: "no valid events in share" };
-      return { events, error: null };
-    }
-
-    // Legacy base64url-encoded JSON.
-    const decoded = base64urlDecode(encoded);
-    const parsed = JSON.parse(decoded);
-    if (!Array.isArray(parsed)) return { events: [], error: "invalid share format" };
-    const events = parsed.filter((entry) => isValidEvent(entry));
-    if (!events.length) return { events: [], error: "no valid events in share" };
-    return { events, error: null };
-  } catch {
-    return { events: [], error: "invalid share payload" };
+    const decompressed = await gzipDecompress(base64urlDecodeToBytes(encoded.slice(3)));
+    return parseSharedEvents(utf8Decode(decompressed));
+  } catch (error) {
+    return { events: [], error: error instanceof ByteLimitError ? "decompressed share payload too large" : "invalid share payload" };
   }
 }
 
 export function addEvent(pkg: string, event: EventEntry) {
-  if (!isValidEvent(event)) return loadEvents(pkg);
-  const current = loadEvents(pkg);
-  if (current.find((item) => eventKey(item) === eventKey(event))) {
-    return current;
-  }
-  const next = [...current, event];
+  const incoming = normalizeEvent(event);
+  if (!incoming) throw new Error("Invalid event. Check the date, label, and optional fields.");
+  const current = editableEvents(pkg);
+  if (current.some((item) => eventKey(item) === eventKey(incoming))) return current;
+  const next = [...current, incoming].sort(sortEvents);
   saveEvents(pkg, next);
   return next;
 }
 
-export function updateEvent(pkg: string, event: EventEntry) {
-  if (!isValidEvent(event)) return loadEvents(pkg);
-  const current = loadEvents(pkg);
-  let changed = false;
-  const next = current.map((item) => {
-    if (eventKey(item) !== eventKey(event)) return item;
-    changed = true;
-    return event;
-  });
-  if (!changed) return current;
+export function replaceEvent(pkg: string, previousKey: string, event: EventEntry) {
+  const incoming = normalizeEvent(event);
+  if (!incoming) throw new Error("Invalid event. Check the date, label, and optional fields.");
+  const current = editableEvents(pkg);
+  if (!current.some((item) => eventKey(item) === previousKey)) throw new Error("This event was removed in another tab.");
+  if (current.some((item) => eventKey(item) !== previousKey && eventKey(item) === eventKey(incoming))) {
+    throw new Error("An event with this date, type, and label already exists.");
+  }
+  const next = current.map((item) => eventKey(item) === previousKey ? incoming : item).sort(sortEvents);
   saveEvents(pkg, next);
   return next;
 }
 
 export function deleteEvent(pkg: string, key: string) {
-  const current = loadEvents(pkg);
+  const current = editableEvents(pkg);
   const next = current.filter((item) => eventKey(item) !== key);
   if (next.length === current.length) return current;
   saveEvents(pkg, next);
@@ -405,14 +398,21 @@ export function deleteEvent(pkg: string, key: string) {
 }
 
 export function exportEvents(pkg: string) {
-  return JSON.stringify(loadEvents(pkg), null, 2);
+  const snapshot = readEventSnapshot(pkg);
+  if (snapshot.issue && snapshot.original === null) throw new Error(snapshot.issue);
+  return snapshot.issue ? snapshot.original! : JSON.stringify(snapshot.events, null, 2);
 }
 
-export function parseImportPayload(payload: string) {
+export function parseImportPayload(payload: string, limit = EVENT_IMPORT_MAX_BYTES) {
+  if (isTooLarge(payload, limit)) return { events: [], errors: ["event payload too large"] };
   try {
-    const parsed = JSON.parse(payload);
+    const parsed: unknown = JSON.parse(payload);
     if (!Array.isArray(parsed)) return { events: [], errors: ["payload is not an array"] };
-    const events = parsed.filter((entry) => isValidEvent(entry));
+    if (parsed.length > EVENT_MAX_COUNT) return { events: [], errors: ["too many events in payload"] };
+    const events = parsed.flatMap((entry) => {
+      const event = normalizeEvent(entry);
+      return event ? [event] : [];
+    });
     const errors = parsed.length === events.length ? [] : ["some entries were invalid and skipped"];
     return { events, errors };
   } catch {
@@ -420,16 +420,23 @@ export function parseImportPayload(payload: string) {
   }
 }
 
+export async function readEventImportFile(file: Blob) {
+  if (file.size > EVENT_IMPORT_MAX_BYTES) throw new ByteLimitError();
+  return utf8Decode(await readBoundedBytes(file.stream(), EVENT_IMPORT_MAX_BYTES));
+}
+
 export function mergeEvents(pkg: string, imported: EventEntry[]) {
-  const current = loadEvents(pkg);
+  if (imported.length > EVENT_MAX_COUNT) throw new Error("Too many events in payload.");
+  const current = editableEvents(pkg);
   const map = new Map<string, EventEntry>();
   current.forEach((event) => map.set(eventKey(event), event));
 
   let added = 0;
   let updated = 0;
 
-  for (const incoming of imported) {
-    if (!isValidEvent(incoming)) continue;
+  for (const event of imported) {
+    const incoming = normalizeEvent(event);
+    if (!incoming) continue;
     const key = eventKey(incoming);
     const existing = map.get(key);
     if (!existing) {
@@ -438,19 +445,10 @@ export function mergeEvents(pkg: string, imported: EventEntry[]) {
       continue;
     }
 
-    const needsUpdate =
-      (!existing.url && incoming.url) ||
-      (!existing.strength && incoming.strength) ||
-      incoming.url !== existing.url ||
-      incoming.strength !== existing.strength;
-
-    if (needsUpdate) {
-      const merged: EventEntry = {
-        ...existing,
-        url: existing.url || incoming.url,
-        strength: existing.strength || incoming.strength,
-      };
-      map.set(key, merged);
+    const url = existing.url ?? incoming.url;
+    const strength = existing.strength ?? incoming.strength;
+    if (url !== existing.url || strength !== existing.strength) {
+      map.set(key, { ...existing, ...(url ? { url } : {}), ...(strength ? { strength } : {}) });
       updated += 1;
     }
   }
@@ -458,7 +456,7 @@ export function mergeEvents(pkg: string, imported: EventEntry[]) {
   if (!added && !updated) return { events: current, added, updated };
 
   const next = Array.from(map.values()).sort(sortEvents);
-  persistEvents(pkg, next);
+  saveEvents(pkg, next);
   return { events: next, added, updated };
 }
 

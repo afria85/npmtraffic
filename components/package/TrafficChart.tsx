@@ -10,6 +10,7 @@ import ActionMenu from "@/components/ui/ActionMenu";
 import { IconChevronDown } from "@/components/ui/icons";
 import { computeLeftPad } from "@/components/charts/axis-padding";
 import { toObservationPath } from "@/components/charts/observation-path";
+import { serializeChartSvg } from "@/components/charts/serialize-svg";
 import { TimelineAxis } from "@/components/charts/TimelineAxis";
 import { useChartViewport } from "@/components/charts/use-chart-viewport";
 
@@ -194,25 +195,6 @@ function readCssVar(name: string) {
   return v || "#0b0f14";
 }
 
-function resolveCssVarsInSvg(xml: string) {
-  if (typeof window === "undefined") return xml;
-  const style = getComputedStyle(document.documentElement);
-  const varRegex = /var\(--([a-zA-Z0-9-_]+)\)/g;
-  const seen = new Set<string>();
-  for (const m of xml.matchAll(varRegex)) {
-    const name = m[1];
-    if (name) seen.add(name);
-  }
-  if (seen.size === 0) return xml;
-  let out = xml;
-  for (const name of seen) {
-    const value = style.getPropertyValue(`--${name}`).trim();
-    if (!value) continue;
-    out = out.split(`var(--${name})`).join(value);
-  }
-  return out;
-}
-
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -248,8 +230,7 @@ function svgToBlob(svgEl: SVGSVGElement, background?: string) {
     cloned.setAttribute("width", String(w));
     cloned.setAttribute("height", String(h));
   }
-  const xmlRaw = new XMLSerializer().serializeToString(cloned);
-  const xml = resolveCssVarsInSvg(xmlRaw);
+  const xml = serializeChartSvg(cloned);
   return new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
 }
 
@@ -317,7 +298,9 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
       };
     }
 
-    const saved = safeParseSettings(window.localStorage.getItem(settingsKey));
+    let rawSettings: string | null = null;
+    try { rawSettings = window.localStorage.getItem(settingsKey); } catch { /* Use defaults. */ }
+    const saved = safeParseSettings(rawSettings);
     const legacyStyle = (saved.maStyle as LineStyleKey | undefined) ?? "dashed";
     const ma3Style = (saved.ma3Style as LineStyleKey) ?? "dashed";
     const ma7Style = (saved.ma7Style as LineStyleKey) ?? "dotted";
@@ -339,7 +322,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem(settingsKey, JSON.stringify(settings));
+    try { window.localStorage.setItem(settingsKey, JSON.stringify(settings)); } catch { /* Settings stay usable in memory. */ }
   }, [settingsKey, settings]);
 
   useEffect(() => {
