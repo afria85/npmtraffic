@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { writeFile } from "node:fs/promises";
 
 test("compare can start empty, add and remove with the keyboard, and keep saved comparisons", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 });
@@ -37,7 +38,7 @@ test("compare can start empty, add and remove with the keyboard, and keep saved 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
 });
 
-test("canonical identity drops the range while Open Graph keeps the selected share range", async ({ page }) => {
+test("canonical identity drops the range while Open Graph keeps the selected share range", async ({ page }, testInfo) => {
   const image = page.locator('meta[property="og:image"]').first();
   await page.goto("/p/react?days=7");
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://npmtraffic.com/p/react");
@@ -46,6 +47,9 @@ test("canonical identity drops the range while Open Graph keeps the selected sha
   const packageImage = await page.request.get(new URL((await image.getAttribute("content"))!).pathname);
   expect(packageImage.ok()).toBe(true);
   expect(packageImage.headers()["content-type"]).toContain("image/png");
+  const packagePng = await packageImage.body();
+  expect(packagePng.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  await writeFile(testInfo.outputPath("package-og.png"), packagePng);
   await page.goto("/compare?packages=vue,react&days=14");
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://npmtraffic.com/compare?packages=react,vue");
   await expect(page.locator('meta[property="og:url"]')).toHaveAttribute("content", /packages=react,vue&days=14$/);
@@ -53,4 +57,10 @@ test("canonical identity drops the range while Open Graph keeps the selected sha
   const comparisonImage = await page.request.get(new URL((await image.getAttribute("content"))!).pathname);
   expect(comparisonImage.ok()).toBe(true);
   expect(comparisonImage.headers()["content-type"]).toContain("image/png");
+  const comparisonPng = await comparisonImage.body();
+  expect(comparisonPng.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  await writeFile(testInfo.outputPath("comparison-og.png"), comparisonPng);
+  const legacyImage = await page.request.head("/og.png?type=package&pkg=react&days=7");
+  expect(legacyImage.ok()).toBe(true);
+  expect(legacyImage.headers()["content-type"]).toContain("image/png");
 });

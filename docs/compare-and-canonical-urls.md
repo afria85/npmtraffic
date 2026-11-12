@@ -4,6 +4,8 @@ Open `/compare` and use the package combobox. The list supports the arrow keys, 
 
 Search metadata identifies a package by `/p/<name>`. For a comparison of at least two packages it identifies the normalized, sorted set by `/compare?packages=<set>`. The empty comparison and single selections canonicalize to `/compare`. Range and event query parameters stay available on deep links. Range-specific share links and dynamic Open Graph images keep the selected range.
 
+On the first protected Preview, the dynamic image routes returned HTML because they fetched their own protected deployment without a session. Their adapter also dropped null days before calculating trends and converted null comparison totals to zero. The existing image routes now call the shared renderer and observation services directly. They keep the package-specific layouts and route aliases. Images show available or shared day counts, preserve gaps, retain stale labels, and use the same contiguous-window trend calculation as package insights. Missing statistics stay unavailable. The image routes rate-limit data fetches and set `no-store` on stale or unavailable statistics.
+
 The homepage release marker uses the React 19.0.0 publication date from the npm registry, December 5, 2024 at 18:10:21 UTC. Package insights display their available-day denominator. The days-with-downloads percentage divides available observations above zero by all available observations in the selected UTC window. Variability is a separate descriptor.
 
 The theme script applies the stored or system preference as the browser parses the document. The accessibility regression blocks Next.js client script requests to verify that the initial palette and contrast are already correct.
