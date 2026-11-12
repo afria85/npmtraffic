@@ -51,24 +51,6 @@ function parseYMDLike(s: string): Date | null {
   return null;
 }
 
-type ParsedIsoDate = { year: number; monthIndex: number; day: number };
-
-function parseIsoDate(s: string): ParsedIsoDate | null {
-  // Accept ISO-like strings: YYYY-MM-DD (optionally with time suffix)
-  const m = /^\s*(\d{4})-(\d{2})-(\d{2})/.exec(s);
-  if (!m) return null;
-
-  const year = Number(m[1]);
-  const monthIndex = Number(m[2]) - 1;
-  const day = Number(m[3]);
-
-  if (!Number.isFinite(year) || !Number.isFinite(monthIndex) || !Number.isFinite(day)) return null;
-  if (monthIndex < 0 || monthIndex > 11) return null;
-  if (day < 1 || day > 31) return null;
-
-  return { year, monthIndex, day };
-}
-
 function toUTCDate(dateLike: unknown): Date {
   if (dateLike instanceof Date) return dateLike;
   if (typeof dateLike === "number") return new Date(dateLike);
@@ -170,91 +152,35 @@ export function buildMonthTicks(
   const useFullYear =
     typeof modeOrOpts === "object" ? Boolean(modeOrOpts.useFullYear) : Boolean(useFullYearMaybe);
 
-  if (!points.length) return [];
+  const tickLimit = Math.floor(maxTicks);
+  if (!(tickLimit > 0)) return [];
 
-  const candidateIndices: number[] = [];
+  const candidates: { index: number; date: Date }[] = [];
+  let previousMonth = "";
+  for (const [index, point] of points.entries()) {
+    const date = toUTCDate(extractDateLike(point));
+    if (!isValidDate(date)) continue;
 
-  if (mode === "first-or-change") {
-    let prevKey = "";
-    for (let i = 0; i < points.length; i++) {
-      const d = toUTCDate(extractDateLike(points[i]));
-      if (!isValidDate(d)) continue;
-
-      const key = `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
-      if (i === 0 || key !== prevKey) candidateIndices.push(i);
-      prevKey = key;
-    }
-  } else {
-    // Spread roughly evenly across the series.
-    const step = Math.max(1, Math.floor(points.length / Math.max(1, maxTicks)));
-    for (let i = 0; i < points.length; i += step) candidateIndices.push(i);
-    if (candidateIndices[candidateIndices.length - 1] !== points.length - 1) {
-      candidateIndices.push(points.length - 1);
-    }
+    const month = `${date.getUTCFullYear()}-${date.getUTCMonth()}`;
+    if (mode === "month" || month !== previousMonth) candidates.push({ index, date });
+    previousMonth = month;
   }
 
-  const unique = Array.from(new Set(candidateIndices)).sort((a, b) => a - b).slice(0, maxTicks);
-
-  // Emit labels; include full year on the first tick and whenever the year changes.
-  let prevYear: number | null = null;
-
-  return unique
-    .map((index) => {
-      const d = toUTCDate(extractDateLike(points[index]));
-      if (!isValidDate(d)) return null;
-
-      const year = d.getUTCFullYear();
-      const showYearWhen = prevYear === null || year !== prevYear;
-      const label = formatMonthLabel(d.getUTCMonth(), year, useFullYear || showYearWhen);
-      prevYear = year;
-      return { index, label };
-    })
-    .filter((t): t is MonthTick => Boolean(t));
-}
-
-function labelHasYear(label: string): boolean {
-  return /\b(19|20)\d{2}\b/.test(label);
-}
-
-/**
- * adjustMonthTicksForOverlap
- *
- * Lightweight overlap mitigation for tight ranges (e.g. Dec 31 -> Jan 01).
- * It keeps buildMonthTicks deterministic, and only blanks labels that are too close.
- *
- * Strategy:
- * - If two adjacent ticks are within `minIndexGap`, blank the earlier tick's label.
- * - If we blank a label that carried the year, we promote the next label to include the year
- *   (so the axis still communicates the context).
- */
-export function adjustMonthTicksForOverlap(
-  dates: string[],
-  ticks: MonthTick[],
-  opts?: { minIndexGap?: number; promoteYear?: boolean },
-): MonthTick[] {
-  const minIndexGap = Math.max(1, opts?.minIndexGap ?? 2);
-  const promoteYear = opts?.promoteYear ?? true;
-
-  if (!Array.isArray(ticks) || ticks.length < 2) return ticks;
-
-  const out = ticks.map((t) => ({ ...t }));
-  for (let i = 0; i < out.length - 1; i += 1) {
-    const a = out[i];
-    const b = out[i + 1];
-    if (!a || !b) continue;
-    const gap = (b.index ?? 0) - (a.index ?? 0);
-    if (!Number.isFinite(gap) || gap >= minIndexGap) continue;
-
-    const aHadYear = typeof a.label === "string" && labelHasYear(a.label);
-    a.label = "";
-
-    if (promoteYear && aHadYear && typeof b.label === "string" && !labelHasYear(b.label)) {
-      const date = dates?.[b.index];
-      const parsed = date ? parseIsoDate(date) : null;
-      if (parsed) {
-        b.label = formatMonthLabel(parsed.year, parsed.monthIndex, true);
-      }
-    }
+  // Keep the first and last valid candidates and distribute the rest across the range.
+  let selected = candidates;
+  if (candidates.length > tickLimit) {
+    selected = tickLimit === 1
+      ? candidates.slice(0, 1)
+      : Array.from({ length: tickLimit }, (_, slot) =>
+          candidates[Math.round(slot * (candidates.length - 1) / (tickLimit - 1))],
+        );
   }
-  return out;
+
+  let previousYear: number | undefined;
+  return selected.map(({ index, date }) => {
+    const year = date.getUTCFullYear();
+    const label = formatMonthLabel(date.getUTCMonth(), year, useFullYear || year !== previousYear);
+    previousYear = year;
+    return { index, label };
+  });
 }

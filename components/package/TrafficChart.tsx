@@ -9,7 +9,9 @@ import type { VersionTimelineMarker } from "@/lib/npm-versions";
 import ActionMenu from "@/components/ui/ActionMenu";
 import { IconChevronDown } from "@/components/ui/icons";
 import { computeLeftPad } from "@/components/charts/axis-padding";
-import { buildMonthTicks, adjustMonthTicksForOverlap } from "@/components/charts/time-ticks";
+import { TimelineAxis } from "@/components/charts/TimelineAxis";
+import { useChartViewport } from "@/components/charts/use-chart-viewport";
+
 function MetricCheckbox({
   label,
   checked,
@@ -233,6 +235,7 @@ function downloadBlob(blob: Blob, filename: string) {
 function svgToBlob(svgEl: SVGSVGElement, background?: string) {
   const cloned = svgEl.cloneNode(true) as SVGSVGElement;
   cloned.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  cloned.setAttribute("font-family", getComputedStyle(svgEl).fontFamily);
   if (background) {
     const rect = svgEl.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "rect");
     rect.setAttribute("x", "0");
@@ -390,18 +393,17 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
     };
   }, [styleOpen]);
 
+  const hasTooltip = hoverIndex !== null;
   useEffect(() => {
-    if (!isMobile || hoverIndex == null) return;
+    if (!hasTooltip) return;
     const onPointerDown = (event: PointerEvent) => {
-      if (!chartContainerRef.current) return;
-      if (chartContainerRef.current.contains(event.target as Node)) return;
-      setHoverIndex(null);
+      if (!svgRef.current?.contains(event.target as Node)) setHoverIndex(null);
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [hoverIndex, isMobile]);
+  }, [hasTooltip]);
 
   const eventsByDate = useMemo(() => groupEventsByDate(loadEvents(pkgName).filter((e) => e.event_type !== "release")), [pkgName]);
 
@@ -428,8 +430,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
     return Math.max(1, ...candidateValues);
   }, [series, derived]);
 
-  const width = 1000;
-  const height = 260;
+  const { width, height } = useChartViewport(svgRef);
   const axisFontSize = isMobile ? 14 : 13;
   const yLabelOffset = isMobile ? 10 : 8;
   const leftPad = useMemo(() => computeLeftPad(numberFormatter.format(maxValue), axisFontSize), [maxValue, axisFontSize]);
@@ -488,11 +489,6 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
     return values;
   }, [maxValue, innerH, pad.t]);
 
-  const xTicks = useMemo(() => {
-    const maxTicks = isMobile ? 4 : 6;
-    return adjustMonthTicksForOverlap(series.map((row) => row.date), buildMonthTicks(series.map((row) => row.date), maxTicks, "first-or-change", isMobile), { minIndexGap: isMobile ? 2 : 2 });
-  }, [isMobile, series]);
-
   const hovered = hoverIndex == null ? null : series[hoverIndex];
   const hoverPoint = hoverIndex == null ? null : downloadsPoints[hoverIndex] ?? null;
 
@@ -537,7 +533,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
     } else {
       const preferRight = pointX > containerWidth / 2;
       let fallbackLeft = preferRight ? pointX + gap : pointX - tooltipWidth - gap;
-      fallbackLeft = Math.min(Math.max(fallbackLeft, 0), containerWidth - tooltipWidth);
+      fallbackLeft = clamp(fallbackLeft, 0, Math.max(0, containerWidth - tooltipWidth));
       const oppositeLeft = preferRight ? pointX - tooltipWidth - gap : pointX + gap;
       if (
         !(fallbackLeft >= pointerRight || fallbackLeft + tooltipWidth <= pointerLeft) &&
@@ -548,7 +544,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
       }
       let fallbackTop = pointY - tooltipHeight - gap;
       if (fallbackTop < 0 || fallbackTop + tooltipHeight > containerHeight) {
-        fallbackTop = Math.min(Math.max(pointY + gap, 0), containerHeight - tooltipHeight);
+        fallbackTop = clamp(pointY + gap, 0, Math.max(0, containerHeight - tooltipHeight));
       }
       finalLeft = fallbackLeft;
       finalTop = fallbackTop;
@@ -558,7 +554,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
   }, [hoverPoint, width, height, isMobile]);
 
   const tooltipClassName =
-    "absolute z-30 pointer-events-none rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
+    "absolute z-30 pointer-events-none w-max max-w-full rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
   const hoveredMA7 = hoverIndex == null ? null : derived?.ma7?.[hoverIndex]?.value ?? null;
   const hoveredMA3 = hoverIndex == null ? null : derived?.ma3?.[hoverIndex]?.value ?? null;
   const hoveredOutlier = hoverIndex == null ? null : derived?.outliers?.[hoverIndex] ?? null;
@@ -678,10 +674,12 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
             className="h-60 w-full touch-pan-y sm:h-64"
             role="img"
             aria-label={`Daily downloads line chart (${days} days)`}
-            onMouseLeave={() => setHoverIndex(null)}
             onPointerDown={handlePointerEvent}
             onPointerMove={handlePointerEvent}
-            onPointerLeave={() => setHoverIndex(null)}
+            onPointerLeave={(event) => {
+              if (event.pointerType !== "touch") setHoverIndex(null);
+            }}
+            onPointerCancel={() => setHoverIndex(null)}
           >
             {/* grid */}
             {yTicks.map((tick) => (
@@ -699,22 +697,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
               </g>
             ))}
 
-            {xTicks.map((tick, idx) => {
-              const x = pad.l + innerW * (series.length <= 1 ? 0 : tick.index / (series.length - 1));
-              const y = pad.t + innerH;
-              const isFirst = idx === 0;
-              const isLast = idx === xTicks.length - 1;
-              const textAnchor = isFirst ? "start" : isLast ? "end" : "middle";
-              const textX = isFirst ? x + 2 : isLast ? x - 2 : x;
-              return (
-                <g key={`x-${tick.index}`}>
-                  <line x1={x} x2={x} y1={y} y2={y + 6} stroke="var(--chart-grid)" />
-                  <text x={textX} y={y + 24} textAnchor={textAnchor} fontSize={axisFontSize} fill="var(--chart-axis)">
-                    {tick.label}
-                  </text>
-                </g>
-              );
-            })}
+            <TimelineAxis series={series} left={pad.l} plotWidth={innerW} y={pad.t + innerH} fontSize={axisFontSize} />
 
             {/* markers (events + version publishes) */}
             {series.map((row, index) => {
@@ -901,7 +884,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
           ) : null}
 
           {hovered ? (
-            <div ref={tooltipRef} className={tooltipClassName}>
+            <div ref={tooltipRef} className={tooltipClassName} data-chart-tooltip>
               <div className="flex items-center justify-between gap-2">
                 <span className="font-mono text-[var(--foreground)]">{hovered.date}</span>
                 <span className="text-[var(--foreground-tertiary)]">UTC</span>
