@@ -364,7 +364,7 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats) {
           {safePkg}
         </div>
         <div style={{ marginTop: 10, color: MUTED, fontSize: 20 }}>
-          {dateLabel ?? `${days} day window (UTC)`}{stats?.isStale ? " · cached" : ""}
+          {`${dateLabel ?? `${days} day window (UTC)`}${stats?.isStale ? " · cached" : ""}`}
         </div>
 
         {/* 4-up stat grid (matches share-preview style) */}
