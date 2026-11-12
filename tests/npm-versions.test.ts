@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { downsampleVersionMarkers, extractVersionMarkersFromTime, type VersionTimelineMarker } from "../lib/npm-versions";
+import { buildReleaseImports, downsampleVersionMarkers, extractVersionMarkersFromTime, type VersionTimelineMarker } from "../lib/npm-versions";
+import { classifyVersion } from "../lib/npm-semver";
 
 function isoForDay(day: string, hour = 0) {
   return `${day}T${String(hour).padStart(2, "0")}:00:00.000Z`;
@@ -50,4 +51,35 @@ test("downsampleVersionMarkers keeps first/last and zero-patch releases", () => 
   assert.ok(keptDays.has(markers[5]!.date_utc));
   assert.ok(keptDays.has(markers[20]!.date_utc));
   assert.ok(keptDays.has(markers[35]!.date_utc));
+});
+
+test("SemVer build metadata stays stable and all valid prerelease identifiers are separated", () => {
+  for (const suffix of ["alpha", "beta.2", "rc.0", "canary.2025", "experimental", "preview-123", "0"]) {
+    assert.equal(classifyVersion("1.2.3-" + suffix + "+build"), "prerelease");
+  }
+  assert.equal(classifyVersion("1.2.3+build.01"), "stable");
+  for (const version of ["1.02.3", "1.2", "v1.2.3", "1.2.3-alpha.01", "1.2.3+", "1.2.3\n"]) {
+    assert.equal(classifyVersion(version), null);
+  }
+});
+
+test("release import keeps original publication timestamps and bounds each selection independently", () => {
+  const range = { startDate: "2025-12-31", endDate: "2026-01-01" };
+  const time = Object.fromEntries(Array.from({ length: 505 }, (_, index) => [
+    "1.0." + index, "2025-12-31T23:00:00.000Z",
+  ]));
+  const publishedAt = "2026-01-02T00:15:00+01:00";
+  Object.assign(time, {
+    "2.0.0-rc.1": publishedAt,
+    "3.0.0": "2026-01-02T00:00:00Z",
+    "4.0.0": "2025-12-31",
+  });
+  const result = buildReleaseImports(time, range, true);
+  assert.equal(result.stable.total, 505);
+  assert.equal(result.all.total, 506);
+  assert.equal(result.stable.entries.length, 500);
+  assert.equal(result.all.entries.length, 500);
+  assert.equal(result.isStale, true);
+  assert.deepEqual(result.all.entries[0], { version: "2.0.0-rc.1", publishedAt, date: "2026-01-01", kind: "prerelease" });
+  assert.deepEqual(extractVersionMarkersFromTime(time, range).map((marker) => marker.date_utc), ["2025-12-31"]);
 });

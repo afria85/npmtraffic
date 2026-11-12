@@ -17,10 +17,13 @@ globalThis.fetch = async (input, init) => {
     return Response.json({start, end, package: packageName, downloads});
   }
   if (url.hostname === 'registry.npmjs.org') {
-    const name = decodeURIComponent(url.pathname.slice(1));
+    const latest = url.pathname.endsWith('/latest');
+    const name = decodeURIComponent(url.pathname.slice(1, latest ? -7 : undefined));
+    if (latest) return Response.json({name, repository: {url: 'git+https://github.com/react/react.git', directory: 'packages/react'}});
     const time = name === 'react' ? {
       '1.0.0': '2020-01-01T00:00:00Z',
-      '1.1.0-canary-responsive-chart-tooltip-regression': new Date(Date.now() - 86_400_000).toISOString(),
+      '1.1.0+responsive-chart-tooltip-regression': new Date(Date.now() - 86_400_000).toISOString(),
+      '1.2.0-canary.1': new Date(Date.now() - 86_400_000).toISOString(),
     } : {};
     return Response.json({name, 'dist-tags':{latest:'1.0.0'}, time, versions:{}});
   }

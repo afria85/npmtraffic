@@ -45,6 +45,10 @@ Decoded response bytes on November 12, 2026. The plain and `fields` requests eac
 | typescript | 15,924,452 | 4,833 |
 | @types/node | 11,183,996 | 3,513 |
 
+The abbreviated install-v1 format returned 2,972,858 bytes for React and 25,726,726 for Next. Both responses omitted publication timestamps. Repository links now use the version-level `/latest` response, capped at 128 KiB. The server keeps the publication history fetch because it supplies timestamps, limits its decoded response to 48 MiB, and reuses the selected records for client imports. If the limit or upstream request fails, the server can serve a labeled stale snapshot. Without a snapshot, it marks the history unavailable. The limits are operational bounds. Peak memory and OOM behavior were not measured.
+
+Automatic chart markers and the release count use valid stable SemVer publications inside the selected UTC window. Build metadata remains stable. The marker import can include prereleases explicitly and shows the cap of 500 matching publications, ordered newest first. Imported event JSON carries the original registry timestamp. The npm `latest` dist-tag identifies the configured version and can differ from the most recently published version. Publication dates provide context for traffic changes.
+
 ## Remediation order and infrastructure
 
 Start with A for untrusted event and export inputs. B should follow A or explicitly stack on its commit because both touch the event panel. C can branch from main if it stays on server infrastructure. D follows the audit of startup accessibility and can stay independent of A and B when it changes compare entry points and metadata only. Continue to preserve the observation contract and mobile chart matrix at each step.

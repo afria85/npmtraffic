@@ -55,14 +55,14 @@ export default function VersionMetadataPanel({
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-[var(--foreground)]">Package metadata</h2>
           <p className="mt-1 text-xs text-[var(--foreground-tertiary)]">
-            Version signals from npm registry. Helpful to explain download changes.
+            Publication dates and version counts from the npm registry.
           </p>
         </div>
 
         <span
           className={cls(
             "inline-flex items-center rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.25em]",
-            cacheStatus === "STALE" ? "border-amber-500/30 bg-amber-500/10 text-amber-100" : "border-[var(--border)] bg-[var(--surface-hover)] text-[var(--foreground)]"
+            cacheStatus === "STALE" ? "border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-100" : "border-[var(--border)] bg-[var(--surface-hover)] text-[var(--foreground)]"
           )}
           title={`Fetched at ${fetchedAt}${isStale ? " (stale)" : ""}`}
         >
@@ -72,7 +72,7 @@ export default function VersionMetadataPanel({
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-3">
-          <p className="text-xs font-medium text-[var(--foreground-tertiary)]">Latest</p>
+          <p className="text-xs font-medium text-[var(--foreground-tertiary)]">{latestVersion && latestVersion === distTagLatest ? "npm latest tag" : "Most recently published"}</p>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             {latestVersion ? (
               <a
@@ -86,14 +86,6 @@ export default function VersionMetadataPanel({
             ) : (
               <span className="text-sm font-semibold text-[var(--foreground)]">Unknown</span>
             )}
-            {distTagLatest && latestVersion && distTagLatest !== latestVersion ? (
-              <span
-                className="rounded border border-[var(--border)] bg-[var(--surface-hover)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--foreground)]"
-                title={`dist-tag latest → ${distTagLatest}`}
-              >
-                dist-tag: {distTagLatest}
-              </span>
-            ) : null}
           </div>
           {publishedLabel ? (
             <p className="mt-1 text-xs text-[var(--foreground-secondary)]">Published {publishedLabel} (UTC)</p>
@@ -103,7 +95,7 @@ export default function VersionMetadataPanel({
         </div>
 
         <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-3">
-          <p className="text-xs font-medium text-[var(--foreground-tertiary)]">Releases in range</p>
+          <p className="text-xs font-medium text-[var(--foreground-tertiary)]">Stable releases in range</p>
           <p className="mt-1 text-sm font-semibold tabular-nums text-[var(--foreground)]">{releasesInRange}</p>
           <p className="mt-1 text-xs text-[var(--foreground-tertiary)]">{rangeLabel}</p>
         </div>
@@ -111,7 +103,7 @@ export default function VersionMetadataPanel({
         <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-3">
           <p className="text-xs font-medium text-[var(--foreground-tertiary)]">Total versions</p>
           <p className="mt-1 text-sm font-semibold tabular-nums text-[var(--foreground)]">{totalVersions}</p>
-          <p className="mt-1 text-xs text-[var(--foreground-tertiary)]">All published semver versions.</p>
+          <p className="mt-1 text-xs text-[var(--foreground-tertiary)]">Includes prereleases.</p>
         </div>
 
         <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-3">
