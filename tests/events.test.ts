@@ -185,6 +185,18 @@ test("merge events updates missing metadata", () => {
   assert.equal(release?.url, "https://example.com");
 });
 
+test("importing 600 new events into 600 saved events preserves the entire saved snapshot", () => {
+  const existing = Array.from({ length: 600 }, (_, index) => ({ ...note, label: "Saved " + index }));
+  const incoming = Array.from({ length: 600 }, (_, index) => ({ ...note, label: "Incoming " + index }));
+  saveEvents("pkg", existing);
+  const storage = globalThis.window.localStorage;
+  const key = "npmtraffic:events:pkg";
+  const original = storage.getItem(key);
+  assert.throws(() => importEventsFromPayload("pkg", JSON.stringify(incoming)), /Too many events for this package/);
+  assert.equal(storage.getItem(key), original);
+  assert.equal(loadEvents("pkg").length, 600);
+});
+
 test("parseImportPayload rejects invalid entries", () => {
   const payload = JSON.stringify([
     { date_utc: "not-date", event_type: "release" as const, label: "Bad" },
