@@ -3,6 +3,7 @@ import type { DerivedMetrics } from "@/lib/derived";
 import type { TrafficSeriesRow } from "@/lib/traffic";
 
 export type TrendDirection = "up" | "down" | "flat" | "none";
+type AvailableRow = { date: string; downloads: number };
 
 export type WindowTrend = {
   windowSize: number;
@@ -15,21 +16,23 @@ export type WindowTrend = {
 
 export type PackageInsights = {
   trend: WindowTrend;
-  peak: TrafficSeriesRow | null;
-  latest: (TrafficSeriesRow & { delta: number | null }) | null;
+  peak: AvailableRow | null;
+  latest: (AvailableRow & { delta: number | null }) | null;
   activeDays: number;
-  activeRate: number;
+  activeRate: number | null;
+  availableDays: number;
   variability: {
     coefficient: number;
     label: "steady" | "variable" | "volatile" | "none";
   };
   outlierCount: number;
-  strongestOutlier: (TrafficSeriesRow & { score: number }) | null;
+  strongestOutlier: (AvailableRow & { score: number }) | null;
 };
 
-export type ComparePackageInsight = CompareTotals & {
+export type ComparePackageInsight = Omit<CompareTotals, "total"> & {
+  total: number;
   trend: WindowTrend;
-  latestDownloads: number;
+  latestDownloads: number | null;
 };
 
 export type CompareInsights = {
@@ -37,7 +40,7 @@ export type CompareInsights = {
   leader: ComparePackageInsight | null;
   runnerUp: ComparePackageInsight | null;
   growthLeader: ComparePackageInsight | null;
-  latestLeader: ComparePackageInsight | null;
+  latestLeader: (ComparePackageInsight & { latestDownloads: number }) | null;
   closestPair: {
     first: ComparePackageInsight;
     second: ComparePackageInsight;
@@ -60,9 +63,11 @@ function getDirection(delta: number): TrendDirection {
   return "flat";
 }
 
-export function buildWindowTrend(values: number[]): WindowTrend {
+export function buildWindowTrend(values: (number | null)[]): WindowTrend {
   const windowSize = Math.min(7, Math.floor(values.length / 2));
-  if (windowSize < 1) {
+  const recent = values.slice(values.length - windowSize);
+  const previous = values.slice(values.length - windowSize * 2, values.length - windowSize);
+  if (windowSize < 1 || !recent.every((v) => v !== null) || !previous.every((v) => v !== null)) {
     return {
       windowSize: 0,
       recentTotal: 0,
@@ -73,8 +78,6 @@ export function buildWindowTrend(values: number[]): WindowTrend {
     };
   }
 
-  const recent = values.slice(values.length - windowSize);
-  const previous = values.slice(values.length - windowSize * 2, values.length - windowSize);
   const recentTotal = sum(recent);
   const previousTotal = sum(previous);
   const delta = recentTotal - previousTotal;
@@ -90,7 +93,7 @@ export function buildWindowTrend(values: number[]): WindowTrend {
   };
 }
 
-function getPeak(series: TrafficSeriesRow[]) {
+function getPeak(series: AvailableRow[]) {
   if (!series.length) return null;
   return series.reduce((best, row) => (row.downloads > best.downloads ? row : best), series[0]);
 }
@@ -118,27 +121,30 @@ export function buildPackageInsights(
 ): PackageInsights | null {
   if (!series.length) return null;
 
-  const values = series.map((row) => row.downloads);
+  const available = series.filter((row): row is TrafficSeriesRow & AvailableRow => row.downloads !== null);
+  const values = available.map((row) => row.downloads);
   const latest = series.at(-1) ?? null;
   const previous = series.at(-2) ?? null;
-  const strongestOutlier =
-    derived?.outliers
-      ?.map((outlier, index) => ({
-        ...(series[index] ?? { date: outlier.date, downloads: 0 }),
-        score: outlier.score,
-        isOutlier: outlier.is_outlier,
-      }))
-      .filter((item) => item.isOutlier)
-      .sort((a, b) => Math.abs(b.score) - Math.abs(a.score))[0] ?? null;
+  const byDate = new Map(available.map((row) => [row.date, row.downloads]));
+  const outliers = derived?.outliers.flatMap(({ date, is_outlier, score }) => {
+    const downloads = byDate.get(date);
+    return is_outlier && score !== null && downloads !== undefined ? [{ date, downloads, score }] : [];
+  }) ?? [];
+  const strongestOutlier = outliers.sort((a, b) => Math.abs(b.score) - Math.abs(a.score))[0];
+  const activeDays = values.filter((value) => value > 0).length;
 
   return {
-    trend: buildWindowTrend(values),
-    peak: getPeak(series),
-    latest: latest ? { ...latest, delta: previous ? latest.downloads - previous.downloads : null } : null,
-    activeDays: values.filter((value) => value > 0).length,
-    activeRate: round((values.filter((value) => value > 0).length / series.length) * 100, 1),
+    trend: buildWindowTrend(series.map((row) => row.downloads)),
+    peak: getPeak(available),
+    latest: latest && latest.downloads !== null ? {
+      date: latest.date, downloads: latest.downloads,
+      delta: previous?.downloads != null ? latest.downloads - previous.downloads : null,
+    } : null,
+    activeDays,
+    activeRate: values.length ? round((activeDays / values.length) * 100, 1) : null,
+    availableDays: values.length,
     variability: getVariability(values),
-    outlierCount: derived?.outliers?.filter((item) => item.is_outlier).length ?? 0,
+    outlierCount: outliers.length,
     strongestOutlier: strongestOutlier
       ? {
           date: strongestOutlier.date,
@@ -149,40 +155,33 @@ export function buildPackageInsights(
   };
 }
 
-function rankTrend(item: ComparePackageInsight) {
-  if (item.trend.direction !== "up") return Number.NEGATIVE_INFINITY;
-  if (item.trend.percent == null) return item.trend.delta > 0 ? Number.POSITIVE_INFINITY : 0;
-  return item.trend.percent;
-}
-
 export function buildCompareInsights(
   packages: CompareTotals[],
   series: CompareSeriesRow[]
 ): CompareInsights | null {
   if (!packages.length || !series.length) return null;
 
-  const insights: ComparePackageInsight[] = packages.map((pkg) => {
-    const values = series.map((row) => row.values[pkg.name]?.downloads ?? 0);
+  const insights: ComparePackageInsight[] = packages.filter((pkg): pkg is CompareTotals & { total: number } => pkg.total !== null).map((pkg) => {
+    const values = series.map((row) => row.values[pkg.name]?.downloads ?? null);
     return {
       ...pkg,
       trend: buildWindowTrend(values),
-      latestDownloads: values.at(-1) ?? 0,
+      latestDownloads: values.at(-1) ?? null,
     };
   });
 
   const byTotal = [...insights].sort((a, b) => b.total - a.total);
-  const byTrend = [...insights].sort((a, b) => {
-    const rankDelta = rankTrend(b) - rankTrend(a);
-    if (rankDelta !== 0) return rankDelta;
-    return b.trend.delta - a.trend.delta;
-  });
-  const byLatest = [...insights].sort((a, b) => b.latestDownloads - a.latestDownloads);
+  const byTrend = insights.filter((item) => item.trend.direction === "up" && item.trend.percent !== null)
+    .sort((a, b) => (b.trend.percent ?? 0) - (a.trend.percent ?? 0) || b.trend.delta - a.trend.delta);
+  const byLatest = insights.filter((item): item is ComparePackageInsight & { latestDownloads: number } => item.latestDownloads !== null)
+    .sort((a, b) => b.latestDownloads - a.latestDownloads);
 
   let closestPair: CompareInsights["closestPair"] = null;
   for (let i = 0; i < insights.length; i += 1) {
     for (let j = i + 1; j < insights.length; j += 1) {
       const first = insights[i];
       const second = insights[j];
+      if (first.share === null || second.share === null) continue;
       const shareGap = round(Math.abs(first.share - second.share), 2);
       if (!closestPair || shareGap < closestPair.shareGap) {
         closestPair = { first, second, shareGap };
@@ -194,7 +193,7 @@ export function buildCompareInsights(
     windowSize: insights[0]?.trend.windowSize ?? 0,
     leader: byTotal[0] ?? null,
     runnerUp: byTotal[1] ?? null,
-    growthLeader: byTrend[0]?.trend.direction === "up" ? byTrend[0] : null,
+    growthLeader: byTrend[0] ?? null,
     latestLeader: byLatest[0] ?? null,
     closestPair,
   };

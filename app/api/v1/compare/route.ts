@@ -8,7 +8,6 @@ import { rateLimit } from "@/lib/rate-limit";
 import { parsePackageList } from "@/lib/query";
 import { TrafficError } from "@/lib/traffic";
 
-export const revalidate = 900;
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
@@ -91,7 +90,7 @@ export async function GET(req: Request) {
       status: 200,
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
+        "Cache-Control": "no-store",
         "x-request-id": requestId,
         "Content-Disposition": `attachment; filename="${filename}"`,
       },

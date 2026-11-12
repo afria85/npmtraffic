@@ -83,7 +83,7 @@ export default function PackageInsightsPanel({ series, derived, days }: Props) {
   const trendDetail =
     insights.trend.windowSize > 0
       ? `${formatCompact(insights.trend.recentTotal)} recent, ${formatCompact(insights.trend.previousTotal)} prior`
-      : "Needs at least two data points";
+      : "Needs two consecutive windows of available days";
   const peakDetail = insights.peak
     ? `${formatNumber(insights.peak.downloads)} downloads on ${formatDate(insights.peak.date)}`
     : "No peak available";
@@ -94,7 +94,7 @@ export default function PackageInsightsPanel({ series, derived, days }: Props) {
     : "No latest day available";
   const outlierDetail = insights.strongestOutlier
     ? `Strongest: ${insights.strongestOutlier.date}, score ${insights.strongestOutlier.score.toFixed(2)}`
-    : "No MAD outliers in this range";
+    : insights.availableDays ? "No MAD outliers among available days" : "No available observations";
 
   return (
     <section className="overflow-hidden rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)]">
@@ -118,12 +118,12 @@ export default function PackageInsightsPanel({ series, derived, days }: Props) {
         />
         <InsightCell
           label="Consistency"
-          value={`${insights.activeRate.toFixed(1)}% active`}
-          detail={`${insights.activeDays}/${series.length} days above zero; ${insights.variability.label} traffic`}
+          value={insights.activeRate === null ? "Unavailable" : insights.activeRate.toFixed(1) + "% active"}
+          detail={`${insights.activeDays}/${insights.availableDays} available days above zero. ${insights.variability.label === "none" ? "Consistency unavailable" : insights.variability.label + " traffic"}`}
         />
         <InsightCell
           label="Outliers"
-          value={formatNumber(insights.outlierCount)}
+          value={insights.availableDays ? formatNumber(insights.outlierCount) : "Unavailable"}
           detail={outlierDetail}
         />
       </div>

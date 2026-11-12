@@ -1,26 +1,27 @@
 import { cacheGetWithStale, cacheSetWithStale } from "@/lib/cache";
 import { assertValidPackageName, normalizePackageInput } from "@/lib/package-name";
 import { clampDays, rangeForDays, type RangeForDaysResult } from "@/lib/query";
-import { fetchDailyDownloadsRange, type NpmRangeRow, UpstreamError } from "@/lib/npm-client";
-import { listDatesBetween } from "@/lib/dates";
+import { fetchDailyDownloadsRange, UpstreamError } from "@/lib/npm-client";
 import { recordError, recordSuccess } from "@/lib/health";
 import { buildDerivedMetrics, DERIVED_METHOD_DESCRIPTION, type DerivedMetrics } from "@/lib/derived";
 
-const SHORT_FRESH_TTL_SECONDS = 60 * 15;
-const LONG_FRESH_TTL_SECONDS = 60 * 60 * 12;
+import { fetchRegistryObservations, normalizeObservations, OBSERVATION_TTL_SECONDS, summarizeCoverage, type Observation } from "@/lib/observations";
+
 const STALE_TTL_SECONDS = 60 * 60 * 24;
 
-export type TrafficSeriesRow = { date: string; downloads: number };
+export type TrafficSeriesRow = Pick<Observation, "date" | "downloads"> & Partial<Omit<Observation, "date" | "downloads">>;
 
 export type TrafficResponse = {
   package: string;
   range: RangeForDaysResult;
-  series: TrafficSeriesRow[];
-  totals: { sum: number; avgPerDay: number };
+  series: Observation[];
+  coverage: ReturnType<typeof summarizeCoverage> & { missingDays: number; unverifiedDays: number };
+  totals: { sum: number | null; avgPerDay: number | null };
   derived: DerivedMetrics;
   meta: {
     source: "npm";
     fetchedAt: string;
+    registryFetchedAt: string | null;
     cacheStatus: "HIT" | "MISS" | "STALE";
     isStale: boolean;
     staleReason: "UPSTREAM_401" | "UPSTREAM_429" | "UPSTREAM_5XX" | "TIMEOUT" | "UNKNOWN" | null;
@@ -32,8 +33,8 @@ export type TrafficResponse = {
 type TrafficCacheValue = {
   package: string;
   range: RangeForDaysResult;
-  series: TrafficSeriesRow[];
-  totals: { sum: number; avgPerDay: number };
+  series: Observation[];
+  registryFetchedAt: string | null;
   fetchedAt: string;
 };
 
@@ -56,53 +57,40 @@ export class TrafficError extends Error {
   }
 }
 
-function computeTotals(series: TrafficSeriesRow[]) {
-  const sum = series.reduce((total, row) => total + row.downloads, 0);
-  const avgPerDay = series.length ? Math.round(sum / series.length) : 0;
-  return { sum, avgPerDay };
-}
-
-function normalizeSeries(rows: NpmRangeRow[], range: RangeForDaysResult) {
-  const timeline = listDatesBetween(range.startDate, range.endDate);
-  const lookup = new Map<string, number>();
-  let total = 0;
-  for (const row of rows) {
-    if (!timeline.includes(row.day) || lookup.has(row.day) ||
-        !Number.isSafeInteger(row.downloads) || row.downloads < 0) {
-      throw new UpstreamError(502, "Invalid npm daily observations");
-    }
-    total += row.downloads;
-    if (!Number.isSafeInteger(total)) throw new UpstreamError(502, "Unsafe npm download total");
-    lookup.set(row.day, row.downloads);
-  }
-  if (lookup.size !== timeline.length) {
-    throw new UpstreamError(502, "Incomplete npm daily observations");
-  }
-  return timeline.map((date) => ({ date, downloads: lookup.get(date)! }));
-}
-
 function buildResponse(
   cached: TrafficCacheValue,
   cacheStatus: TrafficResponse["meta"]["cacheStatus"],
   staleReason: TrafficResponse["meta"]["staleReason"] | null
 ): TrafficResponse {
   const derived = buildDerivedMetrics(cached.series);
+  const coverage = {
+    ...summarizeCoverage(cached.series, (row) => row.downloads !== null),
+    missingDays: cached.series.filter((row) => row.status === "missing").length,
+    unverifiedDays: cached.series.filter((row) => row.status === "unverified").length,
+  };
+  const sum = cached.series.reduce((total, row) => total + (row.downloads ?? 0), 0);
   const isStale = cacheStatus === "STALE";
   return {
     package: cached.package,
     range: cached.range,
     series: cached.series,
     derived,
-    totals: cached.totals,
+    coverage,
+    totals: {
+      sum: coverage.includedDays ? sum : null,
+      avgPerDay: coverage.includedDays ? Math.round(sum / coverage.includedDays) : null,
+    },
     meta: {
       source: "npm",
       fetchedAt: cached.fetchedAt,
+      registryFetchedAt: cached.registryFetchedAt,
       cacheStatus,
       isStale,
       staleReason: isStale ? staleReason : null,
       derivedMethod: DERIVED_METHOD_DESCRIPTION,
     },
-    warning: isStale ? "Showing cached data (upstream error)." : undefined,
+    warning: isStale ? "Showing cached data (upstream error)."
+      : cached.registryFetchedAt === null ? "Registry totals unavailable. Package counts are unverified." : undefined,
   };
 }
 
@@ -118,15 +106,8 @@ function getStaleReason(error: unknown) {
   return "UNKNOWN";
 }
 
-function getCacheTtl(days: number) {
-  if (days > 30) {
-    return { fresh: LONG_FRESH_TTL_SECONDS, stale: STALE_TTL_SECONDS };
-  }
-  return { fresh: SHORT_FRESH_TTL_SECONDS, stale: STALE_TTL_SECONDS };
-}
-
-function buildCacheKey(pkg: string, range: RangeForDaysResult) {
-  return `traffic:${pkg.toLowerCase()}:${range.days}:${range.label}:${range.startDate}:${range.endDate}`;
+export function trafficCacheKey(pkg: string, range: RangeForDaysResult) {
+  return ["traffic", "observations-v1", pkg.toLowerCase(), range.startDate, range.endDate].join(":");
 }
 
 export function getCachedTraffic(
@@ -134,14 +115,14 @@ export function getCachedTraffic(
   range: RangeForDaysResult,
   reason?: TrafficResponse["meta"]["staleReason"]
 ) {
-  const key = buildCacheKey(pkg, range);
+  const key = trafficCacheKey(pkg, range);
   const cached = cacheGetWithStale<TrafficCacheValue>(key);
   if (!cached.hit || !cached.value) return null;
   const status = cached.stale ? "STALE" : "HIT";
   return buildResponse(cached.value, status, cached.stale ? reason ?? "UNKNOWN" : null);
 }
 
-export async function fetchTraffic(pkgInput: string, daysInput?: string | number) {
+export async function fetchTraffic(pkgInput: string, daysInput?: string | number, now = new Date()) {
   const pkg = normalizePackageInput(pkgInput);
   const days = clampDays(daysInput);
 
@@ -152,8 +133,8 @@ export async function fetchTraffic(pkgInput: string, daysInput?: string | number
     throw new TrafficError("INVALID_REQUEST", 400, message);
   }
 
-  const range = rangeForDays(days);
-  const key = buildCacheKey(pkg, range);
+  const range = rangeForDays(days, now);
+  const key = trafficCacheKey(pkg, range);
   const cached = cacheGetWithStale<TrafficCacheValue>(key);
   if (cached.hit && cached.value && !cached.stale) {
     recordSuccess("HIT", false);
@@ -173,23 +154,26 @@ export async function fetchTraffic(pkgInput: string, daysInput?: string | number
         throw new UpstreamError(code, "Test upstream failure");
       }
 
-      const upstream = await fetchDailyDownloadsRange(pkg, {
-        start: range.startDate,
-        end: range.endDate,
-      });
-      const series = normalizeSeries(upstream.downloads, range);
-      const totals = computeTotals(series);
-      const fetchedAt = new Date().toISOString();
+      const [packageResult, registryResult] = await Promise.allSettled([
+        fetchDailyDownloadsRange(pkg, { start: range.startDate, end: range.endDate }),
+        fetchRegistryObservations(range),
+      ]);
+      if (packageResult.status === "rejected") throw packageResult.reason;
+      if (registryResult.status === "rejected" && cacheGetWithStale(key).hit) throw registryResult.reason;
+      const registry = registryResult.status === "fulfilled" ? registryResult.value : null;
       const nextValue: TrafficCacheValue = {
         package: pkg,
         range,
-        series,
-        totals,
-        fetchedAt,
+        series: normalizeObservations(packageResult.value.downloads, range, registry),
+        registryFetchedAt: registry?.fetchedAt ?? null,
+        fetchedAt: new Date().toISOString(),
       };
-      const ttl = getCacheTtl(range.days);
-      cacheSetWithStale(key, nextValue, ttl.fresh, ttl.stale);
-      recordSuccess("MISS", false);
+      if (registry) {
+        cacheSetWithStale(key, nextValue, OBSERVATION_TTL_SECONDS, STALE_TTL_SECONDS);
+        recordSuccess("MISS", false);
+      } else {
+        recordError("REGISTRY_OBSERVATIONS_UNAVAILABLE");
+      }
       return buildResponse(nextValue, "MISS", null);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error ?? "");
@@ -198,11 +182,12 @@ export async function fetchTraffic(pkgInput: string, daysInput?: string | number
         throw new TrafficError("PACKAGE_NOT_FOUND", 404, "Package not found");
       }
 
-      if (cached.hit && cached.value) {
+      const fallback = cacheGetWithStale<TrafficCacheValue>(key).value;
+      if (fallback) {
         const staleReason = getStaleReason(error);
         recordError(staleReason);
         recordSuccess("STALE", true);
-        return buildResponse(cached.value, "STALE", staleReason);
+        return buildResponse(fallback, "STALE", staleReason);
       }
 
       const upstreamStatus = error instanceof UpstreamError ? error.status : undefined;

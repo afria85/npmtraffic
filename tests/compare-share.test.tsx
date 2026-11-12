@@ -19,6 +19,6 @@ test("calculatePackageShares handles zero total without dividing by zero", () =>
     { name: "b", total: 0 },
   ];
   const results = calculatePackageShares(packages);
-  assert.equal(results[0].share, 0);
-  assert.equal(results[1].share, 0);
+  assert.equal(results[0].share, null);
+  assert.equal(results[1].share, null);
 });

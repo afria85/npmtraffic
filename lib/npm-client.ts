@@ -4,7 +4,7 @@ export type NpmRangeRow = { day: string; downloads: number };
 export type NpmRangeResponse = {
   start: string;
   end: string;
-  package: string;
+  package?: string;
   downloads: NpmRangeRow[];
 };
 
@@ -26,10 +26,11 @@ export class UpstreamError extends Error {
 }
 
 export async function fetchDailyDownloadsRange(
-  pkg: string,
+  pkg: string | null,
   range: NpmDateRange
 ): Promise<NpmRangeResponse> {
-  const url = `https://api.npmjs.org/downloads/range/${range.start}:${range.end}/${encodeURIComponent(pkg)}`;
+  const suffix = pkg === null ? "" : `/${encodeURIComponent(pkg)}`;
+  const url = `https://api.npmjs.org/downloads/range/${range.start}:${range.end}${suffix}`;
   // Keep the deadline active through body consumption, not just response headers.
   const signal = AbortSignal.timeout(5000);
   const res = await fetch(url, {
@@ -38,7 +39,7 @@ export async function fetchDailyDownloadsRange(
   });
   if (!res.ok) {
     // A downloads 404 alone does not prove that a package does not exist.
-    if (res.status === 404) {
+    if (res.status === 404 && pkg !== null) {
       const registry = await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkg)}`, {
         signal, headers: { accept: "application/json", "user-agent": USER_AGENT },
       });
@@ -51,7 +52,7 @@ export async function fetchDailyDownloadsRange(
   const data: unknown = await res.json();
   if (!data || typeof data !== "object") throw new UpstreamError(502, "Invalid npm response");
   const value = data as NpmRangeResponse;
-  if (value.package !== pkg || value.start !== range.start || value.end !== range.end ||
+  if (value.package !== (pkg ?? undefined) || value.start !== range.start || value.end !== range.end ||
       !Array.isArray(value.downloads) || value.downloads.some((row) =>
         !row || typeof row.day !== "string" || typeof row.downloads !== "number")) {
     throw new UpstreamError(502, "Invalid npm response schema or range");

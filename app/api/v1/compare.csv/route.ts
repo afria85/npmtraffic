@@ -2,14 +2,13 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { buildCompareData } from "@/lib/compare";
 import { buildCsv } from "@/lib/csv";
-import { buildExportCommentHeader, buildExportMeta } from "@/lib/export";
+import { buildExportCommentHeader, buildExportMeta, compareCsvRows } from "@/lib/export";
 import { buildExportFilename } from "@/lib/export-filename";
 import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
 import { parsePackageList } from "@/lib/query";
 import { TrafficError } from "@/lib/traffic";
 
-export const revalidate = 900;
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
@@ -72,22 +71,7 @@ export async function GET(req: Request) {
 
     const data = await buildCompareData(pkgs, days);
 
-    const header: Array<string | number | null> = ["date"];
-    for (const pkg of data.packages) {
-      header.push(`${pkg.name} downloads`, `${pkg.name} delta`);
-    }
-
-    const rows: Array<Array<string | number | null>> = [
-      header,
-      ...data.series.map((row) => {
-        const line: Array<string | number | null> = [row.date];
-        for (const pkg of data.packages) {
-          const value = row.values[pkg.name];
-          line.push(value?.downloads ?? 0, value?.delta ?? null);
-        }
-        return line;
-      }),
-    ];
+    const rows = compareCsvRows(data);
 
     const exportMeta = buildExportMeta(
       data.range,
@@ -97,7 +81,7 @@ export async function GET(req: Request) {
       data.meta.isStale,
       data.meta.staleReason ?? null
     );
-    const csv = buildExportCommentHeader(exportMeta) + "\n" + buildCsv(rows);
+    const csv = buildExportCommentHeader(exportMeta, data.coverage) + "\n" + buildCsv(rows);
     const filename = buildExportFilename({
       packages: pkgs,
       days: data.days,
@@ -108,7 +92,7 @@ export async function GET(req: Request) {
       status: 200,
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Cache-Control": "public, s-maxage=900, stale-while-revalidate=86400",
+        "Cache-Control": "no-store",
         "x-request-id": requestId,
         "X-Content-Type-Options": "nosniff",
         "Content-Disposition": `attachment; filename="${filename}"`,

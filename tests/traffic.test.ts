@@ -1,7 +1,8 @@
+import { registryFixture } from "./support/npm-observations";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { cacheClear, cacheSetWithStale } from "../lib/cache";
-import { fetchTraffic, TrafficError } from "../lib/traffic";
+import { fetchTraffic, trafficCacheKey, TrafficError } from "../lib/traffic";
 import { rangeForDays } from "../lib/query";
 
 
@@ -10,6 +11,8 @@ test("serves stale cache when upstream fails", async (t) => {
   const expectedRange = rangeForDays(14);
 
   globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
@@ -39,14 +42,14 @@ test("serves stale cache when upstream fails", async (t) => {
   });
 
   const firstResponse = await fetchTraffic("react", 14);
-  const cacheKey = `traffic:${firstResponse.package.toLowerCase()}:${firstResponse.range.days}:${firstResponse.range.label}:${firstResponse.range.startDate}:${firstResponse.range.endDate}`;
+  const cacheKey = trafficCacheKey(firstResponse.package, firstResponse.range);
   cacheSetWithStale(
     cacheKey,
     {
       package: firstResponse.package,
       range: firstResponse.range,
       series: firstResponse.series,
-      totals: firstResponse.totals,
+      registryFetchedAt: firstResponse.meta.registryFetchedAt,
       fetchedAt: firstResponse.meta.fetchedAt,
     },
     -1,
@@ -83,6 +86,8 @@ test("preserves explicit zero observations and totals for the requested range", 
   const expectedRange = rangeForDays(14);
 
   globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
@@ -115,7 +120,7 @@ test("preserves explicit zero observations and totals for the requested range", 
   assert.equal(data.series.length, 14);
   assert.equal(data.series[0].date, expectedRange.startDate);
   assert.equal(data.series.at(-1)?.date, expectedRange.endDate);
-  const totalDownloads = data.series.reduce((total, row) => total + row.downloads, 0);
+  const totalDownloads = data.series.reduce((total, row) => total + (row.downloads ?? 0), 0);
   assert.equal(data.totals.sum, totalDownloads);
   assert.equal(data.series[1].downloads, 0);
   assert.equal(data.series.at(-2)?.downloads, 0);
@@ -126,6 +131,8 @@ test("fetchTraffic only calls npm downloads endpoint and returns totals", async 
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(7);
   globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     assert.ok(!url.includes("/api/v1/"), "should not request internal API");
     if (
@@ -189,6 +196,8 @@ test("deduplicates concurrent traffic requests", async (t) => {
     );
 
   globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(

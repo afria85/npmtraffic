@@ -4,7 +4,7 @@ const MAD_SCALE = 1.4826;
 const OUTLIER_THRESHOLD = 3;
 
 export type DerivedValue = { date: string; value: number | null };
-export type OutlierValue = { date: string; is_outlier: boolean; score: number };
+export type OutlierValue = { date: string; is_outlier: boolean | null; score: number | null };
 
 export type DerivedMetrics = {
   ma3: DerivedValue[];
@@ -26,7 +26,9 @@ export function computeTrailingMA(series: TrafficSeriesRow[], window: number) {
   const result: DerivedValue[] = [];
   const values: number[] = [];
   for (let i = 0; i < series.length; i += 1) {
-    values.push(series[i].downloads);
+    const value = series[i].downloads;
+    if (value === null) values.length = 0;
+    else values.push(value);
     if (values.length > window) {
       values.shift();
     }
@@ -43,14 +45,18 @@ export function computeTrailingMA(series: TrafficSeriesRow[], window: number) {
 
 export function computeOutliersMAD(series: TrafficSeriesRow[]) {
   const result: OutlierValue[] = [];
-  const values = series.map((row) => row.downloads);
+  const values = series.flatMap((row) => row.downloads === null ? [] : [row.downloads]);
   const med = median(values);
   const deviations = values.map((value) => Math.abs(value - med));
   const mad = median(deviations);
   const scale = mad * MAD_SCALE;
 
   for (let i = 0; i < series.length; i += 1) {
-    const value = values[i];
+    const value = series[i].downloads;
+    if (value === null) {
+      result.push({ date: series[i].date, is_outlier: null, score: null });
+      continue;
+    }
     let score = 0;
     if (scale > 0) {
       score = (value - med) / scale;
@@ -70,4 +76,4 @@ export function buildDerivedMetrics(series: TrafficSeriesRow[]): DerivedMetrics 
 }
 
 export const DERIVED_METHOD_DESCRIPTION =
-  `Trailing MA3/MA7; outlier score = (x - median)/(MAD×${MAD_SCALE.toFixed(4)}) threshold=${OUTLIER_THRESHOLD}`;
+  `Trailing MA3/MA7 require consecutive available days. MAD uses available days only. Score = (x - median)/(MAD×${MAD_SCALE.toFixed(4)}) threshold=${OUTLIER_THRESHOLD}`;

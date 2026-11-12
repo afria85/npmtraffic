@@ -33,7 +33,7 @@ test('fixture-backed package, scoped package, comparison, exports and local save
     await expect(page.getByText('Complete observations through', {exact:false})).toBeVisible();
     const csv=await request.get(`/api/v1/package/${encodeURIComponent(name)}/daily.csv?days=7`);
     expect(csv.status()).toBe(200);
-    expect((await csv.text()).split('\n')).toContain('date,downloads,ma3,ma7,is_outlier,outlier_score');
+    expect((await csv.text()).split('\n')).toContain('date,downloads,ma3,ma7,is_outlier,outlier_score,observation_status,upstream_downloads,registry_downloads');
   }
   await page.goto('/compare?packages=react,vue&days=7');
   await page.getByRole('button',{name:'Save this comparison',exact:true}).click();

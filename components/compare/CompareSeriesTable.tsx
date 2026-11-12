@@ -1,5 +1,7 @@
 "use client";
 
+import type { CompareSeriesRow } from "@/lib/compare";
+
 import { Fragment, useMemo, useState } from "react";
 import SignedValue from "@/components/ui/SignedValue";
 
@@ -14,22 +16,12 @@ function DateSortIcon({ dir }: { dir: DateSortDir }) {
   );
 }
 
-type CompareSeriesRow = {
-  date: string;
-  values: Record<string, { downloads: number; delta: number | null }>;
-};
-
 type Props = {
   series: CompareSeriesRow[];
   packageNames: string[];
 };
 
 const numberFormatter = new Intl.NumberFormat("en-US");
-
-function formatNumber(value: number | null) {
-  if (value == null) return "-";
-  return numberFormatter.format(value);
-}
 
 export default function CompareSeriesTable({ series, packageNames }: Props) {
   const [dateSortDir, setDateSortDir] = useState<DateSortDir>("desc");
@@ -116,7 +108,7 @@ export default function CompareSeriesTable({ series, packageNames }: Props) {
             {packageNames.map((pkg) => (
               <Fragment key={`${row.date}-${pkg}-pair`}>
                 <td className="px-2 py-2 text-right font-mono tabular-nums sm:px-3">
-                  {formatNumber(row.values[pkg]?.downloads ?? null)}
+                  {row.values[pkg]?.downloads != null ? numberFormatter.format(row.values[pkg].downloads) : row.values[pkg]?.status === "available" ? "Excluded" : row.values[pkg]?.status === "unverified" ? "Unverified" : "Missing"}
                 </td>
                 <td className="px-2 py-2 text-right tabular-nums sm:px-3">
                   <SignedValue value={row.values[pkg]?.delta ?? null} showArrow emphasis="primary" />

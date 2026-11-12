@@ -1,3 +1,4 @@
+import { registryFixture } from "./support/npm-observations";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { GET as getDaily } from "../app/api/v1/package/[name]/daily/route";
@@ -15,6 +16,8 @@ test("daily API returns traffic response shape", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(30);
   globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
@@ -67,6 +70,8 @@ test("daily API supports long-range normalization", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(90);
   globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
@@ -110,6 +115,8 @@ test("daily CSV export includes metadata comments", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(30);
   globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
@@ -150,7 +157,7 @@ test("daily CSV export includes metadata comments", async (t) => {
   assert.ok(lines[6].startsWith("# cache_status="));
   assert.ok(lines[7].startsWith("# is_stale="));
   assert.ok(lines[8].startsWith("# stale_reason="));
-  assert.equal(lines[9], "date,downloads,ma3,ma7,is_outlier,outlier_score");
+  assert.ok(lines.includes("date,downloads,ma3,ma7,is_outlier,outlier_score,observation_status,upstream_downloads,registry_downloads"));
   assert.equal(res.headers.get("x-content-type-options"), "nosniff");
   const disposition = res.headers.get("content-disposition") ?? "";
   assert.ok(disposition.startsWith('attachment; filename="npmtraffic__react'));
@@ -160,6 +167,8 @@ test("daily CSV export matches long-range row count", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(90);
   globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
@@ -192,13 +201,15 @@ test("daily CSV export matches long-range row count", async (t) => {
   const text = await res.text();
   const lines = text.trim().split("\n");
   // 9 comment lines + header + 90 data rows
-  assert.equal(lines.length, 9 + 1 + 90);
+  assert.equal(lines.length, 13 + 1 + 90);
 });
 
 test("daily CSV export attachment header sanitizes scoped names", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(30);
   globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url.includes("/@scope/name") || url.includes("/%40scope%2Fname")) {
       return new Response(
@@ -233,6 +244,8 @@ test("daily JSON export returns audit metadata", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(14);
   globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
@@ -286,6 +299,8 @@ test("compare JSON export includes metadata block", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(30);
   globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url.includes("/react")) {
       return new Response(
@@ -343,6 +358,8 @@ test("compare CSV export includes metadata comments", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(30);
   globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url.includes("/react") || url.includes("/vue")) {
       return new Response(
@@ -379,7 +396,7 @@ test("compare CSV export includes metadata comments", async (t) => {
   assert.ok(lines[6].startsWith("# cache_status="));
   assert.ok(lines[7].startsWith("# is_stale="));
   assert.ok(lines[8].startsWith("# stale_reason="));
-  assert.ok(lines[9].startsWith("date"));
+  assert.ok(lines.some((line) => line.startsWith("date,") && line.includes("included")));
   const disposition = res.headers.get("content-disposition") ?? "";
   assert.ok(disposition.includes("npmtraffic__react__vue"));
 });
@@ -388,6 +405,8 @@ test("daily Excel CSV export uses semicolon delimiter", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(30);
   globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (
       url.startsWith(
@@ -420,7 +439,7 @@ test("daily Excel CSV export uses semicolon delimiter", async (t) => {
   const text = await res.text();
   const lines = text.split("\n");
   assert.equal(lines[0], "sep=;");
-  assert.ok(lines[10].includes(";"));
+  assert.ok(lines.some((line) => line.startsWith("date;") && line.includes(";")));
   assert.ok(res.headers.get("content-disposition")?.includes(".excel.csv\""));
 });
 
@@ -428,6 +447,8 @@ test("compare Excel CSV export uses semicolon delimiter", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(30);
   globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url.includes("/react") || url.includes("/vue")) {
       return new Response(
@@ -456,7 +477,7 @@ test("compare Excel CSV export uses semicolon delimiter", async (t) => {
   const text = await res.text();
   const lines = text.split("\n");
   assert.equal(lines[0], "sep=;");
-  assert.ok(lines[10].includes(";"));
+  assert.ok(lines.some((line) => line.startsWith("date;") && line.includes(";")));
   const disposition = res.headers.get("content-disposition") ?? "";
   assert.ok(disposition.includes(".excel.csv\""));
 });
@@ -504,6 +525,8 @@ test("search API returns normalized results", async (t) => {
 test("validate API returns request id and cache headers", async (t) => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url === "https://registry.npmjs.org/react") {
       return new Response(JSON.stringify({ name: "react" }), {

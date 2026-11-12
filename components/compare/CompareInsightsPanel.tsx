@@ -77,13 +77,13 @@ export default function CompareInsightsPanel({ packages, series, days }: Props) 
   if (!insights) return null;
 
   const leaderDetail = insights.leader
-    ? insights.runnerUp
+    ? insights.runnerUp?.share != null && insights.leader.share !== null
       ? `${formatCompact(insights.leader.total)} total, ${(insights.leader.share - insights.runnerUp.share).toFixed(2)}pp ahead`
       : `${formatCompact(insights.leader.total)} total`
     : "No leader available";
   const growthDetail = insights.growthLeader
     ? `Latest ${insights.growthLeader.trend.windowSize}d: ${formatCompact(insights.growthLeader.trend.recentTotal)} vs ${formatCompact(insights.growthLeader.trend.previousTotal)} prior`
-    : "No package is up in the latest window";
+    : "No growth leader with complete, comparable windows";
   const latestDate = series.at(-1)?.date ?? "latest day";
   const latestDetail = insights.latestLeader
     ? `${formatNumber(insights.latestLeader.latestDownloads)} downloads on ${latestDate}`
@@ -97,7 +97,7 @@ export default function CompareInsightsPanel({ packages, series, days }: Props) 
       <div className="min-w-0 border-b border-[color:var(--border)] px-4 py-3">
         <h2 className="text-sm font-semibold text-[var(--foreground)]">Compare insights</h2>
         <p className="mt-1 min-w-0 break-words text-xs text-[var(--foreground-tertiary)]">
-          Selected packages across the {days}d range.
+          Selected packages on shared observation dates in the {days}d range.
         </p>
       </div>
       <div className="grid divide-y divide-[color:var(--border)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">

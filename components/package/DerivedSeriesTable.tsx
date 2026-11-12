@@ -243,7 +243,8 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
         continue;
       }
       const previous = series[i - 1];
-      values.push(series[i].downloads - previous.downloads);
+      const current = series[i].downloads;
+      values.push(current !== null && previous.downloads !== null ? current - previous.downloads : null);
     }
     return values;
   }, [series]);
@@ -649,7 +650,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                         </div>
                       </td>
                       <td className="px-2 py-2 text-right font-mono tabular-nums whitespace-nowrap sm:px-3">
-                        {row.downloads.toLocaleString("en-US")}
+                        {row.downloads === null ? row.status === "unverified" ? "Unverified" : "Missing" : row.downloads.toLocaleString("en-US")}
                       </td>
                       <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">
                         <SignedValue value={delta} showArrow emphasis="primary" />
