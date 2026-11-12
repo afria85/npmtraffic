@@ -66,7 +66,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function StatusPage() {
-  const { build, health, hasHealth } = getStatusOverview();
+  const { build, health, hasHealth, rateLimit } = getStatusOverview();
   const lastSuccess = formatUtc(health.lastSuccessAt);
   const lastError = formatUtc(health.lastErrorAt);
 
@@ -104,7 +104,7 @@ export default async function StatusPage() {
               <p>
                 Last traffic error:{" "}
                 {lastError
-                  ? `${lastError} (${health.lastErrorCode ?? "unknown"}${health.lastErrorReason ? ` - ${health.lastErrorReason}` : ""})`
+                  ? `${lastError} (${health.lastErrorCode ?? "unknown"})`
                   : "None recorded in this runtime"}
               </p>
             </>
@@ -128,6 +128,22 @@ export default async function StatusPage() {
               <p>No cache activity recorded in this runtime yet.</p>
               <p>{CACHE_TTL_SUMMARY}</p>
             </>
+          )}
+        </StatusPanel>
+
+        <StatusPanel title="API rate limiting">
+          {rateLimit.configuration === "configured" ? (
+            <>
+              <p>Shared rate limiting is configured.</p>
+              <p>{rateLimit.lastSharedObservation
+                ? (rateLimit.lastSharedObservation.result === "responded" ? "Last shared decision received" : "Last shared request failed closed")
+                  + " at " + formatUtc(rateLimit.lastSharedObservation.observedAt) + "."
+                : "No shared rate limit decisions observed in this runtime yet."}</p>
+            </>
+          ) : (
+            <p>{rateLimit.configuration === "incomplete"
+              ? "Shared rate limiting configuration is incomplete. API limits are instance-local."
+              : "Shared rate limiting is disabled. API limits are instance-local."}</p>
           )}
         </StatusPanel>
 

@@ -2,7 +2,7 @@ import { cacheGetWithStale, cacheSetWithStale } from "@/lib/cache";
 import { assertValidPackageName, normalizePackageInput } from "@/lib/package-name";
 import { clampDays, rangeForDays, type RangeForDaysResult } from "@/lib/query";
 import { fetchDailyDownloadsRange, UpstreamError } from "@/lib/npm-client";
-import { recordError, recordSuccess } from "@/lib/health";
+import { recordError, recordCacheResult } from "@/lib/health";
 import { buildDerivedMetrics, DERIVED_METHOD_DESCRIPTION, type DerivedMetrics } from "@/lib/derived";
 
 import { fetchRegistryObservations, normalizeObservations, OBSERVATION_TTL_SECONDS, summarizeCoverage, type Observation } from "@/lib/observations";
@@ -137,7 +137,7 @@ export async function fetchTraffic(pkgInput: string, daysInput?: string | number
   const key = trafficCacheKey(pkg, range);
   const cached = cacheGetWithStale<TrafficCacheValue>(key);
   if (cached.hit && cached.value && !cached.stale) {
-    recordSuccess("HIT", false);
+    recordCacheResult("HIT");
     return buildResponse(cached.value, "HIT", null);
   }
 
@@ -170,15 +170,16 @@ export async function fetchTraffic(pkgInput: string, daysInput?: string | number
       };
       if (registry) {
         cacheSetWithStale(key, nextValue, OBSERVATION_TTL_SECONDS, STALE_TTL_SECONDS);
-        recordSuccess("MISS", false);
+        recordCacheResult("MISS", nextValue.fetchedAt);
       } else {
         recordError("REGISTRY_OBSERVATIONS_UNAVAILABLE");
+        recordCacheResult("MISS");
       }
       return buildResponse(nextValue, "MISS", null);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error ?? "");
       if (msg.startsWith("NPM_NOT_FOUND")) {
-        recordError("PACKAGE_NOT_FOUND", msg);
+        recordError("PACKAGE_NOT_FOUND");
         throw new TrafficError("PACKAGE_NOT_FOUND", 404, "Package not found");
       }
 
@@ -186,12 +187,12 @@ export async function fetchTraffic(pkgInput: string, daysInput?: string | number
       if (fallback) {
         const staleReason = getStaleReason(error);
         recordError(staleReason);
-        recordSuccess("STALE", true);
+        recordCacheResult("STALE");
         return buildResponse(fallback, "STALE", staleReason);
       }
 
       const upstreamStatus = error instanceof UpstreamError ? error.status : undefined;
-      recordError("UPSTREAM_UNAVAILABLE", String(error ?? "upstream"));
+      recordError(getStaleReason(error));
       throw new TrafficError(
         "UPSTREAM_UNAVAILABLE",
         502,
