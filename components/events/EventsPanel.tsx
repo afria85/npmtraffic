@@ -10,7 +10,11 @@ import {
   eventIdentifier,
   exportEvents,
   importEventsFromPayload,
-  loadEvents,
+  readEventSnapshot,
+  readEventImportFile,
+  replaceEvent,
+  EVENT_LABEL_MAX_LENGTH,
+  EVENT_URL_MAX_LENGTH,
   subscribeEvents,
   isSafeHttpUrl,
   isValidDate,
@@ -122,6 +126,7 @@ function toUtcDay(iso: string): string | null {
 
 export default function EventsPanel({ pkgName, encoded, range }: Props) {
   const [events, setEvents] = useState<EventEntry[]>([]);
+  const [storageIssue, setStorageIssue] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [isImportingReleases, setIsImportingReleases] = useState(false);
 
@@ -142,7 +147,9 @@ export default function EventsPanel({ pkgName, encoded, range }: Props) {
   const formGridId = useMemo(() => `events-form-${reactId.replace(/:/g, "")}`, [reactId]);
 
   const refreshEvents = useCallback(() => {
-    setEvents(pkgName ? loadEvents(pkgName) : []);
+    const snapshot = readEventSnapshot(pkgName);
+    setEvents(snapshot.events);
+    setStorageIssue(snapshot.issue);
   }, [pkgName]);
 
   useEffect(() => {
@@ -231,21 +238,18 @@ export default function EventsPanel({ pkgName, encoded, range }: Props) {
       ...(strength ? { strength } : {}),
     };
 
-    if (editingKey) {
-      deleteEvent(pkgName, editingKey);
-      const added = addEvent(pkgName, entry);
-      setEvents(added);
-      clearDraft();
-      setStatusFor("Event updated.");
-      return;
+    try {
+      setEvents(editingKey ? replaceEvent(pkgName, editingKey, entry) : addEvent(pkgName, entry));
+      setStatusFor(editingKey ? "Event updated." : "Event added.");
+      if (editingKey) clearDraft();
+      else {
+        setDraftLabel("");
+        setDraftUrl("");
+        setDraftStrength("");
+      }
+    } catch (error) {
+      setStatusFor(error instanceof Error ? error.message : "Could not save event.");
     }
-
-    const next = addEvent(pkgName, entry);
-    setEvents(next);
-    setDraftLabel("");
-    setDraftUrl("");
-    setDraftStrength("");
-    setStatusFor("Event added.");
   }
 
   function onEdit(entry: EventEntry) {
@@ -258,17 +262,24 @@ export default function EventsPanel({ pkgName, encoded, range }: Props) {
   }
 
   function onDelete(entry: EventEntry) {
-    const next = deleteEvent(pkgName, eventIdentifier(entry));
-    setEvents(next);
-    if (editingKey && editingKey === eventIdentifier(entry)) clearDraft();
-    setStatusFor("Event deleted.");
+    try {
+      setEvents(deleteEvent(pkgName, eventIdentifier(entry)));
+      if (editingKey === eventIdentifier(entry)) clearDraft();
+      setStatusFor("Event deleted.");
+    } catch (error) {
+      setStatusFor(error instanceof Error ? error.message : "Could not delete event.");
+    }
   }
 
   function onExportJson() {
-    const json = exportEvents(pkgName);
-    const safeName = pkgName.toLowerCase().replace(/[^a-z0-9@._-]+/g, "-");
-    downloadText(`events-${safeName}.json`, json);
-    setStatusFor("Events exported.");
+    try {
+      const json = exportEvents(pkgName);
+      const safeName = pkgName.toLowerCase().replace(/[^a-z0-9@._-]+/g, "-");
+      downloadText("events-" + safeName + ".json", json);
+      setStatusFor("Events exported.");
+    } catch (error) {
+      setStatusFor(error instanceof Error ? error.message : "Could not export events.");
+    }
   }
 
   function onPickImportFile() {
@@ -281,25 +292,30 @@ export default function EventsPanel({ pkgName, encoded, range }: Props) {
     if (!file) return;
 
     try {
-      const text = await file.text();
+      const text = await readEventImportFile(file);
       const result = importEventsFromPayload(pkgName, text);
       setEvents(result.events);
       if (result.errors?.length) {
-        setStatusFor(`Imported with warnings: ${result.errors.join("; ")}`);
+        const prefix = result.added || result.updated ? "Imported with warnings" : "No events saved";
+        setStatusFor(`${prefix}: ${result.errors.join("; ")}`);
       } else {
         setStatusFor(`Imported: +${result.added} / updated ${result.updated}.`);
       }
-    } catch {
-      setStatusFor("Import failed (invalid file).");
+    } catch (error) {
+      setStatusFor(error instanceof Error ? "Import failed. " + error.message : "Import failed.");
     }
   }
 
   function onImportShared() {
     if (importBanner.kind !== "ready") return;
-    const result = importEventsFromPayload(pkgName, JSON.stringify(importBanner.events));
-    setEvents(result.events);
-    setDismissed(true);
-    setStatusFor(`Imported shared events: +${result.added} / updated ${result.updated}.`);
+    try {
+      const result = importEventsFromPayload(pkgName, JSON.stringify(importBanner.events));
+      setEvents(result.events);
+      setDismissed(true);
+      setStatusFor("Imported shared events: +" + result.added + " / updated " + result.updated + ".");
+    } catch (error) {
+      setStatusFor(error instanceof Error ? error.message : "Could not import shared events.");
+    }
   }
 
   async function onImportReleases() {
@@ -353,8 +369,8 @@ export default function EventsPanel({ pkgName, encoded, range }: Props) {
       } else {
         setStatusFor(`Imported releases${trimmed}: +${result.added} / updated ${result.updated}.`);
       }
-    } catch {
-      setStatusFor("Failed to import releases from registry.");
+    } catch (error) {
+      setStatusFor(error instanceof Error ? error.message : "Failed to import releases from registry.");
     } finally {
       setIsImportingReleases(false);
     }
@@ -457,6 +473,7 @@ export default function EventsPanel({ pkgName, encoded, range }: Props) {
         </div>
       ) : null}
 
+      {storageIssue ? <p role="status" className="mt-3 text-sm text-[var(--foreground-secondary)]">{storageIssue}</p> : null}
       {status ? (
         <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--foreground)]">
           {status}
@@ -504,6 +521,7 @@ export default function EventsPanel({ pkgName, encoded, range }: Props) {
           </label>
           <input
             id="event-label"
+            maxLength={EVENT_LABEL_MAX_LENGTH}
             value={draftLabel}
             onChange={(e) => setDraftLabel(e.target.value)}
             placeholder="e.g. v0.4.4 released"
@@ -520,6 +538,7 @@ export default function EventsPanel({ pkgName, encoded, range }: Props) {
           </label>
           <input
             id="event-url"
+            maxLength={EVENT_URL_MAX_LENGTH}
             value={draftUrl}
             onChange={(e) => setDraftUrl(e.target.value)}
             placeholder="https://..."

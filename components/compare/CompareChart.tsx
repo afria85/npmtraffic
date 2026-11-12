@@ -8,6 +8,7 @@ import ActionMenu from "@/components/ui/ActionMenu";
 import { IconChevronDown } from "@/components/ui/icons";
 import { computeLeftPad } from "@/components/charts/axis-padding";
 import { toObservationPath } from "@/components/charts/observation-path";
+import { serializeChartSvg } from "@/components/charts/serialize-svg";
 import { TimelineAxis } from "@/components/charts/TimelineAxis";
 import { useChartViewport } from "@/components/charts/use-chart-viewport";
 
@@ -122,23 +123,6 @@ function readCssVar(name: string) {
   return v || "#0b0f14";
 }
 
-function resolveCssVarsInSvg(xml: string) {
-  if (typeof window === "undefined") return xml;
-  const style = getComputedStyle(document.documentElement);
-  const seen = new Set<string>();
-  const matches = xml.match(/var\(--[a-zA-Z0-9-_]+\)/g) ?? [];
-  for (const token of matches) {
-    if (seen.has(token)) continue;
-    seen.add(token);
-    const name = token.slice(4, -1); // --var-name
-    const v = style.getPropertyValue(name).trim();
-    if (!v) continue;
-    xml = xml.split(token).join(v);
-  }
-  return xml;
-}
-
-
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -174,8 +158,7 @@ function svgToBlob(svgEl: SVGSVGElement, background?: string) {
     cloned.setAttribute("width", String(w));
     cloned.setAttribute("height", String(h));
   }
-  const xmlRaw = new XMLSerializer().serializeToString(cloned);
-  const xml = resolveCssVarsInSvg(xmlRaw);
+  const xml = serializeChartSvg(cloned);
   return new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
 }
 

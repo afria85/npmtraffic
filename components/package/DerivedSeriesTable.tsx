@@ -15,6 +15,9 @@ import { DateField } from "@/components/ui/DateField";
 import { SelectField } from "@/components/ui/SelectField";
 import {
   addEvent,
+  replaceEvent,
+  EVENT_LABEL_MAX_LENGTH,
+  EVENT_URL_MAX_LENGTH,
   deleteEvent,
   EVENT_TYPES,
   eventIdentifier,
@@ -316,13 +319,13 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
       url: form.url,
       strength: form.strength,
     };
-    if (editingKey) {
-      deleteEvent(pkgName, editingKey);
-      addEvent(pkgName, entry);
-      showStatus("Event updated.");
-    } else {
-      addEvent(pkgName, entry);
-      showStatus("Event added.");
+    try {
+      if (editingKey) replaceEvent(pkgName, editingKey, entry);
+      else addEvent(pkgName, entry);
+      showStatus(editingKey ? "Event updated." : "Event added.");
+    } catch (error) {
+      showStatus(error instanceof Error ? error.message : "Could not save event.", "warning");
+      return;
     }
     refreshEvents();
     setForm({ ...DEFAULT_FORM, date_utc: todayUtcDate() });
@@ -339,7 +342,12 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
   const handleDelete = (entry: EventEntry) => {
     if (!pkgName) return;
-    deleteEvent(pkgName, eventIdentifier(entry));
+    try {
+      deleteEvent(pkgName, eventIdentifier(entry));
+    } catch (error) {
+      showStatus(error instanceof Error ? error.message : "Could not remove event.", "warning");
+      return;
+    }
     showStatus("Event removed.");
     refreshEvents();
     refresh();
@@ -347,7 +355,13 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
 
   const handleExport = () => {
     if (!pkgName) return;
-    const content = exportEvents(pkgName);
+    let content: string;
+    try {
+      content = exportEvents(pkgName);
+    } catch (error) {
+      showStatus(error instanceof Error ? error.message : "Could not export events.", "warning");
+      return;
+    }
     const blob = new Blob([content], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -754,6 +768,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                   <input
                     id="event_label"
                     name="label"
+                    maxLength={EVENT_LABEL_MAX_LENGTH}
                     value={form.label}
                     onChange={(event) => setForm((prev) => ({ ...prev, label: event.target.value }))}
                     className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
@@ -767,6 +782,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                     <input
                       id="event_url"
                       name="url"
+                      maxLength={EVENT_URL_MAX_LENGTH}
                       value={form.url ?? ""}
                       onChange={(event) => setForm((prev) => ({ ...prev, url: event.target.value || undefined }))}
                       className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
