@@ -51,9 +51,12 @@ test('UTC windows cross leap day and year boundaries independently of DST', () =
  assert.deepEqual(rangeForDays(7,new Date('2026-03-29T00:00:00Z')),rangeForDays(7,new Date('2026-03-29T23:59:59Z')));
 });
 
-test('body deadline remains active after headers arrive', async (t) => {
+test('body deadline remains active after headers arrive', { timeout: 15_000 }, async (t) => {
  const original = globalThis.fetch;
- t.after(() => { globalThis.fetch = original; cacheClear(); });
+ // A real request keeps the event loop alive. The mocked stream has no socket,
+ // and AbortSignal.timeout() alone does not keep the process running.
+ const keepAlive = setInterval(() => {}, 1000);
+ t.after(() => { clearInterval(keepAlive); globalThis.fetch = original; cacheClear(); });
  globalThis.fetch = async (_input, init) => new Response(new ReadableStream({
    start(controller) {
      init?.signal?.addEventListener('abort', () => controller.error(init.signal?.reason), {once:true});

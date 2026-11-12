@@ -1,16 +1,22 @@
 import {test,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 for (const theme of ['light','dark']) {
- test(`representative pages have no serious accessibility violations (${theme})`, async ({page}) => {
-  await page.context().addCookies([{name:'npmtraffic_theme',value:theme,url:'http://127.0.0.1:3000'}]);
+ test(`representative pages have no serious accessibility violations (${theme})`, async ({page, baseURL}) => {
+  test.setTimeout(60_000);
+  await page.context().addCookies([{name:'npmtraffic_theme',value:theme,url:baseURL!}]);
   await page.addInitScript(theme=>localStorage.setItem('npmtraffic_theme',theme),theme);
   await page.setViewportSize({width:390,height:844});
   for (const path of ['/','/compare','/p/react?days=7','/compare?packages=react,vue&days=7']) {
    await page.goto(path);
    await page.getByRole('button',{name:'Toggle theme'}).waitFor();
    await expect(page.locator('html')).toHaveAttribute('data-theme',theme);
+   if (path.includes('days=7')) {
+    const selected = page.getByRole('group', {name:/range selector/i}).getByRole('link', {name:'7d', exact:true});
+    await expect(selected).toHaveAttribute('aria-current', 'page');
+    await expect(selected).toHaveCSS('transition-property', 'none');
+   }
    const results=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
-   expect(results.violations.filter(v=>v.impact==='serious'||v.impact==='critical').map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))).toEqual([]);
+   expect(results.violations.filter(v=>v.impact==='serious'||v.impact==='critical').map(v=>({id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))})), path).toEqual([]);
   }
  });
 }

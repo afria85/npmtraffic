@@ -5,7 +5,8 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import ActionMenu from "@/components/ui/ActionMenu";
 import { IconChevronDown } from "@/components/ui/icons";
 import { computeLeftPad } from "@/components/charts/axis-padding";
-import { buildMonthTicks, adjustMonthTicksForOverlap } from "@/components/charts/time-ticks";
+import { TimelineAxis } from "@/components/charts/TimelineAxis";
+import { useChartViewport } from "@/components/charts/use-chart-viewport";
 
 const CHART_BUTTON_CLASSES = "inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold leading-none text-[var(--foreground)] transition-colors hover:bg-[var(--surface-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]";
 
@@ -43,9 +44,6 @@ const PALETTE: { key: PaletteKey; label: string; cssVar: string }[] = [
   { key: "pink", label: "Pink", cssVar: "--chart-palette-pink" },
   { key: "cyan", label: "Cyan", cssVar: "--chart-palette-cyan" },
 ];
-
-const WIDTH = 1000;
-const HEIGHT = 260;
 
 function ChartSelect({
   label,
@@ -165,6 +163,7 @@ function downloadBlob(blob: Blob, filename: string) {
 function svgToBlob(svgEl: SVGSVGElement, background?: string) {
   const cloned = svgEl.cloneNode(true) as SVGSVGElement;
   cloned.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  cloned.setAttribute("font-family", getComputedStyle(svgEl).fontFamily);
   if (background) {
     const rect = svgEl.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "rect");
     rect.setAttribute("x", "0");
@@ -305,18 +304,17 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     };
   }, [styleOpen]);
 
+  const hasTooltip = hoverIndex !== null;
   useEffect(() => {
-    if (!isMobile || hoverIndex == null) return;
+    if (!hasTooltip) return;
     const onPointerDown = (event: PointerEvent) => {
-      if (!chartContainerRef.current) return;
-      if (chartContainerRef.current.contains(event.target as Node)) return;
-      setHoverIndex(null);
+      if (!svgRef.current?.contains(event.target as Node)) setHoverIndex(null);
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [hoverIndex, isMobile]);
+  }, [hasTooltip]);
 
 
   const maxValue = useMemo(() => {
@@ -330,7 +328,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     return Math.max(1, ...values);
   }, [series, packageNames]);
 
-  const width = isMobile ? 420 : WIDTH;
+  const { width, height } = useChartViewport(svgRef);
   const axisFontSize = isMobile ? 13 : 12;
   const yLabelOffset = isMobile ? 10 : 8;
   const leftPad = useMemo(
@@ -339,7 +337,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   );
   const pad = { l: leftPad, r: 20, t: 16, b: isMobile ? 48 : 40 };
   const innerW = width - pad.l - pad.r;
-  const innerH = HEIGHT - pad.t - pad.b;
+  const innerH = height - pad.t - pad.b;
 
   const pointsByPkg = useMemo(() => {
     const xFor = (i: number) => pad.l + innerW * (series.length <= 1 ? 0 : i / (series.length - 1));
@@ -367,11 +365,6 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     return values;
   }, [maxValue, innerH, pad.t]);
 
-  const xTicks = useMemo(() => {
-    const maxTicks = isMobile ? 3 : 6;
-    return adjustMonthTicksForOverlap(series.map((row) => row.date), buildMonthTicks(series.map((row) => row.date), maxTicks, "first-or-change", isMobile), { minIndexGap: isMobile ? 2 : 2 });
-  }, [isMobile, series]);
-
   const hovered = hoverIndex == null ? null : series[hoverIndex];
 
   const primaryPoints = pointsByPkg.get(packageNames[0] ?? "") ?? [];
@@ -385,7 +378,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     const containerRect = chartContainerRef.current.getBoundingClientRect();
     const tooltipRect = tooltipRef.current.getBoundingClientRect();
     const scaleX = svgRect.width / width;
-    const scaleY = svgRect.height / HEIGHT;
+    const scaleY = svgRect.height / height;
     const pointX = svgRect.left - containerRect.left + hoverPoint.x * scaleX;
     const pointY = svgRect.top - containerRect.top + hoverPoint.y * scaleY;
     const containerWidth = containerRect.width;
@@ -436,7 +429,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     }
     tooltipRef.current.style.left = `${finalLeft}px`;
     tooltipRef.current.style.top = `${finalTop}px`;
-  }, [hoverPoint, isMobile]);
+  }, [hoverPoint, width, height, isMobile]);
 
   const tooltipClassName =
     "absolute z-30 pointer-events-none rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
@@ -504,14 +497,15 @@ export default function CompareChart({ series, packageNames, days }: Props) {
       <div ref={chartContainerRef} className="relative mt-4">
         <svg
           ref={svgRef}
-          viewBox={`0 0 ${width} ${HEIGHT}`}
+          viewBox={`0 0 ${width} ${height}`}
           className="h-64 w-full touch-pan-y"
           role="img"
           aria-label={`Compare daily downloads line chart${days ? ` (${days} days)` : ""}`}
-          onMouseLeave={() => setHoverIndex(null)}
           onPointerDown={handlePointerEvent}
           onPointerMove={handlePointerEvent}
-          onPointerLeave={() => setHoverIndex(null)}
+          onPointerLeave={(event) => {
+            if (event.pointerType !== "touch") setHoverIndex(null);
+          }}
           onPointerCancel={() => setHoverIndex(null)}
         >
           {yTicks.map((tick) => (
@@ -529,22 +523,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
             </g>
           ))}
 
-          {xTicks.map((tick, idx) => {
-            const x = pad.l + innerW * (series.length <= 1 ? 0 : tick.index / (series.length - 1));
-            const y = pad.t + innerH;
-            const isFirst = idx === 0;
-            const isLast = idx === xTicks.length - 1;
-            const textAnchor = isFirst ? "start" : isLast ? "end" : "middle";
-            const textX = isFirst ? x + 2 : isLast ? x - 2 : x;
-            return (
-              <g key={`x-${tick.index}`}>
-                <line x1={x} x2={x} y1={y} y2={y + 6} stroke="var(--chart-grid)" />
-                <text x={textX} y={y + 24} textAnchor={textAnchor} fontSize={axisFontSize} fill="var(--chart-axis)">
-                  {tick.label}
-                </text>
-              </g>
-            );
-          })}
+          <TimelineAxis series={series} left={pad.l} plotWidth={innerW} y={pad.t + innerH} fontSize={axisFontSize} />
 
           {packageNames.map((pkg) => {
             const points = pointsByPkg.get(pkg) ?? [];
@@ -682,7 +661,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
         ) : null}
 
         {hovered ? (
-          <div ref={tooltipRef} className={tooltipClassName}>
+          <div ref={tooltipRef} className={tooltipClassName} data-chart-tooltip>
             <div className="flex items-center justify-between gap-2">
               <span className="font-mono text-[var(--foreground)]">{hovered.date}</span>
               <span className="text-[var(--foreground-tertiary)]">UTC</span>

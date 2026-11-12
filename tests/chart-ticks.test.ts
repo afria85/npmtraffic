@@ -20,9 +20,10 @@ test("buildMonthTicks includes year on first tick and year changes", () => {
     "2026-01-02",
     "2026-02-01",
   ];
-  const ticks = buildMonthTicks(dates, 6, "first-or-change", true);
+  const ticks = buildMonthTicks(dates, 6, "first-or-change");
   assert.equal(ticks[0]?.label, "Dec 2025");
   assert.equal(ticks[1]?.label, "Jan 2026");
+  assert.equal(ticks[2]?.label, "Feb");
 });
 
 test("365-day timeline labels reach the final month on mobile and desktop", () => {
@@ -44,4 +45,16 @@ test("365-day timeline labels reach the final month on mobile and desktop", () =
 test("short ranges preserve all distinct month labels", () => {
   const ticks = buildMonthTicks(["2025-12-31", "2026-01-01", "2026-01-31"], 3, "first-or-change", true);
   assert.deepEqual(ticks.map((tick) => tick.label), ["Dec 2025", "Jan 2026"]);
+});
+
+test("tick limits apply to valid dates and preserve both ends of the range", () => {
+  const dates = ["invalid", "2025-12-31", "2026-01-01", "2026-02-01", "invalid"];
+  for (const mode of ["month", "first-or-change"] as const) {
+    assert.deepEqual(buildMonthTicks(dates, 0, mode), []);
+    assert.deepEqual(buildMonthTicks(dates, 1, mode), [{ index: 1, label: "Dec 2025" }]);
+    assert.deepEqual(buildMonthTicks(dates, 2, mode), [
+      { index: 1, label: "Dec 2025" },
+      { index: 3, label: "Feb 2026" },
+    ]);
+  }
 });

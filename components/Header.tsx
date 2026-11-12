@@ -4,24 +4,24 @@ import Logo from "@/components/Logo";
 
 const REPO_URL = "https://github.com/afria85/npmtraffic";
 const NAV_ACTION_CLASSES =
-  "inline-flex h-8 items-center justify-center gap-2 rounded-lg px-3 text-xs font-medium text-[var(--foreground-secondary)] transition-all hover:bg-[var(--surface)] hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]";
+  "inline-flex h-8 items-center justify-center gap-2 rounded-lg px-1.5 text-xs font-medium text-[var(--foreground-secondary)] transition-all hover:bg-[var(--surface)] hover:text-[var(--foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] sm:px-3";
 
 export default function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-4 sm:gap-4 sm:px-6 lg:px-8">
         <Logo size="sm" showText={true} />
         
-        <nav className="flex items-center gap-2" aria-label="Main navigation">
+        <nav className="flex items-center gap-0.5 sm:gap-2" aria-label="Main navigation">
           <Link
             href="/compare"
-            className="inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] text-[var(--foreground-secondary)] hover:bg-[var(--surface)] hover:text-[var(--foreground)] focus-visible:ring-[var(--accent)] h-8 px-3 text-xs"
+            className={NAV_ACTION_CLASSES}
           >
             Compare
           </Link>
           <Link
             href="/about"
-            className="inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] text-[var(--foreground-secondary)] hover:bg-[var(--surface)] hover:text-[var(--foreground)] focus-visible:ring-[var(--accent)] h-8 px-3 text-xs"
+            className={NAV_ACTION_CLASSES}
           >
             About
           </Link>
