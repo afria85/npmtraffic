@@ -382,7 +382,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     const pointX = svgRect.left - containerRect.left + hoverPoint.x * scaleX;
     const pointY = svgRect.top - containerRect.top + hoverPoint.y * scaleY;
     const containerWidth = containerRect.width;
-    const containerHeight = containerRect.height;
+    const containerHeight = svgRect.height;
     const tooltipWidth = tooltipRect.width;
     const tooltipHeight = tooltipRect.height;
     const gap = 8;
@@ -411,7 +411,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     } else {
       const preferRight = pointX > containerWidth / 2;
       let fallbackLeft = preferRight ? pointX + gap : pointX - tooltipWidth - gap;
-      fallbackLeft = Math.min(Math.max(fallbackLeft, 0), containerWidth - tooltipWidth);
+      fallbackLeft = clamp(fallbackLeft, 0, Math.max(0, containerWidth - tooltipWidth));
       const oppositeLeft = preferRight ? pointX - tooltipWidth - gap : pointX + gap;
       if (
         !(fallbackLeft >= pointerRight || fallbackLeft + tooltipWidth <= pointerLeft) &&
@@ -422,7 +422,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
       }
       let fallbackTop = pointY - tooltipHeight - gap;
       if (fallbackTop < 0 || fallbackTop + tooltipHeight > containerHeight) {
-        fallbackTop = Math.min(Math.max(pointY + gap, 0), containerHeight - tooltipHeight);
+        fallbackTop = clamp(pointY + gap, 0, Math.max(0, containerHeight - tooltipHeight));
       }
       finalLeft = fallbackLeft;
       finalTop = fallbackTop;
@@ -432,7 +432,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   }, [hoverPoint, width, height, isMobile]);
 
   const tooltipClassName =
-    "absolute z-30 pointer-events-none rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
+    "absolute z-30 pointer-events-none w-max max-w-full rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
 
   const exports = useMemo(
     () => [
@@ -669,7 +669,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
             <div className="mt-2 space-y-1">
               {packageNames.map((pkg) => (
                 <div key={pkg} className="flex items-center justify-between gap-2">
-                  <span className="text-[var(--foreground-tertiary)]">{pkg}</span>
+                  <span className="min-w-0 [overflow-wrap:anywhere] text-[var(--foreground-tertiary)]">{pkg}</span>
                   <span className="font-mono">{numberFormatter.format(hovered.values[pkg]?.downloads ?? 0)}</span>
                 </div>
               ))}

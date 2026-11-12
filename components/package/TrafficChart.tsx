@@ -533,7 +533,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
     } else {
       const preferRight = pointX > containerWidth / 2;
       let fallbackLeft = preferRight ? pointX + gap : pointX - tooltipWidth - gap;
-      fallbackLeft = Math.min(Math.max(fallbackLeft, 0), containerWidth - tooltipWidth);
+      fallbackLeft = clamp(fallbackLeft, 0, Math.max(0, containerWidth - tooltipWidth));
       const oppositeLeft = preferRight ? pointX - tooltipWidth - gap : pointX + gap;
       if (
         !(fallbackLeft >= pointerRight || fallbackLeft + tooltipWidth <= pointerLeft) &&
@@ -544,7 +544,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
       }
       let fallbackTop = pointY - tooltipHeight - gap;
       if (fallbackTop < 0 || fallbackTop + tooltipHeight > containerHeight) {
-        fallbackTop = Math.min(Math.max(pointY + gap, 0), containerHeight - tooltipHeight);
+        fallbackTop = clamp(pointY + gap, 0, Math.max(0, containerHeight - tooltipHeight));
       }
       finalLeft = fallbackLeft;
       finalTop = fallbackTop;
@@ -554,7 +554,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
   }, [hoverPoint, width, height, isMobile]);
 
   const tooltipClassName =
-    "absolute z-30 pointer-events-none rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
+    "absolute z-30 pointer-events-none w-max max-w-full rounded-2xl border border-[color:var(--chart-tooltip-border)] bg-[color:var(--chart-tooltip-bg)] p-3 text-xs text-[var(--foreground)] shadow-sm shadow-black/20 backdrop-blur transition duration-150";
   const hoveredMA7 = hoverIndex == null ? null : derived?.ma7?.[hoverIndex]?.value ?? null;
   const hoveredMA3 = hoverIndex == null ? null : derived?.ma3?.[hoverIndex]?.value ?? null;
   const hoveredOutlier = hoverIndex == null ? null : derived?.outliers?.[hoverIndex] ?? null;
