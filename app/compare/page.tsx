@@ -1,6 +1,7 @@
 import DataQuality from "@/components/DataQuality";
 import SavedComparisons from "@/components/compare/SavedComparisons";
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
@@ -121,19 +122,28 @@ export default async function ComparePage({ searchParams }: Props) {
     .filter((pkg) => validatePackageName(pkg).ok)
     .slice(0, 5);
   const days = clampDays(rawDays);
-  if (pkgs.length < 2) {
+  const incomplete = pkgs.length < 2;
+  // Keep the input in the same keyed subtree across selection and result layouts.
+  const renderBuilder = (intro: ReactNode) => (
+    <div key="compare-builder" className={`flex w-full flex-col ${incomplete ? "gap-6" : "gap-3"}`}>
+      {intro}
+      <div className={incomplete ? "rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5" : undefined}>
+        <CompareAddBar packages={pkgs} days={days} className="w-full max-w-xl" />
+      </div>
+    </div>
+  );
+  if (incomplete) {
     return (
       <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-12">
-        <div className="space-y-3">
-          <BrandText />
-          <h1 className="text-3xl font-semibold tracking-tight text-[var(--foreground)]">Compare npm packages</h1>
-          <p className="text-sm text-[var(--foreground-tertiary)]">
-            Add at least two packages to compare daily downloads, deltas, and trends.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
-          <CompareAddBar packages={pkgs} days={days} className="w-full max-w-xl" />
-        </div>
+        {renderBuilder(
+          <div className="space-y-3">
+            <BrandText />
+            <h1 className="text-3xl font-semibold tracking-tight text-[var(--foreground)]">Compare npm packages</h1>
+            <p className="text-sm text-[var(--foreground-tertiary)]">
+              Add at least two packages to compare daily downloads, deltas, and trends.
+            </p>
+          </div>
+        )}
         <SavedComparisons />
       </main>
     );
@@ -259,18 +269,13 @@ export default async function ComparePage({ searchParams }: Props) {
         </div>
       </div>
 
-      <CompareAddBar
-        packages={pkgs}
-        days={days}
-        className="w-full max-w-xl"
-      />
     </div>
   );
 
   if (errorText || !data) {
     return (
       <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-6">
-        {header}
+        {renderBuilder(header)}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <p className="text-sm text-[var(--foreground)]">{errorText ?? "We couldn't load the comparison right now."}</p>
           <div className="mt-3 flex items-center gap-2">
@@ -287,7 +292,7 @@ export default async function ComparePage({ searchParams }: Props) {
     <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-6">
       <CompareUrlSync packages={pkgs} />
       <SavedComparisons packages={pkgs} days={days} />
-      {header}
+      {renderBuilder(header)}
       <DataQuality endDate={data.range.endDate} isStale={data.meta.isStale} coverage={data.coverage} shared />
       {data.meta.isStale ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">

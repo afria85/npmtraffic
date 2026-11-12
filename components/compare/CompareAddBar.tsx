@@ -128,8 +128,11 @@ export default function CompareAddBar({ packages, days, className }: Props) {
     setIsListOpen(false);
     setActiveIndex(-1);
     setMessage(null);
-    suppressOpenRef.current = true;
-    inputRef.current?.focus();
+    const input = inputRef.current;
+    if (input && document.activeElement !== input) {
+      suppressOpenRef.current = true;
+      input.focus();
+    }
     startNavigation(() => router.push(url, { scroll: false }));
   }
 
