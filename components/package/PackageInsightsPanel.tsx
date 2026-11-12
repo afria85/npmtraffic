@@ -101,7 +101,7 @@ export default function PackageInsightsPanel({ series, derived, days }: Props) {
       <div className="min-w-0 border-b border-[color:var(--border)] px-4 py-3">
         <h2 className="text-sm font-semibold text-[var(--foreground)]">Insights</h2>
         <p className="mt-1 min-w-0 break-words text-xs text-[var(--foreground-tertiary)]">
-          Normalized npm daily downloads for {days}d.
+          Based on {insights.availableDays} available observations in the {days}-day UTC range.
         </p>
       </div>
       <div className="grid divide-y divide-[color:var(--border)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
@@ -117,9 +117,9 @@ export default function PackageInsightsPanel({ series, derived, days }: Props) {
           detail={peakDetail}
         />
         <InsightCell
-          label="Consistency"
-          value={insights.activeRate === null ? "Unavailable" : insights.activeRate.toFixed(1) + "% active"}
-          detail={`${insights.activeDays}/${insights.availableDays} available days above zero. ${insights.variability.label === "none" ? "Consistency unavailable" : insights.variability.label + " traffic"}`}
+          label="Days with downloads"
+          value={insights.activeRate === null ? "Unavailable" : insights.activeRate.toFixed(1) + "%"}
+          detail={`${insights.activeDays}/${insights.availableDays} available days above zero. ${insights.variability.label === "none" ? "Variability unavailable" : "Traffic variability: " + insights.variability.label}`}
         />
         <InsightCell
           label="Outliers"

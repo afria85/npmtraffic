@@ -20,8 +20,12 @@ export default function CompareUrlSync({ packages }: { packages: string[] }) {
     const same = current.length === canonical.length && current.every((v, i) => v === canonical[i]);
     if (same) return;
 
-    saveCompareList(canonical);
-    window.dispatchEvent(new CustomEvent(COMPARE_UPDATED_EVENT));
+    try {
+      saveCompareList(canonical);
+      window.dispatchEvent(new CustomEvent(COMPARE_UPDATED_EVENT));
+    } catch {
+      // The URL remains the source of truth when browser storage is unavailable.
+    }
   }, [packages]);
 
   return null;

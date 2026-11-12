@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { config } from "@/lib/config";
@@ -45,11 +44,14 @@ import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 
 const THEME_INIT_SCRIPT = `(() => {
-  try {
     const key = "npmtraffic_theme";
-    const match = document.cookie.match(new RegExp('(?:^|; )' + key + '=([^;]+)'));
-    const cookie = match ? decodeURIComponent(match[1]) : null;
-    const saved = localStorage.getItem(key);
+    let cookie = null;
+    let saved = null;
+    try {
+      const match = document.cookie.match(new RegExp('(?:^|; )' + key + '=([^;]+)'));
+      cookie = match ? decodeURIComponent(match[1]) : null;
+    } catch {}
+    try { saved = localStorage.getItem(key); } catch {}
     const system = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
       : "light";
@@ -61,14 +63,6 @@ const THEME_INIT_SCRIPT = `(() => {
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
     document.documentElement.classList.toggle("dark", theme === "dark");
-    if (!cookie && (saved === "dark" || saved === "light")) {
-      const maxAge = 60 * 60 * 24 * 365;
-      const secure = window.location.protocol === "https:" ? "; Secure" : "";
-      document.cookie = key + "=" + encodeURIComponent(saved) + "; Path=/; Max-Age=" + maxAge + "; SameSite=Lax" + secure;
-    }
-  } catch (e) {
-    // ignore
-  }
 })();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -78,6 +72,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <head>
+        {/* Apply the theme as the document is parsed, before client bundles load. */}
+        <script id="theme-init" dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <link rel="icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
@@ -85,9 +81,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="manifest" href="/site.webmanifest" />
         <meta name="theme-color" content="#0b0f14" media="(prefers-color-scheme: dark)" />
         <meta name="theme-color" content="#f6f8fb" media="(prefers-color-scheme: light)" />
-        <Script id="theme-init" strategy="beforeInteractive">
-          {THEME_INIT_SCRIPT}
-        </Script>
       </head>
       <body className="min-h-screen antialiased" suppressHydrationWarning>
         <div

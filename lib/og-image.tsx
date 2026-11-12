@@ -1,5 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
 import type { CSSProperties, ReactNode } from "react";
+import type { buildOgComparisonStats, buildOgPackageStats } from "@/lib/og-stats";
 
 const WIDTH = 1200;
 const HEIGHT = 630;
@@ -27,8 +27,8 @@ function clampText(value: string, max = 80) {
   return v.length > max ? `${v.slice(0, Math.max(0, max - 3))}…` : v;
 }
 
-function formatNumber(n: number): string {
-  if (!Number.isFinite(n)) return "—";
+function formatNumber(n: number | null | undefined): string {
+  if (typeof n !== "number" || !Number.isFinite(n)) return "—";
   if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
@@ -51,28 +51,13 @@ function formatShortDate(isoDate: string): string {
   }
 }
 
-type PkgStats = {
-  total?: number;
-  percentChange?: number | null;
-  sparkline?: number[];
-  dateRange?: { start: string; end: string };
-};
-
-type ComparePkgStats = {
-  name: string;
-  total: number;
-  share: number; // percentage of total
-};
-
-type CompareStats = {
-  packages: ComparePkgStats[];
-  dateRange?: { start: string; end: string };
-};
+type PkgStats = ReturnType<typeof buildOgPackageStats>;
+type CompareStats = ReturnType<typeof buildOgComparisonStats>;
 
 type OgImageOptions =
-  | { mode: "home"; logoSrc?: string }
-  | { mode: "pkg"; pkg: string; days: number; stats?: PkgStats; logoSrc?: string }
-  | { mode: "compare"; pkgs: string[]; days: number; stats?: CompareStats; logoSrc?: string };
+  | { mode: "home" }
+  | { mode: "pkg"; pkg: string; days: number; stats?: PkgStats }
+  | { mode: "compare"; pkgs: string[]; days: number; stats?: CompareStats };
 
 /**
  * BrandMark - npmtraffic logo
@@ -175,31 +160,34 @@ function StatCell({
   );
 }
 
-function Sparkline({ values, w = 520, h = 90 }: { values: number[]; w?: number; h?: number }) {
-  const max = Math.max(1, ...values);
-  const min = Math.min(...values);
+function Sparkline({ values, w = 520, h = 90 }: { values: (number | null)[]; w?: number; h?: number }) {
+  const available = values.filter((value) => value !== null);
+  const max = Math.max(1, ...available);
+  const min = Math.min(...available);
   const pad = 8;
 
-  const points = values
-    .map((v, i) => {
-      const x = pad + (i * (w - pad * 2)) / Math.max(1, values.length - 1);
-      const norm = (v - min) / Math.max(1, max - min);
-      const y = pad + (1 - norm) * (h - pad * 2);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
+  const points = values.map((value, index) => {
+    if (value === null) return null;
+    const x = pad + (index * (w - pad * 2)) / Math.max(1, values.length - 1);
+    const norm = (value - min) / Math.max(1, max - min);
+    return { x: x.toFixed(1), y: (pad + (1 - norm) * (h - pad * 2)).toFixed(1) };
+  });
+  const path = points.map((point, index) => point
+    ? (points[index - 1] ? "L" : "M") + point.x + "," + point.y : "").join(" ");
 
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} xmlns="http://www.w3.org/2000/svg">
       <rect x="0" y="0" width={w} height={h} rx="16" fill="rgba(255,255,255,0.02)" stroke={BORDER} />
-      <polyline
-        points={points}
+      <path
+        d={path}
         fill="none"
         stroke={ACCENT}
         strokeWidth="3"
         strokeLinejoin="round"
         strokeLinecap="round"
       />
+      {points.map((point, index) => point && !points[index - 1] && !points[index + 1]
+        ? <circle key={index} cx={point.x} cy={point.y} r="2" fill={ACCENT} /> : null)}
     </svg>
   );
 }
@@ -213,7 +201,7 @@ function Wordmark({ size = 30 }: { size?: number }) {
   );
 }
 
-function createHeader(opts: { mode: "home" } | { mode: "pkg" | "compare"; days: number }, logoSrc?: string) {
+function createHeader(opts: { mode: "home" } | { mode: "pkg" | "compare"; days: number }) {
   const pillText =
     opts.mode === "home" ? "Open Source" : opts.mode === "compare" ? `Compare · ${opts.days}d` : `${opts.days}d`;
   return (
@@ -231,11 +219,7 @@ function createHeader(opts: { mode: "home" } | { mode: "pkg" | "compare"; days: 
             justifyContent: "center",
           }}
         >
-          {logoSrc ? (
-            <img alt="" src={logoSrc} width={40} height={40} style={{ display: "block", borderRadius: 12 }} />
-          ) : (
-            <BrandMark size={40} />
-          )}
+          <BrandMark size={40} />
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <Wordmark size={30} />
@@ -256,7 +240,7 @@ function createFooter() {
   );
 }
 
-function createHomeLayout(logoSrc?: string) {
+function createHomeLayout() {
   return (
     <div
       style={{
@@ -269,7 +253,7 @@ function createHomeLayout(logoSrc?: string) {
         justifyContent: "space-between",
       }}
     >
-      {createHeader({ mode: "home" }, logoSrc)}
+      {createHeader({ mode: "home" })}
 
       <div
         style={{
@@ -319,7 +303,7 @@ function createHomeLayout(logoSrc?: string) {
   );
 }
 
-function createPackageLayout(pkg: string, days: number, stats?: PkgStats, logoSrc?: string) {
+function createPackageLayout(pkg: string, days: number, stats?: PkgStats) {
   const safePkg = clampText(pkg || "npm package", 60);
 
   const dateLabel =
@@ -331,9 +315,9 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats, logoSr
   const pctIsValid = typeof pct === "number" && Number.isFinite(pct);
   const pctAccent = !pctIsValid ? FG : pct >= 0 ? SUCCESS : DANGER;
   const pctText = !pctIsValid ? "—" : `${pct >= 0 ? "+" : ""}${formatPct(pct)}`;
-  const pctSub = pctIsValid ? "vs previous period" : "previous period unavailable";
+  const pctSub = pctIsValid ? `latest ${stats?.trendDays}d vs prior ${stats?.trendDays}d` : "comparison unavailable";
 
-  const spark = stats?.sparkline && stats.sparkline.length >= 2 ? stats.sparkline : undefined;
+  const spark = stats?.coverage.includedDays ? stats.sparkline : undefined;
   const rangeText =
     stats?.dateRange?.start && stats?.dateRange?.end
       ? `${formatShortDate(stats.dateRange.start)} – ${formatShortDate(stats.dateRange.end)}`
@@ -349,15 +333,17 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats, logoSr
         width: "100%",
         height: "100%",
         background: BG,
-        padding: 72,
+        padding: 48,
+        paddingLeft: 64,
+        paddingRight: 64,
         justifyContent: "space-between",
       }}
     >
-      {createHeader({ mode: "pkg", days }, logoSrc)}
+      {createHeader({ mode: "pkg", days })}
 
       <div
         style={{
-          marginTop: 34,
+          marginTop: 22,
           borderRadius: 28,
           border: `1px solid ${BORDER}`,
           background: BG_CARD,
@@ -375,21 +361,27 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats, logoSr
             fontWeight: 950,
             letterSpacing: -2.2,
             lineHeight: 1.02,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
           }}
         >
           {safePkg}
         </div>
-        <div style={{ marginTop: 10, color: MUTED, fontSize: 20 }}>{dateLabel ?? `${days} day window (UTC)`}</div>
+        <div style={{ marginTop: 10, color: MUTED, fontSize: 20 }}>
+          {`${dateLabel ?? `${days} day window (UTC)`}${stats?.isStale ? " · cached" : ""}`}
+        </div>
 
         {/* 4-up stat grid (matches share-preview style) */}
         <div style={{ marginTop: 24, display: "flex", gap: 14 }}>
-          <StatCell label="Total downloads" value={formatNumber(stats?.total ?? NaN)} sub="sum over range" />
+          <StatCell label="Downloads" value={formatNumber(stats?.total)}
+            sub={stats ? `${stats.coverage.includedDays}/${stats.coverage.requestedDays} available days` : "data unavailable"} />
           <StatCell label="Vs previous period" value={pctText} sub={pctSub} accent={pctAccent} />
           <StatCell
             label="Date range"
             value={rangeText}
             sub="UTC"
-            valueStyle={{ fontSize: 32, letterSpacing: -1.1 }}
+            valueStyle={{ fontSize: 22, letterSpacing: -0.4 }}
           />
           <StatCell
             label="Trend"
@@ -407,11 +399,11 @@ function createPackageLayout(pkg: string, days: number, stats?: PkgStats, logoSr
   );
 }
 
-function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats, logoSrc?: string) {
+function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats) {
   const hasStats = stats && stats.packages.length > 0;
   const dateLabel =
     stats?.dateRange?.start && stats?.dateRange?.end
-      ? `${formatShortDate(stats.dateRange.start)} – ${formatShortDate(stats.dateRange.end)} UTC`
+      ? `${formatShortDate(stats.dateRange.start)} – ${formatShortDate(stats.dateRange.end)} UTC · ${stats.coverage.includedDays}/${stats.coverage.requestedDays} shared days${stats.isStale ? " · cached" : ""}`
       : undefined;
 
   const tabs = pkgs.slice(0, 5);
@@ -428,7 +420,7 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
         justifyContent: "space-between",
       }}
     >
-      {createHeader({ mode: "compare", days }, logoSrc)}
+      {createHeader({ mode: "compare", days })}
 
         <div
           style={{
@@ -518,7 +510,7 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
                 </div>
                 <div style={{ marginTop: 8, color: MUTED, fontSize: 16 }}>total downloads</div>
                 <div style={{ marginTop: 8, color: CHART_COLORS[i % CHART_COLORS.length], fontSize: 16, fontWeight: 800 }}>
-                  {`${pkg.share.toFixed(1)}% share`}
+                  {pkg.share === null ? "Share unavailable" : `${pkg.share.toFixed(1)}% share`}
                 </div>
               </div>
             ))}
@@ -573,10 +565,10 @@ function createCompareLayout(pkgs: string[], days: number, stats?: CompareStats,
 export async function buildOgImageResponse(options: OgImageOptions) {
   const element =
     options.mode === "home"
-      ? createHomeLayout(options.logoSrc)
+      ? createHomeLayout()
       : options.mode === "compare"
-        ? createCompareLayout(options.pkgs, options.days, options.stats, options.logoSrc)
-        : createPackageLayout(options.pkg, options.days, options.stats, options.logoSrc);
+        ? createCompareLayout(options.pkgs, options.days, options.stats)
+        : createPackageLayout(options.pkg, options.days, options.stats);
 
   const { ImageResponse } = await import("next/og");
   return new ImageResponse(element, {

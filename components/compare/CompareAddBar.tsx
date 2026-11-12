@@ -2,12 +2,13 @@
 
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useHydrated } from "@/lib/hydrated";
-import { useEffect, useCallback, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useCallback, useId, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { COMPARE_UPDATED_EVENT, saveCompareList } from "@/lib/compare-store";
+import { COMPARE_UPDATED_EVENT, MAX_COMPARE, saveCompareList } from "@/lib/compare-store";
 import { POPULAR_PACKAGES } from "@/lib/constants";
 import { addRecentSearch, loadRecentSearches, subscribeRecentSearches } from "@/lib/recent-searches";
-import { normalizePackageInput } from "@/lib/package-name";
+import { normalizePackageInput, validatePackageName } from "@/lib/package-name";
+import { canonicalizePackages } from "@/lib/query";
 
 type SearchResult = {
   name: string;
@@ -38,19 +39,6 @@ const DEBOUNCE_MS = 300;
 const EMPTY_SNAPSHOT: string[] = [];
 const getEmptySnapshot = () => EMPTY_SNAPSHOT;
 const POPULAR_LIMIT = 8;
-const MAX_COMPARE = 5;
-
-function uniqPreserveOrder(items: string[]) {
-  const out: string[] = [];
-  const seen = new Set<string>();
-  for (const item of items) {
-    const key = item.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(item);
-  }
-  return out;
-}
 
 export default function CompareAddBar({ packages, days, className }: Props) {
   const router = useRouter();
@@ -68,6 +56,9 @@ export default function CompareAddBar({ packages, days, className }: Props) {
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isListOpen, setIsListOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [isNavigating, startNavigation] = useTransition();
+  const isBusy = isValidating || isNavigating;
 
   const normalizedQuery = normalizePackageInput(query);
   const queryLower = normalizedQuery.toLowerCase();
@@ -78,7 +69,6 @@ export default function CompareAddBar({ packages, days, className }: Props) {
     const controller = new AbortController();
     const handle = window.setTimeout(async () => {
       setState("loading");
-      setMessage(null);
       try {
         const res = await fetch(`/api/v1/search?q=${encodeURIComponent(normalizedQuery)}&limit=10`, {
           signal: controller.signal,
@@ -89,6 +79,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
           setResults([]);
           return;
         }
+        if (controller.signal.aborted) return;
         setResults(payload.items ?? []);
         setState("idle");
       } catch {
@@ -104,63 +95,56 @@ export default function CompareAddBar({ packages, days, className }: Props) {
     };
   }, [normalizedQuery]);
 
-  const popularMatches = useMemo(() => {
-    const matches = POPULAR_PACKAGES.filter((pkg) => (queryLower ? pkg.toLowerCase().includes(queryLower) : true));
-    return matches.slice(0, POPULAR_LIMIT);
-  }, [queryLower]);
-
-  const recentMatches = useMemo(() => {
-    const filtered = queryLower ? recent.filter((item) => item.toLowerCase().includes(queryLower)) : recent.slice();
-    const popularSet = new Set(popularMatches.map((item) => item.toLowerCase()));
-    return filtered.filter((item) => !popularSet.has(item.toLowerCase()));
-  }, [recent, queryLower, popularMatches]);
-
-  const options = useMemo(() => {
-    const list: DisplayOption[] = [];
-    let idx = 0;
-
-    for (const name of popularMatches) {
-      list.push({
-        id: `${listId}-opt-${idx++}`,
-        kind: "popular",
-        label: name,
-        value: name,
-        helper: "Popular",
-      });
-    }
-
-    for (const name of recentMatches) {
-      list.push({
-        id: `${listId}-opt-${idx++}`,
-        kind: "recent",
-        label: name,
-        value: name,
-        helper: "Recent",
-      });
-    }
-
-    for (const item of results) {
-      list.push({
-        id: `${listId}-opt-${idx++}`,
-        kind: "result",
-        label: item.name,
-        value: item.name,
-        helper: item.description,
-      });
-    }
-
-    return list;
-  }, [listId, popularMatches, recentMatches, results]);
+  const popularMatches = POPULAR_PACKAGES.filter((pkg) => pkg.toLowerCase().includes(queryLower)).slice(0, POPULAR_LIMIT);
+  const options: DisplayOption[] = [];
+  const seen = new Set<string>();
+  const addOption = (name: string, kind: OptionKind, helper?: string) => {
+    const value = normalizePackageInput(name);
+    if (seen.has(value) || !validatePackageName(value).ok) return;
+    seen.add(value);
+    options.push({ id: listId + "-opt-" + options.length, kind, label: name, value, helper });
+  };
+  for (const name of popularMatches) addOption(name, "popular", "Popular");
+  for (const name of recent) {
+    if (name.toLowerCase().includes(queryLower)) addOption(name, "recent", "Recent");
+  }
+  for (const item of results) addOption(item.name, "result", item.description);
 
   const activeOption = activeIndex >= 0 ? options[activeIndex] : null;
   const showList = isListOpen && options.length > 0;
 
-  const navigateToCompare = (value: string) => {
-    const next = normalizePackageInput(value);
-    if (!next) return;
+  function updateComparison(next: string[]) {
+    const sorted = canonicalizePackages(next);
+    const names = sorted.map(encodeURIComponent).join(",");
+    try {
+      saveCompareList(sorted);
+      window.dispatchEvent(new CustomEvent(COMPARE_UPDATED_EVENT));
+    } catch {
+      // The URL still carries the comparison when browser storage is unavailable.
+    }
+    const url = "/compare?" + (names ? "packages=" + names + "&" : "") + "days=" + days;
+    setQuery("");
+    setResults([]);
+    setIsListOpen(false);
+    setActiveIndex(-1);
+    setMessage(null);
+    const input = inputRef.current;
+    if (input && document.activeElement !== input) {
+      suppressOpenRef.current = true;
+      input.focus();
+    }
+    startNavigation(() => router.push(url, { scroll: false }));
+  }
 
-    const lowerSet = new Set(packages.map((p) => p.toLowerCase()));
-    if (lowerSet.has(next.toLowerCase())) {
+  async function addPackage(value: string, knownPackage: boolean) {
+    if (isBusy) return;
+    const next = normalizePackageInput(value);
+    if (!validatePackageName(next).ok) {
+      setMessage("Enter a valid npm package name.");
+      return;
+    }
+
+    if (packages.includes(next)) {
       setMessage("That package is already in the comparison.");
       setIsListOpen(false);
       setActiveIndex(-1);
@@ -178,22 +162,30 @@ export default function CompareAddBar({ packages, days, className }: Props) {
       return;
     }
 
-    addRecentSearch(next);
-    
-
-    const nextPkgs = uniqPreserveOrder([...packages, next]);
-    const canonical = nextPkgs.map((p) => encodeURIComponent(p)).join(",");
-    saveCompareList(nextPkgs);
-    window.dispatchEvent(new CustomEvent(COMPARE_UPDATED_EVENT));
-    router.push(`/compare?packages=${canonical}&days=${days}`);
-    setQuery("");
-    setResults([]);
-    setIsListOpen(false);
-    setActiveIndex(-1);
-    setMessage(null);
-    suppressOpenRef.current = true;
-    window.setTimeout(() => inputRef.current?.focus(), 0);
-  };
+    if (!knownPackage) {
+      setIsValidating(true);
+      setMessage(null);
+      try {
+        const response = await fetch("/api/v1/validate/" + encodeURIComponent(next) + "/exists");
+        if (response.status === 404) {
+          setMessage("Package not found in the npm registry.");
+          return;
+        }
+        if (!response.ok) throw new Error("Package lookup failed");
+      } catch {
+        setMessage("Package lookup failed. Try again.");
+        return;
+      } finally {
+        setIsValidating(false);
+      }
+    }
+    try {
+      addRecentSearch(next);
+    } catch {
+      // Recent searches are optional when browser storage is unavailable.
+    }
+    updateComparison([...packages, next]);
+  }
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     if (event.key === "ArrowDown") {
@@ -212,11 +204,13 @@ export default function CompareAddBar({ packages, days, className }: Props) {
     }
     if (event.key === "Enter") {
       event.preventDefault();
-      navigateToCompare(activeOption?.value ?? normalizedQuery);
+      const selected = showList ? activeOption : null;
+      void addPackage(selected?.value ?? normalizedQuery, Boolean(selected && selected.kind !== "recent"));
       return;
     }
     if (event.key === "Escape") {
       setIsListOpen(false);
+      setActiveIndex(-1);
       return;
     }
   };
@@ -228,18 +222,32 @@ export default function CompareAddBar({ packages, days, className }: Props) {
     // We don't control the extension behavior, so we explicitly suppress hydration warnings
     // for this small subtree.
     <div className={className} suppressHydrationWarning>
+      {packages.length ? (
+        <ul aria-label="Packages in comparison" className="mb-2 flex flex-wrap gap-2">
+          {packages.map((name) => (
+            <li key={name} className="min-w-0 max-w-full">
+              <button type="button" aria-label={"Remove " + name} disabled={isBusy}
+                onClick={() => updateComparison(packages.filter((pkg) => pkg !== name))}
+                className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-left text-xs text-[var(--foreground)] hover:bg-[var(--surface-hover)]">
+                <span className="min-w-0 break-all">{name}</span>
+                <span aria-hidden="true">×</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <div className="relative" suppressHydrationWarning>
         <input id="compare-add" name="compare"
           ref={inputRef}
           value={query}
+          readOnly={isBusy}
           onChange={(event) => {
             const nextValue = event.target.value;
-            const normalized = normalizePackageInput(nextValue);
             setQuery(nextValue);
             setIsListOpen(true);
             setActiveIndex(-1);
             setMessage(null);
-            if (!normalized) {
+            if (normalizePackageInput(nextValue) !== normalizedQuery) {
               setResults([]);
               setState("idle");
             }
@@ -264,13 +272,15 @@ export default function CompareAddBar({ packages, days, className }: Props) {
           placeholder="Add a package to compare"
           className="h-11 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
           role="combobox"
+          aria-label="Add a package to compare"
+          aria-busy={isBusy}
           aria-expanded={showList}
           aria-controls={listId}
           aria-autocomplete="list"
-          aria-activedescendant={activeOption?.id}
+          aria-activedescendant={showList ? activeOption?.id : undefined}
         />
 
-        {state === "loading" ? (
+        {state === "loading" || isValidating ? (
           <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
             <div
               className="h-4 w-4 animate-spin rounded-lg border-2 border-[var(--border)] border-t-[var(--accent)]"
@@ -292,6 +302,8 @@ export default function CompareAddBar({ packages, days, className }: Props) {
                   type="button"
                   id={option.id}
                   role="option"
+                  tabIndex={-1}
+                  disabled={isBusy}
                   aria-selected={activeOption?.id === option.id}
                   className={
                     "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition " +
@@ -301,7 +313,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
                   }
                   onMouseEnter={() => setActiveIndex(index)}
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => navigateToCompare(option.value)}
+                  onClick={() => void addPackage(option.value, option.kind !== "recent")}
                 >
                   <span className="min-w-0 truncate">{option.label}</span>
                   {option.helper ? (
@@ -316,7 +328,7 @@ export default function CompareAddBar({ packages, days, className }: Props) {
         ) : null}
       </div>
 
-      {message ? <p className="mt-2 text-xs text-[color:var(--warning)]">{message}</p> : null}
+      <p role="status" className={message ? "mt-2 text-xs text-[color:var(--warning)]" : "sr-only"}>{message}</p>
     </div>
   );
 }

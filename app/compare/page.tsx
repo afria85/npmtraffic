@@ -1,6 +1,7 @@
 import DataQuality from "@/components/DataQuality";
 import SavedComparisons from "@/components/compare/SavedComparisons";
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
@@ -12,7 +13,6 @@ import { buildCompareCanonical } from "@/lib/canonical";
 import RangeSelector from "@/components/RangeSelector";
 import ExportDropdown from "@/components/ExportDropdown";
 import ShareMenu from "@/components/ShareMenu";
-import SearchBox from "@/components/SearchBox";
 import BrandText from "@/components/BrandText";
 import CompareChart from "@/components/compare/CompareChartClient";
 import CompareAddBar from "@/components/compare/CompareAddBar";
@@ -61,7 +61,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     };
   }
 
-  const canonical = buildCompareCanonical(baseUrl, pkgs, days);
+  const canonical = buildCompareCanonical(baseUrl, pkgs);
   const title = `Compare npm downloads (${days} days)`;
   const socialTitle = `${title} | npmtraffic`;
   const description = `Compare npm download history for ${pkgs.join(", ")}.`;
@@ -78,7 +78,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       siteName: "npmtraffic",
       title: socialTitle,
       description,
-      url: canonical,
+      url: `${canonical}&days=${days}`,
       images: [
         {
           url: ogImage,
@@ -122,27 +122,29 @@ export default async function ComparePage({ searchParams }: Props) {
     .filter((pkg) => validatePackageName(pkg).ok)
     .slice(0, 5);
   const days = clampDays(rawDays);
-  if (pkgs.length < 2) {
+  const incomplete = pkgs.length < 2;
+  // Keep the input in the same keyed subtree across selection and result layouts.
+  const renderBuilder = (intro: ReactNode) => (
+    <div key="compare-builder" className={`flex w-full flex-col ${incomplete ? "gap-6" : "gap-3"}`}>
+      {intro}
+      <div className={incomplete ? "rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5" : undefined}>
+        <CompareAddBar packages={pkgs} days={days} className="w-full max-w-xl" />
+      </div>
+    </div>
+  );
+  if (incomplete) {
     return (
       <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-12">
-        <div className="space-y-3">
-          <BrandText />
-          <h1 className="text-3xl font-semibold tracking-tight text-[var(--foreground)]">Compare npm packages</h1>
-          <p className="text-sm text-[var(--foreground-tertiary)]">
-            Add at least two packages to compare daily downloads, deltas, and trends.
-          </p>
-        </div>
-        <SavedComparisons />
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
-          <p className="text-xs uppercase tracking-[0.3em] text-[var(--foreground-tertiary)]">Start here</p>
-          <p className="mt-2 text-sm text-[var(--foreground-tertiary)]">
-            Search for a package, open it, then use <span className="font-semibold text-[var(--foreground)]">Add to compare</span>.
-            When you have two or more, this page will show the overlay chart and the table.
-          </p>
-          <div className="mt-4">
-            <SearchBox className="w-full max-w-xl" />
+        {renderBuilder(
+          <div className="space-y-3">
+            <BrandText />
+            <h1 className="text-3xl font-semibold tracking-tight text-[var(--foreground)]">Compare npm packages</h1>
+            <p className="text-sm text-[var(--foreground-tertiary)]">
+              Add at least two packages to compare daily downloads, deltas, and trends.
+            </p>
           </div>
-        </div>
+        )}
+        <SavedComparisons />
       </main>
     );
   }
@@ -158,7 +160,7 @@ export default async function ComparePage({ searchParams }: Props) {
   }
 
   const baseUrl = await getBaseUrl();
-  const canonical = buildCompareCanonical(baseUrl, pkgs, days);
+  const shareUrl = `${buildCompareCanonical(baseUrl, pkgs)}&days=${days}`;
   const rangeSelector = (
     <RangeSelector
       currentDays={days}
@@ -263,22 +265,17 @@ export default async function ComparePage({ searchParams }: Props) {
         <div className="min-w-0">{rangeSelector}</div>
         <div className={`${COMPARE_ACTION_CONTAINER_CLASSES} flex-shrink-0 self-start sm:self-end`}>
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
-          <ShareMenu url={canonical} title={`npmtraffic compare (${days} days)`} iconOnlyOnMobile />
+          <ShareMenu url={shareUrl} title={`npmtraffic compare (${days} days)`} iconOnlyOnMobile />
         </div>
       </div>
 
-      <CompareAddBar
-        packages={pkgs}
-        days={days}
-        className="w-full max-w-xl"
-      />
     </div>
   );
 
   if (errorText || !data) {
     return (
       <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-6">
-        {header}
+        {renderBuilder(header)}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <p className="text-sm text-[var(--foreground)]">{errorText ?? "We couldn't load the comparison right now."}</p>
           <div className="mt-3 flex items-center gap-2">
@@ -295,10 +292,10 @@ export default async function ComparePage({ searchParams }: Props) {
     <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-6">
       <CompareUrlSync packages={pkgs} />
       <SavedComparisons packages={pkgs} days={days} />
-      {header}
+      {renderBuilder(header)}
       <DataQuality endDate={data.range.endDate} isStale={data.meta.isStale} coverage={data.coverage} shared />
       {data.meta.isStale ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
           <span>Showing cached data (upstream error).</span>
           <RetryButton className="h-8 px-3 text-xs" label="Retry" />
         </div>

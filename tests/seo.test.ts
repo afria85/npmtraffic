@@ -15,5 +15,5 @@ test('robots and sitemap agree on canonical origin without preview hostname', (t
  process.env.VERCEL_URL='preview.vercel.app';
  const result=robots();
  assert.ok(!String(result.sitemap).includes('preview.vercel.app'));
- assert.equal(buildPackageCanonical('https://npmtraffic.com','@scope/name',30),'https://npmtraffic.com/p/%40scope%2Fname?days=30');
+ assert.equal(buildPackageCanonical('https://npmtraffic.com','@scope/name'),'https://npmtraffic.com/p/%40scope%2Fname');
 });
