@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
 import { clampDays } from "@/lib/query";
-import { buildPackageCanonical } from "@/lib/canonical";
+import { buildPackageCanonical, buildPackageShareUrl } from "@/lib/canonical";
 import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
 import DerivedSeriesTable from "@/components/package/DerivedSeriesTable";
 import PackageHeader from "@/components/package/PackageHeader";
@@ -84,7 +84,7 @@ export async function generateMetadata({
     };
   }
   const days = clampDays(sp.days);
-  const canonical = buildPackageCanonical(baseUrl, name, days);
+  const canonical = buildPackageCanonical(baseUrl, name);
   const title = `${name} npm downloads (${days} days)`;
   const socialTitle = `${title} | npmtraffic`;
   const description = `Daily npm download history for ${name} in a GitHub-style table`;
@@ -105,7 +105,7 @@ export async function generateMetadata({
       siteName: "npmtraffic",
       title: socialTitle,
       description,
-      url: canonical,
+      url: buildPackageShareUrl(baseUrl, name, days),
       images: [
         {
           url: ogImage,
@@ -166,7 +166,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
   }
 
   const baseUrl = await getBaseUrl();
-  const canonical = buildPackageCanonical(baseUrl, name, days);
+  const shareUrl = buildPackageShareUrl(baseUrl, name, days);
 
   let data: TrafficResponse | null = null;
   let errorText: string | null = null;
@@ -269,7 +269,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
         <div className="flex flex-shrink-0 items-center justify-start gap-2 sm:justify-end">
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
           <ShareMenu
-            url={canonical}
+            url={shareUrl}
             title={`${name} npm downloads (${days} days) | npmtraffic`}
             iconOnlyOnMobile
           />

@@ -2,7 +2,8 @@ import { readFile } from "node:fs/promises";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const widths = [320, 375, 390, 768, 1440];
-const periods = [7, 30, 90, 365];
+const periods = [7, 14, 30, 90, 180, 365];
+const themes = ["light", "dark"] as const;
 const routes = [
   { name: "package", href: (days: number) => `/p/react?days=${days}` },
   { name: "comparison", href: (days: number) => `/compare?packages=react,vue&days=${days}` },
@@ -111,18 +112,20 @@ async function assertExports(page: Page, chart: Locator, section: Locator, label
   }
 }
 
-for (const width of widths) {
-  test(`package and comparison charts at ${width}px`, async ({ page }, testInfo) => {
+for (const { width, theme } of widths.flatMap((width) => themes.map((theme) => ({ width, theme })))) {
+  test(`package and comparison charts at ${width}px in ${theme} theme`, async ({ page }, testInfo) => {
     test.setTimeout(90_000);
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ colorScheme: theme });
 
     for (const route of routes) {
       for (const days of periods) {
         await test.step(`${route.name} ${days} days`, async () => {
           const response = await page.goto(route.href(days));
           expect(response?.status()).toBe(200);
+          await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
           const chart = page.getByRole("img", { name: new RegExp(`daily downloads line chart \\(${days} days\\)`, "i") });
           const section = chart.locator("xpath=ancestor::section[1]");
           await expect(chart).toBeVisible();

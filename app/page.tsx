@@ -211,7 +211,7 @@ export default async function Home() {
               </p>
               <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-[var(--background)] p-3">
                 <div className="h-2 w-2 rounded-full bg-[var(--accent)]" />
-                <span className="min-w-0 break-all font-mono text-xs text-[var(--foreground)]">2025-01-20: v19.0.0 release</span>
+                <span className="min-w-0 break-words font-mono text-xs text-[var(--foreground)]">2024-12-05 · React v19.0.0 release</span>
                 <span className="text-xs text-[var(--foreground-tertiary)] sm:ml-auto">local marker</span>
               </div>
             </div>

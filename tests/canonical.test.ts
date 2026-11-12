@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildPackageCanonical, buildCompareCanonical } from "../lib/canonical";
+import { buildPackageCanonical, buildPackageShareUrl, buildCompareCanonical } from "../lib/canonical";
 
-test("buildPackageCanonical encodes name and days", () => {
-  const url = buildPackageCanonical("https://npmtraffic.com", "react", 14);
-  assert.equal(url, "https://npmtraffic.com/p/react?days=14");
+test("package canonical identifies the package and its share URL retains the range", () => {
+  assert.equal(buildPackageCanonical("https://npmtraffic.com", "@scope/name"), "https://npmtraffic.com/p/%40scope%2Fname");
+  assert.equal(buildPackageShareUrl("https://npmtraffic.com", "react", 14), "https://npmtraffic.com/p/react?days=14");
 });
 
-test("buildCompareCanonical sorts and encodes packages", () => {
-  const canonical = buildCompareCanonical("https://npmtraffic.com", ["react", "vue"], 30);
-  assert.equal(canonical, "https://npmtraffic.com/compare?packages=react,vue&days=30");
+test("comparison canonical identifies the normalized package set and collapses incomplete selections", () => {
+  const canonical = buildCompareCanonical("https://npmtraffic.com", ["vue", "React", "@scope/name", "react"]);
+  assert.equal(canonical, "https://npmtraffic.com/compare?packages=%40scope%2Fname,react,vue");
+  assert.equal(buildCompareCanonical("https://npmtraffic.com", ["react"]), "https://npmtraffic.com/compare");
 });

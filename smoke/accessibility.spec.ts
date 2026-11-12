@@ -27,6 +27,31 @@ test('keyboard focus is visible in the document',async ({page})=>{
  expect(focused).not.toBe('BODY');
 });
 
+test("the saved theme is applied while parsing the page, before Next.js bundles load", async ({ page, baseURL }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.context().addCookies([{ name: "npmtraffic_theme", value: "light", url: baseURL! }]);
+  await page.route("**/_next/static/**", (route) =>
+    route.request().resourceType() === "script" ? route.abort() : route.continue());
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  const results = await new AxeBuilder({ page }).withRules(["color-contrast"]).analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test("motion effects respect the reduced-motion preference", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  const style = await page.evaluate(() => {
+    const element = document.createElement("div");
+    element.className = "animate-spin hover-lift";
+    document.body.append(element);
+    const css = getComputedStyle(element);
+    return { animation: css.animationName, transition: css.transitionProperty };
+  });
+  expect(style).toEqual({ animation: "none", transition: "none" });
+});
+
 test('mobile search traps focus, has a name and restores focus on Escape',async ({page})=>{
  await page.setViewportSize({width:390,height:844});
  await page.goto('/p/react?days=7');

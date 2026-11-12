@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --sab: env(safe-area-inset-bottom, 0px);
@@ -287,6 +288,21 @@ details summary::marker { display: none; }
 
 .hover-lift:hover {
   transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-in,
+  .animate-pulse,
+  .animate-spin {
+    animation: none;
+  }
+
+  .hover-lift,
+  .hover-lift:hover {
+    transition: none;
+    transform: none;
+  }
 }
 
 /* Legacy slate text utilities */

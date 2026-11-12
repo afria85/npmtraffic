@@ -10,16 +10,24 @@ type Theme = "dark" | "light";
 
 function readPersistedTheme(): Theme | null {
   if (typeof window === "undefined") return null;
-  const saved = window.localStorage.getItem(STORAGE_KEY);
-  return saved === "dark" || saved === "light" ? saved : null;
+  try {
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    return saved === "dark" || saved === "light" ? saved : null;
+  } catch {
+    return null;
+  }
 }
 
 function readCookieTheme(): Theme | null {
   if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]+)`));
-  if (!match) return null;
-  const value = decodeURIComponent(match[1]);
-  return value === "dark" || value === "light" ? value : null;
+  try {
+    const match = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]+)`));
+    if (!match) return null;
+    const value = decodeURIComponent(match[1]);
+    return value === "dark" || value === "light" ? value : null;
+  } catch {
+    return null;
+  }
 }
 
 function getSystemTheme(): Theme {
