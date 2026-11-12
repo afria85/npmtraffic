@@ -1,4 +1,5 @@
 import { getHealthSnapshot } from "@/lib/health";
+import { getRateLimitStatus } from "@/lib/rate-limit";
 
 export type StatusBuildInfo = {
   commit: string;
@@ -9,6 +10,7 @@ export type StatusOverview = {
   build: StatusBuildInfo;
   health: ReturnType<typeof getHealthSnapshot>;
   hasHealth: boolean;
+  rateLimit: ReturnType<typeof getRateLimitStatus>;
 };
 
 export function getStatusOverview(): StatusOverview {
@@ -29,5 +31,6 @@ export function getStatusOverview(): StatusOverview {
     build: { commit, environment },
     health,
     hasHealth,
+    rateLimit: getRateLimitStatus(),
   };
 }

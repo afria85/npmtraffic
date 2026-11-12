@@ -4,6 +4,7 @@ import { fetchTraffic, trafficCacheKey, TrafficError } from '../lib/traffic';
 import { rangeForDays } from '../lib/query';
 import { registryFixture } from './support/npm-observations';
 import { cacheClear, cacheSetWithStale } from '../lib/cache';
+import { getHealthSnapshot, resetHealthSnapshot } from '../lib/health';
 
 const range = rangeForDays(7);
 const complete = () => Array.from({length: 7}, (_, i) => ({
@@ -35,6 +36,15 @@ for (const status of [401,403,429,500,503]) {
   await assert.rejects(fetchTraffic('react',7), (e) => e instanceof TrafficError && e.status === 502);
  });
 }
+test("malformed npm JSON stays unavailable and its body is absent from the status snapshot", async (t) => {
+  const payload = "fixture-confidential-diagnostic";
+  t.mock.method(globalThis, "fetch", async (input: string) => registryFixture(input) ?? new Response(payload));
+  t.after(() => { cacheClear(); resetHealthSnapshot(); });
+  await assert.rejects(fetchTraffic("react", 7), (error) =>
+    error instanceof TrafficError && error.status === 502 && error.upstreamStatus === undefined);
+  assert.equal(getHealthSnapshot().lastErrorCode, "UNKNOWN");
+  assert.equal(JSON.stringify(getHealthSnapshot()).includes(payload), false);
+});
 for (const exists of [true,false]) {
  test(`downloads 404 with registry existence ${exists}`, async (t) => {
   const original = globalThis.fetch;

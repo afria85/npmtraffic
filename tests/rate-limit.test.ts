@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { getClientIp, rateLimit } from "../lib/rate-limit";
+import { getClientIp, getRateLimitStatus, rateLimit } from "../lib/rate-limit";
 
 function buildRequest(headers: Record<string, string>) {
   return new Request("https://example.com", { headers: new Headers(headers) });
@@ -67,7 +67,39 @@ test("rate limit shares anonymous bucket when trusted IP is missing", async (t) 
   assert.equal(second.allowed, false);
 });
 
-for (const outcome of ['http', 'error', 'malformed', 'network']) {
+test("limiter status distinguishes local fallback, incomplete configuration and shared decisions", async (t) => {
+  const originalUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const originalToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  t.after(() => {
+    if (originalUrl === undefined) delete process.env.UPSTASH_REDIS_REST_URL;
+    else process.env.UPSTASH_REDIS_REST_URL = originalUrl;
+    if (originalToken === undefined) delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    else process.env.UPSTASH_REDIS_REST_TOKEN = originalToken;
+  });
+  delete process.env.UPSTASH_REDIS_REST_URL;
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  assert.equal(getRateLimitStatus().configuration, "disabled");
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.invalid";
+  assert.equal(getRateLimitStatus().configuration, "incomplete");
+  assert.equal((await rateLimit(buildRequest({}), "incomplete-fixture", 1)).allowed, true);
+  assert.equal((await rateLimit(buildRequest({}), "incomplete-fixture", 1)).allowed, false);
+
+  process.env.UPSTASH_REDIS_REST_TOKEN = "fixture";
+  assert.equal(getRateLimitStatus().configuration, "configured");
+  assert.equal(getRateLimitStatus().lastSharedObservation, undefined);
+  let decision = 1;
+  t.mock.method(globalThis, "fetch", async (_url: string, init: RequestInit) => {
+    const command = JSON.parse(String(init.body));
+    assert.equal(init.redirect, "error");
+    return Response.json({ result: [decision, 1, String(command[5])] });
+  });
+  assert.equal((await rateLimit(buildRequest({}), "shared-fixture", 1)).allowed, true);
+  decision = 0;
+  assert.equal((await rateLimit(buildRequest({}), "shared-fixture", 1)).retryAfter, 60);
+  assert.equal(getRateLimitStatus().lastSharedObservation?.result, "responded");
+});
+
+for (const outcome of ['http', 'error', 'malformed', 'coerced-null', 'network']) {
   test(`configured Redis fails closed on ${outcome}`, async (t) => {
     const original = globalThis.fetch;
     const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -83,9 +115,11 @@ for (const outcome of ['http', 'error', 'malformed', 'network']) {
       assert.ok(init?.signal);
       assert.equal(JSON.parse(String(init?.body))[0], 'EVAL');
       if (outcome === 'network') throw new Error('offline');
+      if (outcome === 'coerced-null') return Response.json({result: [1, null, null]});
       return Response.json(outcome === 'error' ? {error:'ERR'} : {result: []}, {status: outcome === 'http' ? 500 : 200});
     };
     assert.equal((await rateLimit(buildRequest({}), `redis-${outcome}`)).allowed, false);
+    assert.equal(getRateLimitStatus().lastSharedObservation?.result, "degraded");
   });
 }
 

@@ -49,7 +49,13 @@ export async function fetchDailyDownloadsRange(
     }
     throw new UpstreamError(res.status, "npm downloads unavailable");
   }
-  const data: unknown = await res.json();
+  let data: unknown;
+  try {
+    data = await res.json();
+  } catch {
+    signal.throwIfAborted();
+    throw new Error("Invalid npm JSON response");
+  }
   if (!data || typeof data !== "object") throw new UpstreamError(502, "Invalid npm response");
   const value = data as NpmRangeResponse;
   if (value.package !== (pkg ?? undefined) || value.start !== range.start || value.end !== range.end ||

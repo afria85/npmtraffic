@@ -10,6 +10,20 @@ type RateLimitResult = {
 };
 
 const memoryStore = new Map<string, number[]>();
+type SharedObservation = { result: "responded" | "degraded"; observedAt: string };
+let lastSharedObservation: SharedObservation | undefined;
+
+export function getRateLimitStatus() {
+  const hasUrl = Boolean(process.env.UPSTASH_REDIS_REST_URL);
+  const hasToken = Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
+  if (hasUrl && hasToken) {
+    return { configuration: "configured" as const, lastSharedObservation };
+  }
+  return {
+    configuration: hasUrl || hasToken ? "incomplete" as const : "disabled" as const,
+    lastSharedObservation: undefined,
+  };
+}
 
 function hashKey(value: string) {
   return crypto.createHash("sha256").update(value).digest("hex").slice(0, 16);
@@ -61,16 +75,12 @@ async function memoryRateLimit(
 }
 
 async function upstashRateLimit(
+  url: string,
+  token: string,
   key: string,
   limit: number,
   windowMs: number
 ): Promise<RateLimitResult> {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) {
-    return memoryRateLimit(key, limit, windowMs);
-  }
-
   const now = Date.now();
   const member = crypto.randomUUID();
   const windowStart = now - windowMs;
@@ -94,6 +104,8 @@ async function upstashRateLimit(
   try {
     const res = await fetch(url, {
       method: "POST",
+      cache: "no-store",
+      redirect: "error",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -107,13 +119,18 @@ async function upstashRateLimit(
     if (data.error || !Array.isArray(result) || result.length !== 3) {
       throw new Error("Invalid rate limiter response");
     }
-    const [decision, count, oldestScore] = result.map(Number);
-    if (![0, 1].includes(decision) || !Number.isSafeInteger(count) || count < 0 ||
-        !Number.isFinite(oldestScore) || oldestScore > now) {
+    const [decision, count, oldest] = result;
+    // Redis returns the score from ZRANGE as a decimal string.
+    const oldestScore = typeof oldest === "string" && /^\d+$/.test(oldest) ? Number(oldest) : oldest;
+    if ((decision !== 0 && decision !== 1) || typeof count !== "number" ||
+        !Number.isSafeInteger(count) || (decision === 1 ? count < 1 || count > limit : count < limit) ||
+        typeof oldestScore !== "number" || !Number.isSafeInteger(oldestScore) ||
+        oldestScore <= windowStart || oldestScore > now) {
       throw new Error("Invalid rate limiter counters");
     }
     const allowed = decision === 1;
     const retryAfter = allowed ? 0 : Math.ceil((windowMs - (now - oldestScore)) / 1000);
+    lastSharedObservation = { result: "responded", observedAt: new Date().toISOString() };
 
     return {
       allowed,
@@ -125,6 +142,7 @@ async function upstashRateLimit(
   } catch {
     // A configured shared limiter that fails must not silently grant a fresh
     // per-instance allowance. Fail closed for the current request.
+    lastSharedObservation = { result: "degraded", observedAt: new Date().toISOString() };
     return { allowed: false, limit, remaining: 0, retryAfter: 3, key };
   }
 }
@@ -133,8 +151,8 @@ export async function rateLimit(req: Request, route: string, limit = 60, windowM
   const ip = getClientIp(req);
   const fingerprint = ip ? `ip:${ip}` : "anonymous";
   const key = `ratelimit:${route}:${hashKey(fingerprint)}`;
-  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    return upstashRateLimit(key, limit, windowMs);
-  }
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (url && token) return upstashRateLimit(url, token, key, limit, windowMs);
   return memoryRateLimit(key, limit, windowMs);
 }
