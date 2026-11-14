@@ -25,3 +25,13 @@ test("cached and stale results keep the actual last successful snapshot time", a
   assert.match(html, /UPSTREAM_429/);
   assert.match(html, /served stale/);
 });
+
+test("partial Redis configuration is reported as denied rather than local or operational", async (t) => {
+  const env = { ...process.env };
+  t.after(() => { process.env = env; });
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.invalid";
+  const html = ReactDOMServer.renderToStaticMarkup(await StatusPage());
+  assert.match(html, /configuration is incomplete\. Requests requiring a rate-limit allowance are denied/);
+  assert.doesNotMatch(html, /API limits are instance-local|Shared rate limiting is configured|redis\.invalid/);
+});

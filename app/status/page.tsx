@@ -142,7 +142,7 @@ export default async function StatusPage() {
             </>
           ) : (
             <p>{rateLimit.configuration === "incomplete"
-              ? "Shared rate limiting configuration is incomplete. API limits are instance-local."
+              ? "Shared rate limiting configuration is incomplete. Requests requiring a rate-limit allowance are denied. Cached package responses and fallback images may still be served."
               : "Shared rate limiting is disabled. API limits are instance-local."}</p>
           )}
         </StatusPanel>

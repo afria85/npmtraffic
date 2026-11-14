@@ -7,22 +7,23 @@ type RateLimitResult = {
   remaining: number;
   retryAfter: number;
   key: string;
+  redisFailure?: true;
 };
 
 const memoryStore = new Map<string, number[]>();
 type SharedObservation = { result: "responded" | "degraded"; observedAt: string };
 let lastSharedObservation: SharedObservation | undefined;
 
+function redisConfiguration() {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (url?.trim() && token?.trim()) return { configuration: "configured" as const, url, token };
+  return { configuration: url === undefined && token === undefined ? "disabled" as const : "incomplete" as const };
+}
+
 export function getRateLimitStatus() {
-  const hasUrl = Boolean(process.env.UPSTASH_REDIS_REST_URL);
-  const hasToken = Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
-  if (hasUrl && hasToken) {
-    return { configuration: "configured" as const, lastSharedObservation };
-  }
-  return {
-    configuration: hasUrl || hasToken ? "incomplete" as const : "disabled" as const,
-    lastSharedObservation: undefined,
-  };
+  const { configuration } = redisConfiguration();
+  return { configuration, lastSharedObservation: configuration === "configured" ? lastSharedObservation : undefined };
 }
 
 function hashKey(value: string) {
@@ -81,28 +82,33 @@ async function upstashRateLimit(
   limit: number,
   windowMs: number
 ): Promise<RateLimitResult> {
-  const now = Date.now();
   const member = crypto.randomUUID();
-  const windowStart = now - windowMs;
 
   // Redis executes the sliding-window decision and insertion atomically.
   // Blocked requests do not grow the sorted set or extend its lifetime.
   const script = `
-    redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1])
+    local time = redis.call('TIME')
+    local now = tonumber(time[1]) * 1000 + math.floor(tonumber(time[2]) / 1000)
+    local window = tonumber(ARGV[3])
+    redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', now - window)
     local count = redis.call('ZCARD', KEYS[1])
     local allowed = 0
-    if count < tonumber(ARGV[3]) then
-      redis.call('ZADD', KEYS[1], ARGV[2], ARGV[4])
-      redis.call('PEXPIRE', KEYS[1], ARGV[5])
+    if count < tonumber(ARGV[1]) then
+      redis.call('ZADD', KEYS[1], now, ARGV[2])
+      redis.call('PEXPIRE', KEYS[1], window)
       count = count + 1
       allowed = 1
     end
     local oldest = redis.call('ZRANGE', KEYS[1], 0, 0, 'WITHSCORES')
-    return {allowed, count, oldest[2] or ARGV[2]}
+    return {allowed, count, oldest[2], now}
   `;
 
   try {
-    const res = await fetch(url, {
+    const endpoint = new URL(url);
+    if (endpoint.protocol !== "https:" || endpoint.username || endpoint.password) {
+      throw new Error("Unsafe rate limiter endpoint");
+    }
+    const res = await fetch(endpoint.href, {
       method: "POST",
       cache: "no-store",
       redirect: "error",
@@ -111,21 +117,22 @@ async function upstashRateLimit(
         "Content-Type": "application/json",
       },
       signal: AbortSignal.timeout(3000),
-      body: JSON.stringify(["EVAL", script, 1, key, windowStart, now, limit, member, windowMs]),
+      body: JSON.stringify(["EVAL", script, 1, key, limit, member, windowMs]),
     });
     if (!res.ok) throw new Error("Rate limiter HTTP failure");
     const data = await res.json() as { result?: unknown; error?: string };
     const result = data.result;
-    if (data.error || !Array.isArray(result) || result.length !== 3) {
+    if (data.error || !Array.isArray(result) || result.length !== 4) {
       throw new Error("Invalid rate limiter response");
     }
-    const [decision, count, oldest] = result;
+    const [decision, count, oldest, now] = result;
     // Redis returns the score from ZRANGE as a decimal string.
     const oldestScore = typeof oldest === "string" && /^\d+$/.test(oldest) ? Number(oldest) : oldest;
     if ((decision !== 0 && decision !== 1) || typeof count !== "number" ||
         !Number.isSafeInteger(count) || (decision === 1 ? count < 1 || count > limit : count < limit) ||
         typeof oldestScore !== "number" || !Number.isSafeInteger(oldestScore) ||
-        oldestScore <= windowStart || oldestScore > now) {
+        typeof now !== "number" || !Number.isSafeInteger(now) || now <= 0 ||
+        oldestScore <= 0 || oldestScore <= now - windowMs || oldestScore > now) {
       throw new Error("Invalid rate limiter counters");
     }
     const allowed = decision === 1;
@@ -143,7 +150,7 @@ async function upstashRateLimit(
     // A configured shared limiter that fails must not silently grant a fresh
     // per-instance allowance. Fail closed for the current request.
     lastSharedObservation = { result: "degraded", observedAt: new Date().toISOString() };
-    return { allowed: false, limit, remaining: 0, retryAfter: 3, key };
+    return { allowed: false, limit, remaining: 0, retryAfter: 3, key, redisFailure: true };
   }
 }
 
@@ -151,8 +158,12 @@ export async function rateLimit(req: Request, route: string, limit = 60, windowM
   const ip = getClientIp(req);
   const fingerprint = ip ? `ip:${ip}` : "anonymous";
   const key = `ratelimit:${route}:${hashKey(fingerprint)}`;
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (url && token) return upstashRateLimit(url, token, key, limit, windowMs);
+  const redis = redisConfiguration();
+  if (redis.configuration === "configured") {
+    return upstashRateLimit(redis.url, redis.token, key, limit, windowMs);
+  }
+  if (redis.configuration === "incomplete") {
+    return { allowed: false, limit, remaining: 0, retryAfter: 3, key };
+  }
   return memoryRateLimit(key, limit, windowMs);
 }

@@ -1,6 +1,7 @@
 import { registryFixture } from "./support/npm-observations";
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { GET as getOg } from "../app/api/og/route";
 import { GET as getDaily } from "../app/api/v1/package/[name]/daily/route";
 import { GET as getDailyCsv } from "../app/api/v1/package/[name]/daily.csv/route";
 import { GET as getDailyExcelCsv } from "../app/api/v1/package/[name]/daily.excel.csv/route";
@@ -619,4 +620,99 @@ test("compare Excel CSV export requires packages", async () => {
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("a denied package request preserves cached observations and the cold 429 contract", async (t) => {
+  const env = { ...process.env };
+  t.after(() => { process.env = env; });
+  delete process.env.UPSTASH_REDIS_REST_URL;
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  const warmName = "partial-redis-cache-fixture";
+  const range = rangeForDays(7);
+  const fetchMock = t.mock.method(globalThis, "fetch", async (input: string | URL | Request) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
+    const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+    if (url.hostname === "api.npmjs.org" && url.pathname.endsWith("/" + warmName)) {
+      return Response.json({
+        start: range.startDate, end: range.endDate, package: warmName,
+        downloads: [{ day: range.startDate, downloads: 0 }],
+      });
+    }
+    throw new Error("Unexpected upstream request");
+  });
+  const route = (name: string) => getDaily(
+    new Request("http://localhost/api/v1/package/" + name + "/daily?days=7"),
+    { params: Promise.resolve({ name }) },
+  );
+  const seed = await route(warmName);
+  assert.equal(seed.status, 200);
+  const cached = await seed.json();
+  assert.equal(cached.series[0].downloads, 0);
+  assert.equal(cached.series[1].downloads, null);
+  const upstreamCalls = fetchMock.mock.callCount();
+
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.invalid";
+  for (const config of ["url-only", "token-only", "shared-fault"]) {
+    if (config === "token-only") {
+      delete process.env.UPSTASH_REDIS_REST_URL;
+      process.env.UPSTASH_REDIS_REST_TOKEN = "fixture";
+    }
+    if (config === "shared-fault") process.env.UPSTASH_REDIS_REST_URL = "https://redis.invalid";
+
+    const warm = await route(warmName);
+    assert.equal(warm.status, 200);
+    assert.equal(warm.headers.get("retry-after"), "3");
+    assert.equal(warm.headers.get("cache-control"), "no-store");
+    assert.deepEqual((await warm.json()).series, cached.series);
+
+    const cold = await route("partial-redis-cold-fixture");
+    assert.equal(cold.status, 429);
+    assert.equal(cold.headers.get("retry-after"), "3");
+    assert.deepEqual(await cold.json(), {
+      error: { code: "RATE_LIMITED", message: "Please retry shortly." }, retryAfter: 3,
+    });
+    assert.equal(fetchMock.mock.callCount(), upstreamCalls + (config === "shared-fault" ? 2 : 0));
+  }
+});
+
+test("Open Graph keeps a noncacheable PNG fallback on partial Redis configuration and outage", async (t) => {
+  const originalUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const originalToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  t.after(() => {
+    if (originalUrl === undefined) delete process.env.UPSTASH_REDIS_REST_URL;
+    else process.env.UPSTASH_REDIS_REST_URL = originalUrl;
+    if (originalToken === undefined) delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    else process.env.UPSTASH_REDIS_REST_TOKEN = originalToken;
+  });
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.invalid";
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  const hosts: string[] = [];
+  const originalFetch = globalThis.fetch;
+  t.mock.method(globalThis, "fetch", async (input: string | URL | Request) => {
+    const url = new URL(input instanceof Request ? input.url : input);
+    if (url.protocol === "data:") return originalFetch(input);
+    hosts.push(url.hostname);
+    throw new Error("Fixture upstream outage");
+  });
+
+  for (const mode of ["pkg&pkg=react", "compare&pkgs=react,vue"]) {
+    const req = new Request("http://localhost/api/og?days=365&mode=" + mode);
+    const partial = await getOg(req);
+    assert.equal(partial.status, 200);
+    assert.match(partial.headers.get("content-type") ?? "", /^image\/png/i);
+    assert.equal(partial.headers.get("cache-control"), "no-store");
+    const partialPng = Buffer.from(await partial.arrayBuffer());
+    assert.equal(partialPng.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+    assert.equal(Number(partial.headers.get("content-length")), partialPng.length);
+
+    process.env.UPSTASH_REDIS_REST_TOKEN = "fixture";
+    const outage = await getOg(req);
+    assert.equal(outage.status, 200);
+    assert.equal(outage.headers.get("cache-control"), "no-store");
+    assert.deepEqual(Buffer.from(await outage.arrayBuffer()), partialPng);
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  }
+  assert.deepEqual(hosts, ["redis.invalid", "redis.invalid"]);
 });
