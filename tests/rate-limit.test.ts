@@ -87,6 +87,19 @@ test("limiter status distinguishes local fallback, incomplete configuration and 
   delete process.env.UPSTASH_REDIS_REST_URL;
   delete process.env.UPSTASH_REDIS_REST_TOKEN;
 
+  for (const [emptyUrl, emptyToken] of [["", undefined], [undefined, ""], ["", ""], [url, "  "], ["  ", token]]) {
+    if (emptyUrl === undefined) delete process.env.UPSTASH_REDIS_REST_URL;
+    else process.env.UPSTASH_REDIS_REST_URL = emptyUrl;
+    if (emptyToken === undefined) delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    else process.env.UPSTASH_REDIS_REST_TOKEN = emptyToken;
+    assert.equal(getRateLimitStatus().configuration, "incomplete");
+    const denied = await request();
+    assert.equal(denied.allowed, false);
+    assert.equal(denied.retryAfter, 3);
+  }
+  assert.equal(redis.mock.callCount(), 0);
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+
   process.env.UPSTASH_REDIS_REST_URL = url;
   assert.equal(getRateLimitStatus().configuration, "incomplete");
   const urlOnly = await request();
@@ -119,7 +132,7 @@ test("limiter status distinguishes local fallback, incomplete configuration and 
   assert.equal(redis.mock.callCount(), 2);
 });
 
-for (const outcome of ['http', 'error', 'malformed', 'coerced-null', 'network']) {
+for (const outcome of ['http', 'error', 'malformed', 'coerced-null', 'invalid-json', 'network']) {
   test(`configured Redis fails closed on ${outcome}`, async (t) => {
     const original = globalThis.fetch;
     const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -134,6 +147,7 @@ for (const outcome of ['http', 'error', 'malformed', 'coerced-null', 'network'])
     globalThis.fetch = async (_input, init) => {
       assert.ok(init?.signal);
       assert.equal(JSON.parse(String(init?.body))[0], 'EVAL');
+      if (outcome === 'invalid-json') return new Response('{');
       if (outcome === 'network') throw new Error('offline');
       if (outcome === 'coerced-null') return Response.json({result: [1, null, null, 1_794_648_000_000]});
       return Response.json(outcome === 'error' ? {error:'ERR'} : {result: []}, {status: outcome === 'http' ? 500 : 200});
@@ -232,4 +246,28 @@ test("invalid Redis time, scores and counters fail closed and recover", async (t
   reply = [1, 1, String(now), now];
   assert.equal((await request()).allowed, true);
   assert.equal(getRateLimitStatus().lastSharedObservation?.result, "responded");
+});
+
+test("configured Redis never transmits a credential to unsafe REST endpoints", async (t) => {
+  const originalUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const originalToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  t.after(() => {
+    if (originalUrl === undefined) delete process.env.UPSTASH_REDIS_REST_URL;
+    else process.env.UPSTASH_REDIS_REST_URL = originalUrl;
+    if (originalToken === undefined) delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    else process.env.UPSTASH_REDIS_REST_TOKEN = originalToken;
+  });
+  process.env.UPSTASH_REDIS_REST_TOKEN = "fixture";
+  const redis = t.mock.method(globalThis, "fetch", async () => Response.json({
+    result: [1, 1, "1794648000000", 1_794_648_000_000],
+  }));
+  const request = () => rateLimit(buildRequest({}), "unsafe-redis-endpoint");
+  for (const endpoint of ["http://redis.invalid", "https://user:pass@redis.invalid", "not-a-url"]) {
+    process.env.UPSTASH_REDIS_REST_URL = endpoint;
+    const result = await request();
+    assert.equal(result.allowed, false);
+    assert.equal(result.retryAfter, 3);
+    assert.equal(getRateLimitStatus().lastSharedObservation?.result, "degraded");
+  }
+  assert.equal(redis.mock.callCount(), 0);
 });

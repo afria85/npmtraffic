@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { fork, type ChildProcess } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
-import { getRateLimitStatus, rateLimit } from "../lib/rate-limit";
+import { rateLimit } from "../lib/rate-limit";
 
 const ORIGIN = "https://rare-dolphin-170027.upstash.io";
 const IDENTITY = "npmtraffic-staging-rate-limit@aws/eu-central-1";
@@ -19,7 +19,7 @@ type Batch = { route: string; ip: string; count: number; skew?: number; fault?: 
 type Result = Awaited<ReturnType<typeof rateLimit>>;
 type WorkerMessage =
   | { type: "fetch"; id: number; command: Command }
-  | { type: "result"; pid: number; results: Result[]; observation?: string; elapsedMs: number }
+  | { type: "result"; pid: number; results: Result[]; elapsedMs: number }
   | { type: "failed" };
 type ParentMessage =
   | { type: "run"; batch: Batch }
@@ -86,7 +86,6 @@ function runWorker() {
       const results = await Promise.all(Array.from({ length: count }, () => rateLimit(req, route, LIMIT, WINDOW)));
       process.send?.({
         type: "result", pid: process.pid, results, elapsedMs: Math.round(performance.now() - start),
-        observation: getRateLimitStatus().lastSharedObservation?.result,
       } satisfies WorkerMessage);
     } catch {
       process.send?.({ type: "failed" } satisfies WorkerMessage);
@@ -165,6 +164,7 @@ export async function verifyStaging(env: Record<string, string | undefined>, tra
       function receive(value: WorkerMessage) {
         if (value.type === "result") {
           if (value.results.length !== batch.count || value.results.some(result => result.key !== key) ||
+              value.results.some(result => Boolean(result.redisFailure) !== Boolean(batch.fault)) ||
               sent !== (batch.fault ? 0 : batch.count)) finish();
           else finish(value);
           return;
@@ -220,14 +220,13 @@ export async function verifyStaging(env: Record<string, string | undefined>, tra
     assert.notEqual(burst[0].pid, burst[1].pid);
     const results = burst.flatMap(result => result.results);
     assert.equal(countAllowed(results), LIMIT);
-    assert(burst.every(result => result.observation === "responded"));
     assert(results.filter(result => !result.allowed).every(validDenial));
     assert.equal(await command(["ZCARD", quotaKey]), LIMIT);
     const ttlBefore = await command(["PTTL", quotaKey]);
     assert(typeof ttlBefore === "number" && ttlBefore > 0 && ttlBefore <= WINDOW);
     await delay(250);
     const denied = await run(b, batch(main, 1));
-    assert(!denied.results[0].allowed && validDenial(denied.results[0]) && denied.observation === "responded");
+    assert(!denied.results[0].allowed && validDenial(denied.results[0]));
     assert.equal(await command(["ZCARD", quotaKey]), LIMIT);
     const ttl = await command(["PTTL", quotaKey]);
     assert(typeof ttl === "number" && ttl > 0 && ttl < ttlBefore);
@@ -240,20 +239,19 @@ export async function verifyStaging(env: Record<string, string | undefined>, tra
     assert.equal(await command(["EXISTS", quotaKey]), 0);
     const boundary = await Promise.all([run(a, batch(main, 3)), run(b, batch(main, 3))]);
     assert.equal(countAllowed(boundary.flatMap(result => result.results)), LIMIT);
-    assert(boundary.every(result => result.observation === "responded"));
     checks.expiryAndIsolation = true;
 
     phase = "timeout-and-recovery";
     for (const fault of ["network", "malformed", "timeout"] as const) {
       const attempt = await run(a, batch(isolated, 1, { fault }));
-      assert(!attempt.results[0].allowed && attempt.results[0].retryAfter === 3 && attempt.observation === "degraded");
+      assert(!attempt.results[0].allowed && attempt.results[0].retryAfter === 3);
       if (fault === "timeout") {
         assert(attempt.elapsedMs >= 2900 && attempt.elapsedMs < 5000);
         checks.syntheticTimeoutMs = attempt.elapsedMs;
       }
     }
     const recovered = await run(a, batch(isolated, 1));
-    assert(recovered.results[0].allowed && recovered.observation === "responded");
+    assert(recovered.results[0].allowed);
     checks.syntheticFaultRecovery = true;
 
     phase = "redis-time-in-writing-eval";
@@ -278,7 +276,6 @@ export async function verifyStaging(env: Record<string, string | undefined>, tra
     const skewResults = skewed.flatMap(result => result.results);
     const skewAllowed = countAllowed(skewResults);
     checks.clockSkew = { offsetsMs, extraAllowed: skewAllowed };
-    assert(skewed.every(result => result.observation === "responded"));
     assert(skewResults.filter(result => !result.allowed).every(validDenial));
     assert.equal(skewAllowed, 0);
   } catch {

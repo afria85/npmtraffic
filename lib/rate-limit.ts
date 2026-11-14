@@ -7,22 +7,23 @@ type RateLimitResult = {
   remaining: number;
   retryAfter: number;
   key: string;
+  redisFailure?: true;
 };
 
 const memoryStore = new Map<string, number[]>();
 type SharedObservation = { result: "responded" | "degraded"; observedAt: string };
 let lastSharedObservation: SharedObservation | undefined;
 
+function redisConfiguration() {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (url?.trim() && token?.trim()) return { configuration: "configured" as const, url, token };
+  return { configuration: url === undefined && token === undefined ? "disabled" as const : "incomplete" as const };
+}
+
 export function getRateLimitStatus() {
-  const hasUrl = Boolean(process.env.UPSTASH_REDIS_REST_URL);
-  const hasToken = Boolean(process.env.UPSTASH_REDIS_REST_TOKEN);
-  if (hasUrl && hasToken) {
-    return { configuration: "configured" as const, lastSharedObservation };
-  }
-  return {
-    configuration: hasUrl || hasToken ? "incomplete" as const : "disabled" as const,
-    lastSharedObservation: undefined,
-  };
+  const { configuration } = redisConfiguration();
+  return { configuration, lastSharedObservation: configuration === "configured" ? lastSharedObservation : undefined };
 }
 
 function hashKey(value: string) {
@@ -103,7 +104,11 @@ async function upstashRateLimit(
   `;
 
   try {
-    const res = await fetch(url, {
+    const endpoint = new URL(url);
+    if (endpoint.protocol !== "https:" || endpoint.username || endpoint.password) {
+      throw new Error("Unsafe rate limiter endpoint");
+    }
+    const res = await fetch(endpoint.href, {
       method: "POST",
       cache: "no-store",
       redirect: "error",
@@ -145,7 +150,7 @@ async function upstashRateLimit(
     // A configured shared limiter that fails must not silently grant a fresh
     // per-instance allowance. Fail closed for the current request.
     lastSharedObservation = { result: "degraded", observedAt: new Date().toISOString() };
-    return { allowed: false, limit, remaining: 0, retryAfter: 3, key };
+    return { allowed: false, limit, remaining: 0, retryAfter: 3, key, redisFailure: true };
   }
 }
 
@@ -153,9 +158,12 @@ export async function rateLimit(req: Request, route: string, limit = 60, windowM
   const ip = getClientIp(req);
   const fingerprint = ip ? `ip:${ip}` : "anonymous";
   const key = `ratelimit:${route}:${hashKey(fingerprint)}`;
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (url && token) return upstashRateLimit(url, token, key, limit, windowMs);
-  if (url || token) return { allowed: false, limit, remaining: 0, retryAfter: 3, key };
+  const redis = redisConfiguration();
+  if (redis.configuration === "configured") {
+    return upstashRateLimit(redis.url, redis.token, key, limit, windowMs);
+  }
+  if (redis.configuration === "incomplete") {
+    return { allowed: false, limit, remaining: 0, retryAfter: 3, key };
+  }
   return memoryRateLimit(key, limit, windowMs);
 }

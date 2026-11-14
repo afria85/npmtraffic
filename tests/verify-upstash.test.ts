@@ -27,12 +27,13 @@ test("verifier accepts only the attested staging origin and explicit opt-in", as
   }
 });
 
-function mockRedis({ failCleanup = false, failFirstEval = false } = {}) {
+function mockRedis({ failCleanup = false, failFirstEval = false, malformedDenial = false } = {}) {
   const sets = new Map<string, number[]>();
   const touched = new Set<string>();
   let calls = 0;
   let delAttempts = 0;
   let ttlReads = 0;
+  let sentMalformedDenial = false;
   const transport: typeof fetch = async (url, init) => {
     assert.equal(url, origin);
     assert.equal(init?.redirect, "error");
@@ -76,6 +77,10 @@ function mockRedis({ failCleanup = false, failFirstEval = false } = {}) {
     const allowed = active.length < limit;
     if (allowed) active.push(now);
     sets.set(key, active);
+    if (malformedDenial && !allowed && !sentMalformedDenial) {
+      sentMalformedDenial = true;
+      return json([0, active.length, null, now]);
+    }
     return json([allowed ? 1 : 0, active.length, String(Math.min(...active)), now]);
   };
   return { transport, sets, touched, calls: () => calls, delAttempts: () => delAttempts };
@@ -107,4 +112,13 @@ test("failed write responses still trigger cleanup, and unverifiable cleanup for
   assert.equal(result.cleanupFailures, 5);
   assert.equal(unavailable.delAttempts(), 10);
   assert(result.requests <= result.maxRequests);
+});
+
+test("a malformed denial cannot be masked by other successful responses in the burst", async () => {
+  const redis = mockRedis({ malformedDenial: true });
+  const result = await verifyStaging(approved, redis.transport);
+  assert.equal(result.status, "HOLD");
+  assert.equal(result.failure, "shared-quota");
+  assert.equal(result.cleanup, "verified");
+  assert.equal(redis.sets.size, 0);
 });
