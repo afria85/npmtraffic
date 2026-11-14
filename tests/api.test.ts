@@ -1,6 +1,7 @@
 import { registryFixture } from "./support/npm-observations";
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { GET as getOg } from "../app/api/og/route";
 import { GET as getDaily } from "../app/api/v1/package/[name]/daily/route";
 import { GET as getDailyCsv } from "../app/api/v1/package/[name]/daily.csv/route";
 import { GET as getDailyExcelCsv } from "../app/api/v1/package/[name]/daily.excel.csv/route";
@@ -674,4 +675,44 @@ test("a denied package request preserves cached observations and the cold 429 co
     });
     assert.equal(fetchMock.mock.callCount(), upstreamCalls + (config === "shared-fault" ? 2 : 0));
   }
+});
+
+test("Open Graph keeps a noncacheable PNG fallback on partial Redis configuration and outage", async (t) => {
+  const originalUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const originalToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  t.after(() => {
+    if (originalUrl === undefined) delete process.env.UPSTASH_REDIS_REST_URL;
+    else process.env.UPSTASH_REDIS_REST_URL = originalUrl;
+    if (originalToken === undefined) delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    else process.env.UPSTASH_REDIS_REST_TOKEN = originalToken;
+  });
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.invalid";
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  const hosts: string[] = [];
+  const originalFetch = globalThis.fetch;
+  t.mock.method(globalThis, "fetch", async (input: string | URL | Request) => {
+    const url = new URL(input instanceof Request ? input.url : input);
+    if (url.protocol === "data:") return originalFetch(input);
+    hosts.push(url.hostname);
+    throw new Error("Fixture upstream outage");
+  });
+
+  for (const mode of ["pkg&pkg=react", "compare&pkgs=react,vue"]) {
+    const req = new Request("http://localhost/api/og?days=365&mode=" + mode);
+    const partial = await getOg(req);
+    assert.equal(partial.status, 200);
+    assert.match(partial.headers.get("content-type") ?? "", /^image\/png/i);
+    assert.equal(partial.headers.get("cache-control"), "no-store");
+    const partialPng = Buffer.from(await partial.arrayBuffer());
+    assert.equal(partialPng.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+    assert.equal(Number(partial.headers.get("content-length")), partialPng.length);
+
+    process.env.UPSTASH_REDIS_REST_TOKEN = "fixture";
+    const outage = await getOg(req);
+    assert.equal(outage.status, 200);
+    assert.equal(outage.headers.get("cache-control"), "no-store");
+    assert.deepEqual(Buffer.from(await outage.arrayBuffer()), partialPng);
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  }
+  assert.deepEqual(hosts, ["redis.invalid", "redis.invalid"]);
 });
