@@ -7,11 +7,13 @@ Traffic snapshots, search and existence results, and registry metadata use bound
 | Environment configuration | API behavior |
 | --- | --- |
 | Neither Redis binding | Instance-local rate limiting |
-| One Redis binding | Instance-local rate limiting, with an incomplete configuration notice |
+| One Redis binding | Fail closed without contacting Redis or granting a local allowance. Existing retry and cache fallback behavior applies. |
 | Both Redis bindings, valid response | Shared sliding-window decision |
 | Both Redis bindings, timeout, HTTP error or invalid response | Request denied for the configured shared limiter. Existing public HTTP response and retry contract apply. |
 
-Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` together in the intended Vercel environment. The November 12, 2026 audit found neither binding in production. Validate Redis EVAL permissions, concurrency, TTL, and recovery with an isolated staging database and `UPSTASH_VERIFY_STAGING=1 npm run verify:upstash` before enabling the shared limiter in production. Keep both values in secure environment bindings.
+Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` together in the intended Vercel environment. The November 12, 2026 audit found neither binding in production. Keep both values in secure environment bindings. The shared limiter uses Redis TIME inside the same atomic EVAL that updates the sliding window. It does not send application timestamps.
+
+Before enabling shared limiting in production, run `npm run verify:upstash` only with authorization and the dedicated staging credentials. The verifier pins the owner-attested staging origin and identity. Supply the pinned HTTPS origin and its read/write credential through the staging runner's environment, set `UPSTASH_STAGING_ATTESTATION` to the confirmed identity, and opt in with `UPSTASH_VERIFY_STAGING=1`. A run uses at most 64 REST attempts, including up to 20 reserved for cleanup, and reports success only after confirming its temporary keys are absent.
 
 `/status` reads the current runtime's configuration and recent traffic and Redis outcomes without contacting an upstream service. A shared configuration can show no observed decisions when the status request lands on a fresh instance. Serving a cache hit or stale snapshot updates the latest cache result while the last successful upstream fetch keeps its original timestamp. Public health output uses internal error codes and timestamps.
 

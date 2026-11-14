@@ -620,3 +620,58 @@ test("compare Excel CSV export requires packages", async () => {
     globalThis.fetch = originalFetch;
   }
 });
+
+test("a denied package request preserves cached observations and the cold 429 contract", async (t) => {
+  const env = { ...process.env };
+  t.after(() => { process.env = env; });
+  delete process.env.UPSTASH_REDIS_REST_URL;
+  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  const warmName = "partial-redis-cache-fixture";
+  const range = rangeForDays(7);
+  const fetchMock = t.mock.method(globalThis, "fetch", async (input: string | URL | Request) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
+    const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+    if (url.hostname === "api.npmjs.org" && url.pathname.endsWith("/" + warmName)) {
+      return Response.json({
+        start: range.startDate, end: range.endDate, package: warmName,
+        downloads: [{ day: range.startDate, downloads: 0 }],
+      });
+    }
+    throw new Error("Unexpected upstream request");
+  });
+  const route = (name: string) => getDaily(
+    new Request("http://localhost/api/v1/package/" + name + "/daily?days=7"),
+    { params: Promise.resolve({ name }) },
+  );
+  const seed = await route(warmName);
+  assert.equal(seed.status, 200);
+  const cached = await seed.json();
+  assert.equal(cached.series[0].downloads, 0);
+  assert.equal(cached.series[1].downloads, null);
+  const upstreamCalls = fetchMock.mock.callCount();
+
+  process.env.UPSTASH_REDIS_REST_URL = "https://redis.invalid";
+  for (const config of ["url-only", "token-only", "shared-fault"]) {
+    if (config === "token-only") {
+      delete process.env.UPSTASH_REDIS_REST_URL;
+      process.env.UPSTASH_REDIS_REST_TOKEN = "fixture";
+    }
+    if (config === "shared-fault") process.env.UPSTASH_REDIS_REST_URL = "https://redis.invalid";
+
+    const warm = await route(warmName);
+    assert.equal(warm.status, 200);
+    assert.equal(warm.headers.get("retry-after"), "3");
+    assert.equal(warm.headers.get("cache-control"), "no-store");
+    assert.deepEqual((await warm.json()).series, cached.series);
+
+    const cold = await route("partial-redis-cold-fixture");
+    assert.equal(cold.status, 429);
+    assert.equal(cold.headers.get("retry-after"), "3");
+    assert.deepEqual(await cold.json(), {
+      error: { code: "RATE_LIMITED", message: "Please retry shortly." }, retryAfter: 3,
+    });
+    assert.equal(fetchMock.mock.callCount(), upstreamCalls + (config === "shared-fault" ? 2 : 0));
+  }
+});
