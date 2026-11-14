@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { config } from "@/lib/config";
+import { getProjectGithubUrl } from "@/lib/donate";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
@@ -92,7 +93,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <CompareTrayGate />
           </Suspense>
           <div className="flex-1">{children}</div>
-          <Footer />
+          <Footer projectGithubUrl={getProjectGithubUrl()} />
         </div>
         <Analytics />
       </body>

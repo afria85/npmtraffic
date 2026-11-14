@@ -3,10 +3,8 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import { usePathname } from "next/navigation";
-import { getProjectGithubUrl } from "@/lib/donate";
 
-export default function Footer() {
-  const projectGithubUrl = getProjectGithubUrl();
+export default function Footer({ projectGithubUrl }: { projectGithubUrl: string | null }) {
   const pathname = usePathname();
   const isDonateRoute = pathname === "/donate" || pathname === "/support";
   
