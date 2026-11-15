@@ -60,3 +60,22 @@ test.describe("touch range selection", () => {
     await expect(page.getByRole("menu")).toHaveCount(0);
   });
 });
+
+for (const width of [320, 390]) {
+  test("More renders its keyboard focus ring inside the scroller at " + width + "px", async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/p/react?days=7");
+    const group = page.getByRole("group", { name: /range selector/i });
+    await group.getByRole("link", { name: "14d", exact: true }).focus();
+    await page.keyboard.press("Tab");
+    const more = group.getByRole("button", { name: "More", exact: true });
+    await expect(more).toBeFocused();
+    await expect(more).toHaveCSS("box-shadow", /(?:inset[^,]*0px 2px|0px 2px inset)/);
+    expect(await more.evaluate(button => {
+      const scroller = button.closest<HTMLElement>(".overflow-x-auto")!;
+      scroller.style.width = "130px";
+      scroller.scrollLeft = scroller.scrollWidth;
+      return { overflow: getComputedStyle(scroller).overflowX, scrolled: scroller.scrollLeft > 0 };
+    })).toEqual({ overflow: "auto", scrolled: true });
+  });
+}
