@@ -12,6 +12,7 @@ import { computeLeftPad } from "@/components/charts/axis-padding";
 import { toObservationPath } from "@/components/charts/observation-path";
 import { serializeChartSvg } from "@/components/charts/serialize-svg";
 import { TimelineAxis } from "@/components/charts/TimelineAxis";
+import ChartObservationControl, { describeDownloads, useChartInspection } from "@/components/charts/ChartObservationControl";
 import { useChartViewport } from "@/components/charts/use-chart-viewport";
 
 function MetricCheckbox({
@@ -278,7 +279,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
 
   const settingsKey = `npmtraffic_chart_settings:${pkgName}`;
 
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const { hoverIndex, setHoverIndex, inspect, control, setControlIndex } = useChartInspection(svgRef, series.length);
   const [styleOpen, setStyleOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [settings, setSettings] = useState<ChartSettings>(() => {
@@ -367,18 +368,6 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [styleOpen]);
-
-  const hasTooltip = hoverIndex !== null;
-  useEffect(() => {
-    if (!hasTooltip) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!svgRef.current?.contains(event.target as Node)) setHoverIndex(null);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-    };
-  }, [hasTooltip]);
 
   const eventsByDate = useMemo(() => groupEventsByDate(loadEvents(pkgName).filter((e) => e.event_type !== "release")), [pkgName]);
 
@@ -924,6 +913,17 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
             </div>
           ) : null}
       </div>
+
+      <ChartObservationControl
+        length={series.length}
+        inspect={inspect}
+        control={control}
+        onBlur={() => setControlIndex(null)}
+        describe={index => {
+          const row = series[index];
+          return row.date + " UTC, " + pkgName + ": " + describeDownloads(row.downloads, row.status);
+        }}
+      />
 
       <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
         {/* Legend (visual mapping). Never overlays the plot. */}
