@@ -23,10 +23,14 @@ export default function ExportDropdown({
   label = "Export",
   items,
   className,
+  descriptionId,
+  accessibleLabel,
 }: {
   label?: string;
   items: ExportItem[];
   className?: string;
+  descriptionId?: string;
+  accessibleLabel?: string;
 }) {
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -121,11 +125,36 @@ export default function ExportDropdown({
     };
   }, [open]);
 
-  // Close on outside click/tap and Escape (shared controller)
+  const menuReady = open && menuPosition !== null;
+  useLayoutEffect(() => {
+    if (menuReady) {
+      menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
+    }
+  }, [menuReady]);
+
+  // Close on outside click/tap and use the portal's keyboard order.
   useDropdownDismiss({
     open,
     onDismiss: close,
     refs: [triggerRef, menuRef],
+    closeOnEscape: false,
+    onKeyDown: (event) => {
+      if (event.key === "Escape" || event.key === "Tab") {
+        if (event.key === "Escape") event.preventDefault();
+        close();
+        triggerRef.current?.focus();
+        return;
+      }
+      if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+      const links = Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+      if (!links.length) return;
+      event.preventDefault();
+      const index = links.indexOf(document.activeElement as HTMLElement);
+      const next = event.key === "Home" || index === -1 && event.key === "ArrowDown" ? 0
+        : event.key === "End" || index === -1 ? links.length - 1
+        : (index + (event.key === "ArrowDown" ? 1 : links.length - 1)) % links.length;
+      links[next].focus();
+    },
   });
 
   const menuPortal = useMemo(() => {
@@ -137,6 +166,7 @@ export default function ExportDropdown({
         id={menuId}
         role="menu"
         aria-labelledby={buttonId}
+        aria-describedby={descriptionId}
         className="pointer-events-auto z-50 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-xl"
         style={{
           position: "fixed",
@@ -158,7 +188,10 @@ export default function ExportDropdown({
                 role="menuitem"
                 className="block rounded-lg px-3 py-2 text-sm text-[var(--foreground)] transition hover:bg-[var(--surface-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
                 {...(downloadProps ?? {})}
-                onClick={() => close()}
+                onClick={() => {
+                  close();
+                  triggerRef.current?.focus({ preventScroll: true });
+                }}
               >
                 <span className="block font-medium">{item.label}</span>
                 {item.description ? (
@@ -173,7 +206,7 @@ export default function ExportDropdown({
       </div>,
       portalRoot
     );
-  }, [open, portalRoot, menuPosition, items, menuId, buttonId]);
+  }, [open, portalRoot, menuPosition, items, menuId, buttonId, descriptionId]);
 
   return (
     <>
@@ -182,8 +215,10 @@ export default function ExportDropdown({
           ref={triggerRef}
           id={buttonId}
           type="button"
+          aria-label={accessibleLabel}
           aria-haspopup="menu"
           aria-expanded={open}
+          aria-describedby={descriptionId}
           aria-controls={menuId}
           onClick={toggle}
           className={`${ACTION_BUTTON_CLASSES} inline-flex items-center gap-2`}

@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
-import { type RangeForDaysResult } from "@/lib/query";
+import type { RangeForDaysResult } from "@/lib/query";
+import type { CompareData } from "@/lib/compare";
 
 const FILENAME_PREFIX = "npmtraffic__";
 const MAX_FILENAME_LENGTH = 180;
@@ -44,6 +45,22 @@ export function buildExportFilename({
   const allowedLength = MAX_FILENAME_LENGTH - suffix.length;
   const truncatedBase = base.slice(0, Math.max(0, allowedLength));
   return `${truncatedBase}${suffix}`;
+}
+
+export function buildCompareExportFilename(
+  { selection, days, range }: CompareData,
+  format: "json" | "csv" | "excel.csv",
+) {
+  const { exportedPackages, exportedCount, requestedCount, capApplied } = selection;
+  const marker = capApplied ? "truncated" : exportedCount < requestedCount ? "partial" : null;
+  const selectionSuffix = marker ? `__${marker}-${exportedCount}-of-${requestedCount}` : "";
+  const suffix = `${selectionSuffix}__${days}d__${range.startDate}-${range.endDate}__utc.${format}`;
+  const stem = FILENAME_PREFIX + joinPackages(exportedPackages);
+  if (stem.length + suffix.length <= MAX_FILENAME_LENGTH) return stem + suffix;
+
+  const hash = crypto.createHash("sha256").update(JSON.stringify(exportedPackages)).digest("hex").slice(0, 16);
+  const available = MAX_FILENAME_LENGTH - hash.length - 2 - suffix.length;
+  return `${stem.slice(0, available)}__${hash}${suffix}`;
 }
 
 export function sanitizeForFilename(value: string) {

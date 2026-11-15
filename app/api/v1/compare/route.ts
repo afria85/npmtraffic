@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { buildCompareData } from "@/lib/compare";
-import { buildExportFilename } from "@/lib/export-filename";
-import { buildExportMeta } from "@/lib/export";
+import { buildCompareExportFilename } from "@/lib/export-filename";
+import { buildExportMeta, compareSelectionHeaders } from "@/lib/export";
 import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
 import { parsePackageList } from "@/lib/query";
@@ -15,7 +15,6 @@ export async function GET(req: Request) {
   const start = Date.now();
   const route = "GET /api/v1/compare";
   let upstreamStatus: number | undefined;
-  let pkgList: string | undefined;
   let daysValue: number | undefined;
 
   try {
@@ -66,7 +65,6 @@ export async function GET(req: Request) {
       );
     }
 
-    pkgList = pkgs.join(",");
     const data = await buildCompareData(pkgs, daysParam);
 
     const exportMeta = buildExportMeta(
@@ -78,12 +76,7 @@ export async function GET(req: Request) {
       data.meta.staleReason ?? null
     );
     const payload = { ...data, export: exportMeta };
-    const filename = buildExportFilename({
-      packages: pkgs,
-      days: data.days,
-      range: data.range,
-      format: "json",
-    });
+    const filename = buildCompareExportFilename(data, "json");
 
     const body = JSON.stringify(payload, null, 2) + "\n";
     const response = new Response(body, {
@@ -91,6 +84,7 @@ export async function GET(req: Request) {
       headers: {
         "Content-Type": "application/json; charset=utf-8",
         "Cache-Control": "no-store",
+        ...compareSelectionHeaders(data.selection),
         "x-request-id": requestId,
         "Content-Disposition": `attachment; filename="${filename}"`,
       },
@@ -101,7 +95,7 @@ export async function GET(req: Request) {
       route,
       status: 200,
       ms: Date.now() - start,
-      package: pkgList,
+      package: data.selection.exportedPackages.join(","),
       days: data.days,
     });
     return response;
@@ -117,7 +111,6 @@ export async function GET(req: Request) {
         route,
         status: 400,
         ms: Date.now() - start,
-        package: pkgList,
         days: daysValue,
       });
       return NextResponse.json(
@@ -134,7 +127,6 @@ export async function GET(req: Request) {
       status: 502,
       ms: Date.now() - start,
       upstreamStatus,
-      package: pkgList,
       days: daysValue,
     });
     return NextResponse.json(

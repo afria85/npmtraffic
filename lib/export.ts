@@ -1,7 +1,7 @@
 import type { RangeForDaysResult } from "@/lib/query";
 import type { TrafficResponse } from "@/lib/traffic";
 import { DERIVED_METHOD_DESCRIPTION } from "@/lib/derived";
-import type { CompareData } from "@/lib/compare";
+import type { CompareData, CompareSelection } from "@/lib/compare";
 
 export const EXPORT_TIMEZONE = "UTC";
 export const EXPORT_SOURCE = "npm downloads API";
@@ -73,6 +73,17 @@ export function packageCsvRows({ series, derived }: TrafficResponse) {
       row.status, row.upstreamDownloads, row.registryDownloads,
     ]),
   ];
+}
+
+export function compareSelectionHeaders(selection: CompareSelection): Record<string, string> {
+  return {
+    "X-Compare-Cap-Applied": String(selection.capApplied),
+    "X-Compare-Exported-Count": String(selection.exportedCount),
+    "X-Compare-Cap-Omitted-Count": String(selection.capOmittedCount),
+    "X-Compare-Invalid-Count": String(selection.invalidCount),
+    "X-Compare-Unavailable-Count": String(selection.unavailableCount),
+    "X-Compare-Duplicate-Count": String(selection.duplicateCount),
+  };
 }
 
 export function compareCsvRows({ series, packages }: CompareData) {

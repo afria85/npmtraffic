@@ -7,7 +7,7 @@ import { notFound, redirect } from "next/navigation";
 import { getBaseUrl } from "@/lib/base-url";
 import { clampDays, canonicalizePackages, parsePackageList } from "@/lib/query";
 import { validatePackageName } from "@/lib/package-name";
-import { buildCompareData, type CompareData } from "@/lib/compare";
+import { buildCompareData, MAX_COMPARE_PACKAGES, type CompareData, type CompareSelection } from "@/lib/compare";
 import { TrafficError } from "@/lib/traffic";
 import { buildCompareCanonical } from "@/lib/canonical";
 import RangeSelector from "@/components/RangeSelector";
@@ -18,7 +18,7 @@ import CompareChart from "@/components/compare/CompareChartClient";
 import CompareAddBar from "@/components/compare/CompareAddBar";
 import CompareSeriesTable from "@/components/compare/CompareSeriesTable";
 import CompareInsightsPanel from "@/components/compare/CompareInsightsPanel";
-import { buildExportFilename } from "@/lib/export-filename";
+import { buildCompareExportFilename } from "@/lib/export-filename";
 import RetryButton from "@/components/ui/RetryButton";
 import {
   COMPARE_ACTION_CONTAINER_CLASSES,
@@ -43,8 +43,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const sp = (await searchParams) ?? {};
   const rawList = sp.packages ?? sp.pkgs ?? "";
   const pkgs = canonicalizePackages(parsePackageList(rawList))
-    .filter((pkg) => validatePackageName(pkg).ok)
-    .slice(0, 5);
+    .slice(0, MAX_COMPARE_PACKAGES)
+    .filter((pkg) => validatePackageName(pkg).ok);
   const days = clampDays(sp.days);
   const baseUrl = await getBaseUrl();
 
@@ -114,13 +114,27 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   };
 }
 
+function describeExportSelection(selection: CompareSelection) {
+  const messages: string[] = [];
+  const { exportedCount, requestedCount, capOmittedCount, invalidCount, unavailableCount, duplicateCount } = selection;
+  if (exportedCount < requestedCount) {
+    messages.push(`This export includes ${exportedCount} of ${requestedCount} distinct requested packages.`);
+  }
+  if (capOmittedCount) messages.push(`Five-package limit: ${capOmittedCount} omitted.`);
+  if (invalidCount) messages.push(`Invalid package names: ${invalidCount}.`);
+  if (unavailableCount) messages.push(`Packages not found: ${unavailableCount}.`);
+  if (duplicateCount) messages.push(`Duplicate entries ignored: ${duplicateCount}.`);
+  return messages;
+}
+
 export default async function ComparePage({ searchParams }: Props) {
   const sp = (await searchParams) ?? {};
   const rawPkgs = sp.packages ?? sp.pkgs ?? "";
   const rawDays = sp.days;
-  const pkgs = canonicalizePackages(parsePackageList(rawPkgs))
-    .filter((pkg) => validatePackageName(pkg).ok)
-    .slice(0, 5);
+  const requested = parsePackageList(rawPkgs);
+  const pkgs = canonicalizePackages(requested)
+    .slice(0, MAX_COMPARE_PACKAGES)
+    .filter((pkg) => validatePackageName(pkg).ok);
   const days = clampDays(rawDays);
   const incomplete = pkgs.length < 2;
   // Keep the input in the same keyed subtree across selection and result layouts.
@@ -149,14 +163,16 @@ export default async function ComparePage({ searchParams }: Props) {
     );
   }
 
-  const canonicalPkgs = pkgs.map((pkg) => encodeURIComponent(pkg)).join(",");
+  // Keep omissions and duplicates in the URL used by the range selector and exports.
+  const queryPackages = requested.length === pkgs.length ? pkgs : requested;
+  const comparisonPackages = queryPackages.map(encodeURIComponent).join(",");
   if (
     !rawDays ||
     rawDays !== String(days) ||
-    rawPkgs !== pkgs.join(",") ||
+    (requested.length === pkgs.length && rawPkgs !== pkgs.join(",")) ||
     sp.pkgs
   ) {
-    redirect(`/compare?packages=${canonicalPkgs}&days=${days}`);
+    redirect(`/compare?packages=${comparisonPackages}&days=${days}`);
   }
 
   const baseUrl = await getBaseUrl();
@@ -164,7 +180,7 @@ export default async function ComparePage({ searchParams }: Props) {
   const rangeSelector = (
     <RangeSelector
       currentDays={days}
-      getHref={(value) => `/compare?packages=${canonicalPkgs}&days=${value}`}
+      getHref={(value) => `/compare?packages=${comparisonPackages}&days=${value}`}
       label="RANGE"
     />
   );
@@ -172,7 +188,7 @@ export default async function ComparePage({ searchParams }: Props) {
   let data: CompareData | null = null;
   let errorText: string | null = null;
   try {
-    data = await buildCompareData(pkgs, days);
+    data = await buildCompareData(requested, days);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error ?? "");
     if (message.startsWith("BAD_REQUEST")) {
@@ -185,53 +201,30 @@ export default async function ComparePage({ searchParams }: Props) {
     }
   }
 
-  const csvFilename = data
-    ? buildExportFilename({
-        packages: pkgs,
-        days,
-        range: data.range,
-        format: "csv",
-      })
-    : undefined;
-  const excelFilename = data
-    ? buildExportFilename({
-        packages: pkgs,
-        days,
-        range: data.range,
-        format: "excel.csv",
-      })
-    : undefined;
-  const jsonFilename = data
-    ? buildExportFilename({
-        packages: pkgs,
-        days,
-        range: data.range,
-        format: "json",
-      })
-    : undefined;
-
+  const messages = data ? describeExportSelection(data.selection) : [];
+  const noticeId = "compare-export-selection";
   const exportItems = data
     ? [
         {
           key: "csv",
           label: "CSV",
           description: "Comment header, UTC dates, daily deltas",
-          href: `/api/v1/compare.csv?packages=${canonicalPkgs}&days=${days}`,
-          downloadName: csvFilename,
+          href: `/api/v1/compare.csv?packages=${comparisonPackages}&days=${days}`,
+          downloadName: buildCompareExportFilename(data, "csv"),
         },
         {
           key: "excel",
           label: "Excel CSV",
           description: "Semicolon-delimited for spreadsheet imports",
-          href: `/api/v1/compare.excel.csv?packages=${canonicalPkgs}&days=${days}`,
-          downloadName: excelFilename,
+          href: `/api/v1/compare.excel.csv?packages=${comparisonPackages}&days=${days}`,
+          downloadName: buildCompareExportFilename(data, "excel.csv"),
         },
         {
           key: "json",
           label: "JSON",
           description: "Package totals, daily values, metadata, export block",
-          href: `/api/v1/compare.json?packages=${canonicalPkgs}&days=${days}`,
-          downloadName: jsonFilename,
+          href: `/api/v1/compare.json?packages=${comparisonPackages}&days=${days}`,
+          downloadName: buildCompareExportFilename(data, "json"),
         },
       ]
     : [];
@@ -247,10 +240,10 @@ export default async function ComparePage({ searchParams }: Props) {
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[var(--foreground-tertiary)]">
             <span className="text-[11px] uppercase tracking-widest">Open package:</span>
             {pkgs.map((name, i) => (
-              <span key={name} className="flex items-center gap-2">
+              <span key={name} className="flex min-w-0 max-w-full items-center gap-2">
                 <Link
                   href={`/p/${encodeURIComponent(name)}`}
-                  className="inline-flex min-h-8 min-w-10 items-center justify-center px-1 text-sm font-medium text-[color:var(--link)] hover:underline"
+                  className="inline-flex min-h-8 min-w-10 max-w-full items-center justify-center break-all px-1 text-sm font-medium text-[color:var(--link)] hover:underline"
                 >
                   {name}
                 </Link>
@@ -261,10 +254,21 @@ export default async function ComparePage({ searchParams }: Props) {
         </div>
       </div>
 
+      {messages.length > 0 && (
+        <p id={noticeId} className="text-sm text-[var(--foreground-secondary)]">
+          {messages.join(" ")}
+        </p>
+      )}
       <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
         <div className="min-w-0">{rangeSelector}</div>
         <div className={`${COMPARE_ACTION_CONTAINER_CLASSES} flex-shrink-0 self-start sm:self-end`}>
-          {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
+          {exportItems.length ? (
+            <ExportDropdown
+              items={exportItems}
+              accessibleLabel="Export comparison data"
+              descriptionId={messages.length ? noticeId : undefined}
+            />
+          ) : null}
           <ShareMenu url={shareUrl} title={`npmtraffic compare (${days} days)`} iconOnlyOnMobile />
         </div>
       </div>
@@ -300,7 +304,7 @@ export default async function ComparePage({ searchParams }: Props) {
         </div>
       ) : null}
       {data?.warnings?.length ? (
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 break-words px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
           {data.warnings.join(" ")}
         </div>
       ) : null}
