@@ -25,6 +25,7 @@ type CompareTrayProps = {
   onNavigateToCompareRoot?: () => void;
   onSyncCompareUrl?: (packages: string[], days: number) => void;
   compareDays?: number;
+  reserveMobileSpace?: boolean;
 };
 
 export default function CompareTray({
@@ -32,6 +33,7 @@ export default function CompareTray({
   onNavigateToCompareRoot,
   onSyncCompareUrl,
   compareDays,
+  reserveMobileSpace = true,
 }: CompareTrayProps = {}) {
   const hydrated = useHydrated();
 
@@ -45,6 +47,7 @@ export default function CompareTray({
   const trayRef = useRef<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
+    if (!reserveMobileSpace) return;
     const root = document.documentElement;
     const setSpace = (px: number) => {
       root.style.setProperty("--compare-tray-space", `${px}px`);
@@ -90,7 +93,7 @@ export default function CompareTray({
       mql.removeEventListener("change", onResize);
       setSpace(0);
     };
-  }, [packages.length]);
+  }, [packages.length, reserveMobileSpace]);
 
   const handleRemove = useCallback(
     (name: string) => {
@@ -134,6 +137,7 @@ export default function CompareTray({
                     key={pkg}
                     type="button"
                     onClick={() => handleRemove(pkg)}
+                    data-compare-tray-action={"remove:" + pkg}
                     className={LIST_REMOVAL_CLASS}
                     aria-label={`Remove ${pkg} from compare`}
                   >
@@ -159,6 +163,7 @@ export default function CompareTray({
                 <button
                   type="button"
                   onClick={handleClear}
+                  data-compare-tray-action="clear"
                   className={`${ACTION_BUTTON_CLASSES} px-2 sm:px-3 bg-transparent text-[var(--foreground-tertiary)] hover:bg-[var(--surface)]`}
                   aria-label="Clear compare selection"
                 >
@@ -166,7 +171,7 @@ export default function CompareTray({
                 </button>
               ) : null}
               {compareUrl ? (
-                <Link href={compareUrl} className={ACTION_BUTTON_CLASSES}>
+                <Link href={compareUrl} className={ACTION_BUTTON_CLASSES} data-compare-tray-action="compare">
                   {label}
                 </Link>
               ) : (
