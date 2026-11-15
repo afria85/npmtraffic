@@ -66,6 +66,8 @@ test('mobile search traps focus, has a name and restores focus on Escape',async 
  await page.keyboard.press('Shift+Tab');
  await expect(field).toBeFocused();
  await page.keyboard.press('Escape');
+ await expect(field).toHaveAttribute('aria-expanded','false');
+ await page.keyboard.press('Escape');
  await expect(dialog).toHaveCount(0);
  await expect(trigger).toBeFocused();
  await trigger.press('Enter');
