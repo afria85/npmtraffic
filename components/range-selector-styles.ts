@@ -13,7 +13,7 @@ export function primaryButtonClasses(isActive: boolean) {
 }
 
 export const MORE_SUMMARY_CLASSES =
-  `${ACTION_BUTTON_CLASSES} list-none h-8 px-2.5 text-[11px] font-semibold sm:h-11 sm:px-4 sm:text-sm`;
+  `${ACTION_BUTTON_CLASSES} list-none focus-visible:outline-offset-[-2px]! focus-visible:ring-0! h-8 px-2.5 text-[11px] font-semibold sm:h-11 sm:px-4 sm:text-sm`;
 
 export function moreItemClasses(isActive: boolean) {
   return `rounded-lg px-3 py-1.5 text-xs font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] ${
