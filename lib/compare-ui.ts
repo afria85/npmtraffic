@@ -11,3 +11,5 @@ export function getCompareStatusLabel(count: number) {
 export function isCompareReady(count: number) {
   return count >= 2;
 }
+
+export const COMPARE_TRAY_SLOT_ID = "compare-tray-after-content";

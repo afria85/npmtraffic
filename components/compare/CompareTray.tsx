@@ -25,6 +25,7 @@ type CompareTrayProps = {
   onNavigateToCompareRoot?: () => void;
   onSyncCompareUrl?: (packages: string[], days: number) => void;
   compareDays?: number;
+  reserveMobileSpace?: boolean;
 };
 
 export default function CompareTray({
@@ -32,6 +33,7 @@ export default function CompareTray({
   onNavigateToCompareRoot,
   onSyncCompareUrl,
   compareDays,
+  reserveMobileSpace = true,
 }: CompareTrayProps = {}) {
   const hydrated = useHydrated();
 
@@ -45,6 +47,7 @@ export default function CompareTray({
   const trayRef = useRef<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
+    if (!reserveMobileSpace) return;
     const root = document.documentElement;
     const setSpace = (px: number) => {
       root.style.setProperty("--compare-tray-space", `${px}px`);
@@ -90,7 +93,7 @@ export default function CompareTray({
       mql.removeEventListener("change", onResize);
       setSpace(0);
     };
-  }, [packages.length]);
+  }, [packages.length, reserveMobileSpace]);
 
   const handleRemove = useCallback(
     (name: string) => {
