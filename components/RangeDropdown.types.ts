@@ -1,6 +1,7 @@
 export type RangeDropdownItem = {
   days: number;
   href: string;
+  mobileOnly?: boolean;
 };
 
 export type RangeDropdownProps = {

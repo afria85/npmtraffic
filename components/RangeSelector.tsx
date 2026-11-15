@@ -10,15 +10,11 @@ export default function RangeSelector({ currentDays, getHref, label = "Range" }:
   const primaryFastRanges = PRIMARY_RANGES.filter((r) => FAST_RANGES.has(r));
   const hiddenPrimaryRanges = PRIMARY_RANGES.filter((r) => !FAST_RANGES.has(r));
 
-  const dropdownItems: RangeDropdownItem[] = MORE_RANGES.map((range): RangeDropdownItem => ({
-    days: range,
-    href: getHref(range),
+  const dropdownItems: RangeDropdownItem[] = [...hiddenPrimaryRanges, ...MORE_RANGES].map((days) => ({
+    days,
+    href: getHref(days),
+    mobileOnly: hiddenPrimaryRanges.some(range => range === days),
   }));
-
-  // Mobile dropdown contains hidden primary ranges (e.g. 30d) + the extended ranges.
-  const mobileDropdownItems = hiddenPrimaryRanges
-    .map((range): RangeDropdownItem => ({ days: range, href: getHref(range) }))
-    .concat(dropdownItems);
 
   return (
     <div
@@ -52,15 +48,7 @@ export default function RangeSelector({ currentDays, getHref, label = "Range" }:
           </span>
         ))}
 
-        {/* On small screens we use a single 'More' dropdown that also contains the hidden primary ranges. */}
-        <div className="md:hidden">
-          <RangeDropdown currentDays={currentDays} items={mobileDropdownItems} />
-        </div>
-
-        {/* From md+ we show the extended ranges only (since 30d is visible as a pill). */}
-        <div className="hidden md:block">
-          <RangeDropdown currentDays={currentDays} items={dropdownItems} />
-        </div>
+        <RangeDropdown currentDays={currentDays} items={dropdownItems} />
       </div>
     </div>
   );
