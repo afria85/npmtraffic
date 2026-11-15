@@ -26,3 +26,46 @@ for (const width of [320, 390, 768]) {
     await expect(tray).toHaveCount(1);
   });
 }
+
+test("tray focus survives both viewport transitions with six saved comparisons", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.addInitScript(() => {
+    const items = [7, 14, 30, 90, 180, 365].map(days => ({ packages: ["react", "vue"], days }));
+    localStorage.setItem("npmtraffic:saved-comparisons", JSON.stringify({ version: 1, items }));
+  });
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  const route = "/compare?packages=react,vue&days=365";
+  await page.goto(route);
+  const tray = page.getByTestId("compare-tray-container");
+  const react = tray.getByRole("button", { name: "Remove react from compare" });
+  const vue = tray.getByRole("button", { name: "Remove vue from compare" });
+  const region = page.getByRole("region", { name: "Saved comparisons" });
+  const saved = region.getByRole("listitem");
+  const chart = page.getByRole("img", { name: /daily downloads line chart/i });
+  await expect(chart).toBeVisible({ timeout: 20_000 });
+  await expect(saved).toHaveCount(6);
+  expect(await region.evaluate(saved => {
+    const chart = document.querySelector('svg[aria-label*="daily downloads line chart"]')!;
+    return Boolean(chart.compareDocumentPosition(saved) & Node.DOCUMENT_POSITION_FOLLOWING);
+  })).toBe(true);
+  await react.focus();
+  await page.keyboard.press("Tab");
+  await expect(vue).toBeFocused();
+
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await expect(page.locator("#compare-tray-after-content").getByTestId("compare-tray-container")).toHaveCount(0);
+  await expect(vue).toBeFocused();
+
+  await page.setViewportSize({ width: 390, height: 900 });
+  await expect(page.locator("#compare-tray-after-content").getByTestId("compare-tray-container")).toHaveCount(1);
+  await expect(vue).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(tray.getByRole("button", { name: "Clear compare selection" })).toBeFocused();
+  await expect(tray).toHaveCount(1);
+  await expect(saved).toHaveCount(6);
+  await page.reload();
+  await expect(saved).toHaveCount(6);
+  await expect(tray).toHaveCount(1);
+  expect(errors.filter(error => /hydration|#418|parentNode/i.test(error))).toEqual([]);
+});

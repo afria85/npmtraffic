@@ -291,7 +291,6 @@ export default async function ComparePage({ searchParams }: Props) {
   return (
     <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-6">
       <CompareUrlSync packages={pkgs} />
-      <SavedComparisons packages={pkgs} days={days} />
       {renderBuilder(header)}
       <DataQuality endDate={data.range.endDate} isStale={data.meta.isStale} coverage={data.coverage} shared />
       {data.meta.isStale ? (
@@ -341,6 +340,8 @@ export default async function ComparePage({ searchParams }: Props) {
       <CompareInsightsPanel packages={data.packages} series={data.series} days={days} />
 
       <CompareChart series={data.series} packageNames={tablePackageNames} days={days} />
+
+      <SavedComparisons packages={pkgs} days={days} />
 
       <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
         <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3 text-sm text-[var(--foreground)]">

@@ -137,6 +137,7 @@ export default function CompareTray({
                     key={pkg}
                     type="button"
                     onClick={() => handleRemove(pkg)}
+                    data-compare-tray-action={"remove:" + pkg}
                     className={LIST_REMOVAL_CLASS}
                     aria-label={`Remove ${pkg} from compare`}
                   >
@@ -162,6 +163,7 @@ export default function CompareTray({
                 <button
                   type="button"
                   onClick={handleClear}
+                  data-compare-tray-action="clear"
                   className={`${ACTION_BUTTON_CLASSES} px-2 sm:px-3 bg-transparent text-[var(--foreground-tertiary)] hover:bg-[var(--surface)]`}
                   aria-label="Clear compare selection"
                 >
@@ -169,7 +171,7 @@ export default function CompareTray({
                 </button>
               ) : null}
               {compareUrl ? (
-                <Link href={compareUrl} className={ACTION_BUTTON_CLASSES}>
+                <Link href={compareUrl} className={ACTION_BUTTON_CLASSES} data-compare-tray-action="compare">
                   {label}
                 </Link>
               ) : (

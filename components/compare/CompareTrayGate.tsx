@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { useHydrated } from "@/lib/hydrated";
@@ -14,12 +14,6 @@ const getEmptySnapshot = () => EMPTY_SNAPSHOT;
 const compactViewport = "(width < 64rem)";
 const getDesktopSnapshot = () => false;
 
-function subscribeToViewport(callback: () => void) {
-  const media = window.matchMedia(compactViewport);
-  media.addEventListener("change", callback);
-  return () => media.removeEventListener("change", callback);
-}
-
 function isCompactViewport() {
   return window.matchMedia(compactViewport).matches;
 }
@@ -27,7 +21,30 @@ function isCompactViewport() {
 export default function CompareTrayGate() {
   const hydrated = useHydrated();
   const pathname = usePathname();
+  const pendingFocus = useRef<string | undefined>(undefined);
+  const subscribeToViewport = useCallback((notify: () => void) => {
+    const media = window.matchMedia(compactViewport);
+    function onChange() {
+      if (pathname === "/compare") {
+        const active = document.activeElement;
+        pendingFocus.current = active instanceof HTMLElement ? active.dataset.compareTrayAction : undefined;
+      }
+      notify();
+    }
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, [pathname]);
   const compact = useSyncExternalStore(subscribeToViewport, isCompactViewport, getDesktopSnapshot);
+
+  useLayoutEffect(() => {
+    const action = pendingFocus.current;
+    pendingFocus.current = undefined;
+    // Moving between portal containers remounts the tray. Keep the user's
+    // position in its tab order only when that move removed the focused node.
+    if (!action || pathname !== "/compare" || document.activeElement !== document.body) return;
+    document.querySelector<HTMLElement>('[data-compare-tray-action="' + CSS.escape(action) + '"]')
+      ?.focus({ preventScroll: true });
+  }, [compact, pathname]);
 
   const getClientSnapshot = useCallback(() => {
     return hydrated ? loadCompareList() : EMPTY_SNAPSHOT;
