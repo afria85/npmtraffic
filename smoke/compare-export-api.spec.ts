@@ -37,9 +37,10 @@ for (const [label, input, packages, cap = 0, invalid = 0, unavailable = 0, dupli
   test(`compare export contract: ${label}`, async ({ request }) => {
     const query = compareQuery(input);
     const requested = packages.length + cap + invalid + unavailable;
-    let json: CompareData | undefined;
+    let json: Omit<CompareData, "selection"> | undefined;
     for (const extension of routes) {
-      const response = await request.get(`/api/v1/compare${extension}?${query}`);
+      const selectionQuery = extension === ".json" ? "&includeSelection=1" : "";
+      const response = await request.get(`/api/v1/compare${extension}?${query}${selectionQuery}`);
       const headers = response.headers();
       expect(headers["x-request-id"]).toBeTruthy();
       if (!packages.length) {
@@ -76,18 +77,28 @@ for (const [label, input, packages, cap = 0, invalid = 0, unavailable = 0, dupli
       }
 
       if (!extension.endsWith(".csv")) {
-        const payload = await response.json() as CompareData;
-        expect(payload.selection).toEqual({
-          requestedCount: requested, exportedPackages: packages, exportedCount: packages.length,
-          capApplied: cap > 0, capOmittedCount: cap, invalidCount: invalid,
-          unavailableCount: unavailable, duplicateCount: duplicate,
-        });
+        const payload = await response.json() as Omit<CompareData, "selection"> & {
+          selection?: CompareData["selection"];
+        };
+        if (extension === ".json") {
+          expect(payload.selection).toEqual({
+            requestedCount: requested, exportedPackages: packages, exportedCount: packages.length,
+            capApplied: cap > 0, capOmittedCount: cap, invalidCount: invalid,
+            unavailableCount: unavailable, duplicateCount: duplicate,
+          });
+        } else {
+          expect(payload).not.toHaveProperty("selection");
+          expect(Object.keys(payload)).toEqual([
+            "days", "range", "packages", "series", "coverage", "observations",
+            ...(cap || invalid || unavailable ? ["warnings"] : []), "meta", "export",
+          ]);
+        }
         expect(payload.packages.map(({ name }) => name)).toEqual(packages);
         expect((payload.warnings ?? []).length).toBe(Number(cap > 0) + invalid + unavailable);
         if (json) {
           expect(payload).toMatchObject({
             days: json.days, range: json.range, packages: json.packages,
-            coverage: json.coverage, series: json.series, selection: json.selection,
+            coverage: json.coverage, series: json.series,
           });
           expect(payload.warnings).toEqual(json.warnings);
         }

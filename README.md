@@ -98,6 +98,8 @@ curl "https://npmtraffic.com/api/v1/package/react/daily.json?days=30"
 curl "https://npmtraffic.com/api/v1/compare.json?packages=react,vue&days=30"
 ```
 
+Compare JSON keeps its legacy body by default. Add `&includeSelection=1` to either Compare JSON endpoint for the selection object. The selection headers are available in both modes. See the [Compare export contract](docs/compare-export-selection.md).
+
 ## Data Behavior
 
 - Download counts come from `api.npmjs.org` and represent total downloads, not unique users.

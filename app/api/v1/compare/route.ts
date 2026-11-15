@@ -75,10 +75,25 @@ export async function GET(req: Request) {
       data.meta.isStale,
       data.meta.staleReason ?? null
     );
-    const payload = { ...data, export: exportMeta };
+    const payload = {
+      days: data.days,
+      range: data.range,
+      packages: data.packages,
+      series: data.series,
+      coverage: data.coverage,
+      observations: data.observations,
+      warnings: data.warnings,
+      meta: data.meta,
+      export: exportMeta,
+    };
+    const includeSelection = url.searchParams.get("includeSelection") === "1";
     const filename = buildCompareExportFilename(data, "json");
 
-    const body = JSON.stringify(payload, null, 2) + "\n";
+    const body = JSON.stringify(
+      includeSelection ? { ...payload, selection: data.selection } : payload,
+      null,
+      2
+    ) + "\n";
     const response = new Response(body, {
       status: 200,
       headers: {
