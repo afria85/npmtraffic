@@ -70,7 +70,9 @@ for (const width of [320, 390]) {
     await page.keyboard.press("Tab");
     const more = group.getByRole("button", { name: "More", exact: true });
     await expect(more).toBeFocused();
-    await expect(more).toHaveCSS("box-shadow", /(?:inset[^,]*0px 2px|0px 2px inset)/);
+    await expect(more).toHaveCSS("outline-offset", "-2px");
+    await expect(more).toHaveCSS("outline-width", "2px");
+    await expect(more).toHaveCSS("outline-style", "solid");
     expect(await more.evaluate(button => {
       const scroller = button.closest<HTMLElement>(".overflow-x-auto")!;
       scroller.style.width = "130px";
