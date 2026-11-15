@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type APIResponse } from "@playwright/test";
 import { join } from "node:path";
 
 const six = "react,vue,svelte,angular,axios,next";
@@ -7,6 +7,10 @@ const formats = [
   ["Excel CSV", ".excel.csv"],
   ["JSON", ".json"],
 ] as const;
+
+function attachmentName(response: APIResponse) {
+  return response.headers()["content-disposition"]?.match(/^attachment; filename="([^"]+)"$/)?.[1];
+}
 
 for (const width of [320, 390, 768]) {
   test(`compare export notice and saved filenames at ${width}px`, async ({ page, request }, testInfo) => {
@@ -43,10 +47,10 @@ for (const width of [320, 390, 768]) {
       expect(href).toBeTruthy();
       const response = await request.get(href!);
       expect(response.ok()).toBe(true);
-      const filename = await link.getAttribute("download");
+      expect(await link.getAttribute("download")).toBeNull();
+      const filename = attachmentName(response);
       expect(filename).toMatch(/__truncated-5-of-6__/);
       expect(filename?.endsWith(extension)).toBe(true);
-      expect(response.headers()["content-disposition"]).toBe(`attachment; filename="${filename}"`);
       const [download] = await Promise.all([page.waitForEvent("download"), page.keyboard.press("Enter")]);
       expect(download.suggestedFilename()).toBe(filename);
       await download.saveAs(join(testInfo.outputDir, download.suggestedFilename()));
@@ -56,7 +60,7 @@ for (const width of [320, 390, 768]) {
   });
 }
 
-test("compare omission reasons survive range navigation and unavailable names stay out of filenames", async ({ page }) => {
+test("compare omission reasons survive range navigation and unavailable names stay out of filenames", async ({ page, request }) => {
   const params = new URLSearchParams({ packages: "react,vue,missing-export-fixture,invalid name,REACT", days: "7" });
   await page.goto(`/compare?${params}`);
   const trigger = page.getByRole("button", { name: "Export comparison data", exact: true });
@@ -66,15 +70,22 @@ test("compare omission reasons survive range navigation and unavailable names st
   await expect(page).toHaveURL(/days=14/);
   await expect(trigger).toHaveAccessibleDescription(summary);
   await trigger.click();
-  await expect(page.getByRole("menuitem", { name: /^CSV\b/ })).toHaveAttribute("download", /^npmtraffic__react__vue__partial-2-of-4__14d__/);
+  const link = page.getByRole("menuitem", { name: /^CSV\b/ });
+  expect(await link.getAttribute("download")).toBeNull();
+  const response = await request.get((await link.getAttribute("href"))!);
+  expect(response.ok()).toBe(true);
+  expect(attachmentName(response)).toMatch(/^npmtraffic__react__vue__partial-2-of-4__14d__/);
 });
 
-test("shortened downloads retain the truncation marker after saving", async ({ page }) => {
+test("shortened downloads retain the truncation marker after saving", async ({ page, request }) => {
   const query = new URLSearchParams({ packages: "a".repeat(214) + "," + six, days: "7" });
   await page.goto(`/compare?${query}`);
   await page.getByRole("button", { name: "Export comparison data", exact: true }).click();
   const link = page.getByRole("menuitem", { name: /^Excel CSV\b/ });
-  const filename = await link.getAttribute("download");
+  expect(await link.getAttribute("download")).toBeNull();
+  const response = await request.get((await link.getAttribute("href"))!);
+  expect(response.ok()).toBe(true);
+  const filename = attachmentName(response);
   expect(filename).toHaveLength(180);
   expect(filename).toMatch(/__[0-9a-f]{16}__truncated-5-of-7__7d__.+__utc\.excel\.csv$/);
   const [download] = await Promise.all([page.waitForEvent("download"), link.click()]);

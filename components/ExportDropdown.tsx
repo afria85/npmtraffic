@@ -10,7 +10,6 @@ export type ExportItem = {
   label: string;
   description?: string;
   href: string;
-  downloadName?: string;
 };
 
 type MenuPosition = {
@@ -178,30 +177,25 @@ export default function ExportDropdown({
         }}
       >
         <div className="p-2">
-          {items.map((item) => {
-            const downloadProps = item.downloadName ? { download: item.downloadName } : undefined;
-
-            return (
-              <a
-                key={item.key}
-                href={item.href}
-                role="menuitem"
-                className="block rounded-lg px-3 py-2 text-sm text-[var(--foreground)] transition hover:bg-[var(--surface-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
-                {...(downloadProps ?? {})}
-                onClick={() => {
-                  close();
-                  triggerRef.current?.focus({ preventScroll: true });
-                }}
-              >
-                <span className="block font-medium">{item.label}</span>
-                {item.description ? (
-                  <span className="mt-0.5 block text-xs leading-5 text-[var(--foreground-tertiary)]">
-                    {item.description}
-                  </span>
-                ) : null}
-              </a>
-            );
-          })}
+          {items.map((item) => (
+            <a
+              key={item.key}
+              href={item.href}
+              role="menuitem"
+              className="block rounded-lg px-3 py-2 text-sm text-[var(--foreground)] transition hover:bg-[var(--surface-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+              onClick={() => {
+                close();
+                triggerRef.current?.focus({ preventScroll: true });
+              }}
+            >
+              <span className="block font-medium">{item.label}</span>
+              {item.description ? (
+                <span className="mt-0.5 block text-xs leading-5 text-[var(--foreground-tertiary)]">
+                  {item.description}
+                </span>
+              ) : null}
+            </a>
+          ))}
         </div>
       </div>,
       portalRoot

@@ -18,7 +18,6 @@ import CompareChart from "@/components/compare/CompareChartClient";
 import CompareAddBar from "@/components/compare/CompareAddBar";
 import CompareSeriesTable from "@/components/compare/CompareSeriesTable";
 import CompareInsightsPanel from "@/components/compare/CompareInsightsPanel";
-import { buildCompareExportFilename } from "@/lib/export-filename";
 import RetryButton from "@/components/ui/RetryButton";
 import {
   COMPARE_ACTION_CONTAINER_CLASSES,
@@ -210,21 +209,18 @@ export default async function ComparePage({ searchParams }: Props) {
           label: "CSV",
           description: "Comment header, UTC dates, daily deltas",
           href: `/api/v1/compare.csv?packages=${comparisonPackages}&days=${days}`,
-          downloadName: buildCompareExportFilename(data, "csv"),
         },
         {
           key: "excel",
           label: "Excel CSV",
           description: "Semicolon-delimited for spreadsheet imports",
           href: `/api/v1/compare.excel.csv?packages=${comparisonPackages}&days=${days}`,
-          downloadName: buildCompareExportFilename(data, "excel.csv"),
         },
         {
           key: "json",
           label: "JSON",
           description: "Package totals, daily values, metadata, export block",
           href: `/api/v1/compare.json?packages=${comparisonPackages}&days=${days}`,
-          downloadName: buildCompareExportFilename(data, "json"),
         },
       ]
     : [];

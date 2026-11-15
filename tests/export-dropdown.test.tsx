@@ -11,15 +11,13 @@ test("export dropdown renders package links after opening", async () => {
       label: "CSV",
       description: "Comment header, UTC dates, derived columns",
       href: "/api/v1/package/react/daily.csv?days=30",
-      downloadName: "react.csv",
     },
     {
       key: "excel",
       label: "Excel CSV",
       href: "/api/v1/package/react/daily.excel.csv?days=30",
-      downloadName: "react-excel.csv",
     },
-    { key: "json", label: "JSON", href: "/api/v1/package/react/daily.json?days=30", downloadName: "react.json" },
+    { key: "json", label: "JSON", href: "/api/v1/package/react/daily.json?days=30" },
   ];
   const { dom, cleanup } = setupDom();
   const { container, unmount } = renderComponent(dom, <ExportDropdown items={itemList} />);
@@ -34,6 +32,7 @@ test("export dropdown renders package links after opening", async () => {
 
     const menu = dom.window.document.body.querySelector("[role='menu']");
     assert.ok(menu);
+    assert.equal(menu.querySelector("a[download]"), null);
     assert.ok(menu?.innerHTML.includes('href="/api/v1/package/react/daily.csv?days=30"'));
     assert.ok(menu?.innerHTML.includes('href="/api/v1/package/react/daily.excel.csv?days=30"'));
     assert.ok(menu?.innerHTML.includes('href="/api/v1/package/react/daily.json?days=30"'));
@@ -50,19 +49,16 @@ test("export dropdown supports compare list links after opening", async () => {
       key: "csv",
       label: "CSV",
       href: "/api/v1/compare.csv?packages=react,vue&days=14",
-      downloadName: "compare.csv",
     },
     {
       key: "excel",
       label: "Excel CSV",
       href: "/api/v1/compare.excel.csv?packages=react,vue&days=14",
-      downloadName: "compare-excel.csv",
     },
     {
       key: "json",
       label: "JSON",
       href: "/api/v1/compare.json?packages=react,vue&days=14",
-      downloadName: "compare.json",
     },
   ];
   const { dom, cleanup } = setupDom();
@@ -78,6 +74,7 @@ test("export dropdown supports compare list links after opening", async () => {
 
     const menu = dom.window.document.body.querySelector("[role='menu']");
     assert.ok(menu);
+    assert.equal(menu.querySelector("a[download]"), null);
     assert.ok(menu?.innerHTML.includes('href="/api/v1/compare.csv?packages=react,vue&amp;days=14"'));
     assert.ok(menu?.innerHTML.includes('href="/api/v1/compare.excel.csv?packages=react,vue&amp;days=14"'));
     assert.ok(menu?.innerHTML.includes('href="/api/v1/compare.json?packages=react,vue&amp;days=14"'));
@@ -93,7 +90,7 @@ test("export dropdown button references menu for accessibility", async () => {
     dom,
     <ExportDropdown
       items={[
-        { key: "csv", label: "CSV", href: "/api/export.csv", downloadName: "export.csv" },
+        { key: "csv", label: "CSV", href: "/api/export.csv" },
       ]}
     />
   );
