@@ -10,6 +10,7 @@ import { computeLeftPad } from "@/components/charts/axis-padding";
 import { toObservationPath } from "@/components/charts/observation-path";
 import { serializeChartSvg } from "@/components/charts/serialize-svg";
 import { TimelineAxis } from "@/components/charts/TimelineAxis";
+import ChartObservationControl, { describeDownloads, useChartInspection } from "@/components/charts/ChartObservationControl";
 import { useChartViewport } from "@/components/charts/use-chart-viewport";
 
 const CHART_BUTTON_CLASSES = "inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold leading-none text-[var(--foreground)] transition-colors hover:bg-[var(--surface-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]";
@@ -225,7 +226,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
 
   const settingsKey = `npmtraffic_chart_settings:compare:${packageNames.join("|")}`;
 
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const { hoverIndex, setHoverIndex, inspect, control, setControlIndex } = useChartInspection(svgRef, series.length);
   const [styleOpen, setStyleOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [settings, setSettings] = useState<CompareChartSettings>(() => {
@@ -276,19 +277,6 @@ export default function CompareChart({ series, packageNames, days }: Props) {
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [styleOpen]);
-
-  const hasTooltip = hoverIndex !== null;
-  useEffect(() => {
-    if (!hasTooltip) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!svgRef.current?.contains(event.target as Node)) setHoverIndex(null);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-    };
-  }, [hasTooltip]);
-
 
   const maxValue = useMemo(() => {
     const values: number[] = [];
@@ -655,6 +643,20 @@ export default function CompareChart({ series, packageNames, days }: Props) {
         ) : null}
       </div>
 
+      <ChartObservationControl
+        length={series.length}
+        inspect={inspect}
+        control={control}
+        onBlur={() => setControlIndex(null)}
+        describe={index => {
+          const row = series[index];
+          const values = packageNames.map(pkg => {
+            const value = row.values[pkg];
+            return pkg + ": " + describeDownloads(value?.downloads ?? null, value?.status);
+          });
+          return row.date + " UTC, " + values.join("; ");
+        }}
+      />
     </section>
   );
 }
