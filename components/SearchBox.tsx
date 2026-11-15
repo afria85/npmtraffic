@@ -16,12 +16,8 @@ type SearchResult = {
 
 type SearchState = "idle" | "loading" | "error";
 
-type OptionKind = "popular" | "recent" | "result";
-
 type DisplayOption = {
   id: string;
-  kind: OptionKind;
-  label: string;
   value: string;
   helper?: string;
 };
@@ -60,7 +56,7 @@ function SearchPanel({
   }, [hydrated]);
   const recent = useSyncExternalStore(subscribeRecentSearches, getClientSnapshot, getEmptySnapshot);
   const [requestId, setRequestId] = useState<string | null>(null);
-  const [activeIndex, setActiveIndex] = useState(-1);
+  const [activeValue, setActiveValue] = useState<string | null>(null);
   const [isListOpen, setIsListOpen] = useState(false);
 
   const normalizedQuery = normalizePackageInput(query);
@@ -88,6 +84,7 @@ function SearchPanel({
           query?: string;
           items?: SearchResult[];
         };
+        if (controller.signal.aborted) return;
         if (!res.ok) {
           setState("error");
           setResults([]);
@@ -117,94 +114,66 @@ function SearchPanel({
     return matches.slice(0, POPULAR_LIMIT);
   }, [queryLower]);
 
-  const recentMatches = useMemo(() => {
-    const filtered = queryLower
-      ? recent.filter((item) => item.toLowerCase().includes(queryLower))
-      : recent.slice();
-    const popularSet = new Set(popularMatches.map((item) => item.toLowerCase()));
-    return filtered.filter((item) => !popularSet.has(item.toLowerCase()));
-  }, [recent, queryLower, popularMatches]);
-
   const options = useMemo(() => {
     const list: DisplayOption[] = [];
-    let index = 0;
-
-    for (const name of popularMatches) {
-      list.push({
-        id: `${listId}-option-${index++}`,
-        kind: "popular",
-        label: name,
-        value: name,
-        helper: "Popular",
-      });
+    const seen = new Set<string>();
+    function add(name: string, helper?: string) {
+      const value = normalizePackageInput(name);
+      if (!value || seen.has(value)) return;
+      seen.add(value);
+      list.push({ id: listId + "-option-" + encodeURIComponent(value), value, helper });
     }
 
-    for (const name of recentMatches) {
-      list.push({
-        id: `${listId}-option-${index++}`,
-        kind: "recent",
-        label: name,
-        value: name,
-        helper: "Recent",
-      });
+    for (const name of popularMatches) add(name, "Popular");
+    for (const name of recent) {
+      if (normalizePackageInput(name).includes(queryLower)) add(name, "Recent");
     }
-
-    for (const item of results) {
-      list.push({
-        id: `${listId}-option-${index++}`,
-        kind: "result",
-        label: item.name,
-        value: item.name,
-        helper: item.description,
-      });
-    }
-
+    for (const item of results) add(item.name, item.description);
     return list;
-  }, [listId, popularMatches, recentMatches, results]);
+  }, [listId, popularMatches, recent, queryLower, results]);
 
-  const activeOption = activeIndex >= 0 ? options[activeIndex] : null;
   const showList = isListOpen && options.length > 0;
+  const activeOption = showList ? options.find(option => option.value === activeValue) : undefined;
+
+  useEffect(() => {
+    if (activeOption) document.getElementById(activeOption.id)?.scrollIntoView({ block: "nearest" });
+  }, [activeOption]);
+
+  const closeList = () => {
+    setIsListOpen(false);
+    setActiveValue(null);
+  };
 
   const selectPackage = (value: string) => {
     addRecentSearch(value);
-    setIsListOpen(false);
-    router.push(`/p/${encodeURIComponent(value)}?days=30`);
+    closeList();
+    router.push("/p/" + encodeURIComponent(value) + "?days=30");
     onClose?.();
   };
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
+    if (event.nativeEvent.isComposing) return;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       if (!options.length) return;
-      setIsListOpen(true);
-      setActiveIndex((prev) => Math.min(prev + 1, options.length - 1));
-      return;
-    }
-    if (event.key === "ArrowUp") {
       event.preventDefault();
-      if (!options.length) return;
       setIsListOpen(true);
-      setActiveIndex((prev) => (prev <= 0 ? 0 : prev - 1));
+      const index = activeOption ? options.indexOf(activeOption) : -1;
+      const next = event.key === "ArrowDown"
+        ? Math.min(index + 1, options.length - 1)
+        : index < 0 ? options.length - 1 : Math.max(0, index - 1);
+      setActiveValue(options[next].value);
       return;
     }
     if (event.key === "Enter") {
       event.preventDefault();
-      if (activeOption) {
-        selectPackage(activeOption.value);
-        return;
-      }
-      if (normalizedQuery) {
-        selectPackage(normalizedQuery);
-      }
+      const value = activeOption?.value ?? normalizedQuery;
+      if (value) selectPackage(value);
       return;
     }
-    if (event.key === "Escape") {
-      if (onClose) {
-        event.stopPropagation();
-        onClose();
-        return;
-      }
-      setIsListOpen(false);
+    if (event.key === "Escape" && showList) {
+      event.preventDefault();
+      event.stopPropagation();
+      closeList();
     }
   };
 
@@ -218,7 +187,7 @@ function SearchPanel({
   return (
     <div className={className}>
       <div className="relative z-30">
-        <input id="package-search" name="package"
+        <input id={listId + "-input"} name="package"
           ref={inputRef}
           value={query}
           onChange={(event) => {
@@ -226,21 +195,22 @@ function SearchPanel({
             const normalized = normalizePackageInput(nextValue);
             setQuery(nextValue);
             setIsListOpen(true);
-            setActiveIndex(-1);
+            setActiveValue(null);
             setRequestId(null);
-            if (!normalized) {
+            if (normalized !== normalizedQuery) {
               setResults([]);
               setState("idle");
             }
           }}
           onFocus={() => setIsListOpen(true)}
-          onBlur={() => window.setTimeout(() => setIsListOpen(false), 120)}
+          onBlur={closeList}
           onKeyDown={handleKeyDown}
           placeholder="Search npm packages"
           className="h-11 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
           role="combobox"
+          aria-label="Search npm packages"
           aria-expanded={showList}
-          aria-controls={listId}
+          aria-controls={showList ? listId : undefined}
           aria-autocomplete="list"
           aria-activedescendant={activeOption?.id}
         />
@@ -273,7 +243,7 @@ function SearchPanel({
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => selectPackage(option.value)}
                 >
-                  <span>{option.label}</span>
+                  <span>{option.value}</span>
                   {option.helper ? (
                     <span className="max-w-[50%] truncate text-xs text-[var(--foreground-tertiary)]">
                       {option.helper}
