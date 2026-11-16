@@ -60,7 +60,7 @@ export default async function Home() {
     <main className="observatory-page observatory-home">
       <div className="observatory-home-grid">
         <section aria-labelledby="find-package" className="min-w-0">
-          <h1 id="find-package" className="observatory-home-title">Explore npm downloads</h1>
+          <h1 id="find-package" className="observatory-home-title">Explore <span className="text-[var(--accent)]">npm</span> downloads</h1>
           <p className="observatory-home-intro">
             Look up a package or compare up to five. Inspect daily downloads, coverage, and release dates on the same UTC timeline.
           </p>
