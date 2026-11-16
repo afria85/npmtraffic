@@ -643,7 +643,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                     </th>
                   ) : null}
                   {showDerived ? (
-                    <th className="px-2 py-2 text-center font-semibold whitespace-nowrap sm:px-3" title="Outlier flag">
+                    <th className="px-2 py-2 text-center font-semibold whitespace-nowrap sm:px-3" title="Global MAD flag (not adjusted for recurring weekly patterns)">
                       Outlier
                     </th>
                   ) : null}
