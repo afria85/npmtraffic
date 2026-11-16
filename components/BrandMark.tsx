@@ -16,7 +16,7 @@ function BrandMark({ className = "h-6 w-6", variant = "ui" }: BrandMarkProps) {
     <span className={`${className} relative inline-block`}>
       <Image
         src={src}
-        alt="npmtraffic"
+        alt=""
         fill
         sizes="24px"
         priority

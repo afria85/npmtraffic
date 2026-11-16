@@ -9,11 +9,11 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="relative min-h-screen px-6 py-16 sm:py-20">
-      <div className="mx-auto max-w-4xl space-y-16">
+    <main className="observatory-reference relative min-h-screen">
+      <div className="mx-auto max-w-4xl space-y-8 sm:space-y-12">
         {/* Header */}
-        <header className="space-y-6 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-[var(--foreground)] sm:text-5xl">
+        <header className="space-y-3 text-center">
+          <h1 className="observatory-title">
             Built for maintainers who need answers
           </h1>
           <p className="mx-auto max-w-2xl text-lg leading-relaxed text-[var(--foreground-secondary)]">
@@ -22,7 +22,7 @@ export default function AboutPage() {
         </header>
 
         {/* What You Get */}
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-lg sm:p-10">
+        <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-lg sm:p-10">
           <div className="mb-6 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent-muted)]">
               <svg className="h-5 w-5 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">

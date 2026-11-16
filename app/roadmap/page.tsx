@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import BrandText from "@/components/BrandText";
 import { getBaseUrl } from "@/lib/base-url";
 
 const shippingNow = [
@@ -78,16 +76,9 @@ function Section({ title, items }: { title: string; items: string[] }) {
 
 export default function RoadmapPage() {
   return (
-    <main className="mx-auto min-h-full max-w-4xl px-6 py-16 sm:py-20">
+    <main className="observatory-reference mx-auto min-h-full max-w-4xl">
       <header className="mb-8">
-        <Link
-          href="/"
-          className="inline-flex min-h-8 items-center"
-          aria-label="npmtraffic home"
-        >
-          <BrandText />
-        </Link>
-        <h1 className="mt-2 text-4xl font-semibold">Roadmap</h1>
+        <h1 className="observatory-title">Roadmap</h1>
         <p className="mt-2 text-sm text-[var(--foreground-tertiary)]">
           A lightweight, maintainer-focused tool. Shipping items reflect what is already in the app; future work keeps the same no-account, low-tracking posture.
         </p>

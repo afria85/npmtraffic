@@ -27,7 +27,7 @@ export default function Footer({ projectGithubUrl }: { projectGithubUrl: string 
             <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--foreground-tertiary)]">
               Product
             </h3>
-            <nav className="flex flex-col gap-1 text-sm">
+            <nav aria-label="Product" className="flex flex-col gap-1 text-sm">
               <Link href="/" className="inline-flex min-h-8 items-center text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
                 Home
               </Link>
@@ -48,7 +48,7 @@ export default function Footer({ projectGithubUrl }: { projectGithubUrl: string 
             <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--foreground-tertiary)]">
               Resources
             </h3>
-            <nav className="flex flex-col gap-1 text-sm">
+            <nav aria-label="Resources" className="flex flex-col gap-1 text-sm">
               <Link href="/transparency" className="inline-flex min-h-8 items-center text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
                 Transparency
               </Link>
@@ -63,7 +63,7 @@ export default function Footer({ projectGithubUrl }: { projectGithubUrl: string 
                   className="inline-flex min-h-8 items-center gap-1 text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]"
                 >
                   GitHub
-                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg aria-hidden="true" className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </a>
@@ -76,7 +76,7 @@ export default function Footer({ projectGithubUrl }: { projectGithubUrl: string 
             <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--foreground-tertiary)]">
               Support
             </h3>
-            <nav className="flex flex-col gap-1 text-sm">
+            <nav aria-label="Support" className="flex flex-col gap-1 text-sm">
               <Link href="/donate" className="inline-flex min-h-8 items-center text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
                 Donate
               </Link>

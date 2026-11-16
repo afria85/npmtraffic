@@ -343,6 +343,10 @@ details summary::marker { display: none; }
     margin-inline: auto;
     padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 3vw, 1.75rem);
   }
+  .observatory-reference {
+    padding-block: clamp(1.5rem, 4vw, 3rem);
+    padding-inline: clamp(1rem, 3vw, 1.75rem);
+  }
   .observatory-title {
     color: var(--foreground);
     font-size: clamp(1.75rem, 4vw, 3rem);

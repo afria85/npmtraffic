@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import BrandText from "@/components/BrandText";
 import { getBaseUrl } from "@/lib/base-url";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -110,17 +108,10 @@ export default async function DataPage() {
   const compareCurl = `curl "${baseUrl}/api/v1/compare.json?packages=react,vue&days=30"`;
 
   return (
-    <main className="mx-auto min-h-full max-w-5xl px-4 py-12">
+    <main className="observatory-reference mx-auto min-h-full max-w-5xl">
       <header className="mb-6">
-        <Link
-          href="/"
-          className="inline-flex min-h-8 items-center"
-          aria-label="npmtraffic home"
-        >
-          <BrandText />
-        </Link>
-        <h1 className="mt-2 text-4xl font-semibold">Data</h1>
-        <p className="text-sm text-[var(--foreground-tertiary)]">
+        <h1 className="observatory-title">Data</h1>
+        <p className="mt-2 text-sm text-[var(--foreground-tertiary)]">
           API endpoints, exports, caching, and error explanations.
         </p>
       </header>

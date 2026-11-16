@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import BrandText from "@/components/BrandText";
 import { getBaseUrl } from "@/lib/base-url";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -35,10 +34,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function TransparencyPage() {
   return (
-    <main className="mx-auto min-h-full max-w-4xl px-6 py-16 sm:py-20">
+    <main className="observatory-reference mx-auto min-h-full max-w-4xl">
       <header className="mb-8">
-        <BrandText />
-        <h1 className="mt-2 text-4xl font-semibold text-[var(--foreground)]">Transparency</h1>
+        <h1 className="observatory-title">Transparency</h1>
         <p className="mt-2 text-sm text-[var(--foreground-tertiary)]">Infrastructure, data sources, caching, privacy, and sharing posture.</p>
       </header>
 
