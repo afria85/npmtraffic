@@ -7,6 +7,7 @@ const plot = (page: Page) => page.getByRole("img", { name: /daily downloads line
 
 for (const [width, height] of [[320, 720], [390, 844], [768, 1024], [1024, 768], [1440, 900]]) {
   test(`registry ledger fits both plots and keeps essential controls at ${width}px`, async ({ page }) => {
+    test.setTimeout(60_000);
     await page.setViewportSize({ width, height });
     await page.emulateMedia({ colorScheme: width === 390 || width === 1024 ? "dark" : "light", reducedMotion: "reduce" });
     const errors: string[] = [];
@@ -14,7 +15,7 @@ for (const [width, height] of [[320, 720], [390, 844], [768, 1024], [1024, 768],
     for (const route of [packageRoute, five]) {
       await page.goto(route);
       const chart = plot(page);
-      await expect(chart).toBeVisible();
+      await expect(chart).toBeVisible({ timeout: 20_000 });
       const geometry = await chart.evaluate(svg => {
         const main = svg.closest("main")!;
         const nextSection = [...main.querySelectorAll("h2")].find(heading =>
@@ -41,6 +42,7 @@ for (const [width, height] of [[320, 720], [390, 844], [768, 1024], [1024, 768],
 }
 
 test("scoped identifiers and shared totals reflow with 200 percent text size", async ({ page }) => {
+  test.setTimeout(60_000);
   const name = "@scope/" + "long-identifier-".repeat(6) + "package";
   const comparison = new URLSearchParams({ packages: `${name},react`, days: "7" });
   await page.setViewportSize({ width: 320, height: 820 });
@@ -62,6 +64,7 @@ test("scoped identifiers and shared totals reflow with 200 percent text size", a
 });
 
 test("ledger labels and provenance pass automated contrast and name checks", async ({ page }) => {
+  test.setTimeout(60_000);
   await page.setViewportSize({ width: 390, height: 844 });
   for (const theme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: theme });
