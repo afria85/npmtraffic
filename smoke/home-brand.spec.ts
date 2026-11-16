@@ -40,3 +40,18 @@ test("About feature copy matches the measured Compare insight", async ({ page })
   await page.goto("/about");
   await expect(page.getByText(/largest relative increase, and closest race/)).toBeVisible();
 });
+
+for (const [route, title] of [["/about", "About"], ["/donate", "Donate"]] as const) {
+  test(`supporting pages provide their own canonical and social metadata: ${route}`, async ({ page }) => {
+    await page.goto(route);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `https://npmtraffic.com${route}`);
+    await expect(page.locator('meta[property="og:url"]')).toHaveAttribute("content", `https://npmtraffic.com${route}`);
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", `${title} | npmtraffic`);
+  });
+}
+
+test("footer exposes the Data and exports documentation from every page", async ({ page }) => {
+  await page.goto("/about");
+  const resources = page.getByRole("contentinfo").getByRole("navigation", { name: "Resources" });
+  await expect(resources.getByRole("link", { name: "Data & exports" })).toHaveAttribute("href", "/data");
+});
