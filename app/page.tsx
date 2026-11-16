@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const fallbackOgImage = `${baseUrl}/og-fallback.png`;
 
   return {
-    title: "npm Download Trends & Comparisons",
+    title: "npm Download Trends & Comparisons | npmtraffic",
     description: config.site.tagline,
     alternates: {
       canonical: `${baseUrl}/`,
