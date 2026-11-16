@@ -124,7 +124,7 @@ export default function PackageInsightsPanel({ series, derived, days }: Props) {
         <InsightCell
           label="Global MAD flags"
           value={insights.availableDays ? formatNumber(insights.outlierCount) : "Unavailable"}
-          detail={outlierDetail}
+          detail={`${outlierDetail}. Weekly patterns may also be flagged.`}
         />
       </div>
       <div className="border-t border-[color:var(--border)] px-4 py-2 text-xs text-[var(--foreground-tertiary)]">
