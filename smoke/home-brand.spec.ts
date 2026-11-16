@@ -2,11 +2,11 @@ import { expect, test } from "@playwright/test";
 
 for (const theme of ["light", "dark"] as const) {
   test(`homepage npm headline uses the theme accent without changing accessible text (${theme})`, async ({ page }) => {
+    // Respect the app's theme initializer and hydration instead of manually
+    // overriding html attributes before ThemeToggle mounts.
+    await page.emulateMedia({ colorScheme: theme });
     await page.goto("/");
-    await page.evaluate((mode) => {
-      document.documentElement.dataset.theme = mode;
-      document.documentElement.classList.toggle("dark", mode === "dark");
-    }, theme);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     const heading = page.getByRole("heading", { level: 1, name: "Explore npm downloads", exact: true });
     await expect(heading).toBeVisible();
     const npm = heading.getByText("npm", { exact: true });
