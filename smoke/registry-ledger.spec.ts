@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
@@ -108,8 +109,18 @@ test("Compare scale is opt-in and keeps shared absolute totals unchanged", async
   await expect(indexed).toHaveAttribute("aria-pressed", "true");
   await expect(chart).toHaveAttribute("aria-label", /indexed to 100/);
   await expect(page.getByText(/Each package equals 100 on .* UTC/)).toBeVisible();
+  await expect(chart.locator("[data-chart-index-note]")).toContainText(/Index 100 = .* UTC/);
   await expect.poll(() => line.getAttribute("d")).not.toBe(before);
   expect(await totals.innerText()).toBe(rawTotals);
+
+  await page.getByRole("button", { name: "Export", exact: true }).last().click();
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("menuitem", { name: "Export SVG" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/-indexed-\\d{4}-\\d{2}-\\d{2}\\.svg$/);
+  const markup = await readFile(await download.path(), "utf8");
+  expect(markup).toContain("Index 100 =");
 
   await absolute.click();
   await expect(absolute).toHaveAttribute("aria-pressed", "true");
