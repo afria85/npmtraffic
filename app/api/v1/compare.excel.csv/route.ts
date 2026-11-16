@@ -2,8 +2,8 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { buildCompareData } from "@/lib/compare";
 import { buildCsv } from "@/lib/csv";
-import { buildExportCommentHeader, buildExportMeta, compareCsvRows } from "@/lib/export";
-import { buildExportFilename } from "@/lib/export-filename";
+import { buildExportCommentHeader, buildExportMeta, compareCsvRows, compareSelectionHeaders } from "@/lib/export";
+import { buildCompareExportFilename } from "@/lib/export-filename";
 import { logApiEvent } from "@/lib/api-log";
 import { rateLimit } from "@/lib/rate-limit";
 import { parsePackageList } from "@/lib/query";
@@ -16,7 +16,6 @@ export async function GET(req: Request) {
   const start = Date.now();
   const route = "GET /api/v1/compare.excel.csv";
   let upstreamStatus: number | undefined;
-  let pkgList: string | undefined;
   let daysValue: number | undefined;
 
   try {
@@ -67,8 +66,6 @@ export async function GET(req: Request) {
       );
     }
 
-    pkgList = pkgs.join(",");
-
     const data = await buildCompareData(pkgs, days);
 
     const rows = compareCsvRows(data);
@@ -81,12 +78,7 @@ export async function GET(req: Request) {
       data.meta.isStale,
       data.meta.staleReason ?? null
     );
-    const filename = buildExportFilename({
-      packages: pkgs,
-      days: data.days,
-      range: data.range,
-      format: "excel.csv",
-    });
+    const filename = buildCompareExportFilename(data, "excel.csv");
     const csv =
       ["sep=;"].concat(buildExportCommentHeader(exportMeta, data.coverage).split("\n")).join("\n") +
       "\n" +
@@ -96,6 +88,7 @@ export async function GET(req: Request) {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
         "Cache-Control": "no-store",
+        ...compareSelectionHeaders(data.selection),
         "x-request-id": requestId,
         "X-Content-Type-Options": "nosniff",
         "Content-Disposition": `attachment; filename="${filename}"`,
@@ -107,7 +100,7 @@ export async function GET(req: Request) {
       route,
       status: 200,
       ms: Date.now() - start,
-      package: pkgList,
+      package: data.selection.exportedPackages.join(","),
       days: data.days,
     });
     return response;
@@ -123,7 +116,6 @@ export async function GET(req: Request) {
         route,
         status: 400,
         ms: Date.now() - start,
-        package: pkgList,
         days: daysValue,
       });
       return NextResponse.json(
@@ -141,7 +133,6 @@ export async function GET(req: Request) {
           route,
           status: 400,
           ms: Date.now() - start,
-          package: pkgList,
           days: daysValue,
         });
         return NextResponse.json(
@@ -155,7 +146,6 @@ export async function GET(req: Request) {
           route,
           status: 404,
           ms: Date.now() - start,
-          package: pkgList,
           days: daysValue,
         });
         return NextResponse.json(
@@ -172,7 +162,6 @@ export async function GET(req: Request) {
       status,
       ms: Date.now() - start,
       upstreamStatus,
-      package: pkgList,
       days: daysValue,
     });
     return NextResponse.json(

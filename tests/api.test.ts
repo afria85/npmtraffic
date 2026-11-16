@@ -7,6 +7,7 @@ import { GET as getDailyCsv } from "../app/api/v1/package/[name]/daily.csv/route
 import { GET as getDailyExcelCsv } from "../app/api/v1/package/[name]/daily.excel.csv/route";
 import { GET as getDailyJson } from "../app/api/v1/package/[name]/daily.json/route";
 import { GET as getCompare } from "../app/api/v1/compare/route";
+import { GET as getCompareJson } from "../app/api/v1/compare.json/route";
 import { GET as getCompareCsv } from "../app/api/v1/compare.csv/route";
 import { GET as getCompareExcelCsv } from "../app/api/v1/compare.excel.csv/route";
 import { GET as getSearch } from "../app/api/v1/search/route";
@@ -353,6 +354,35 @@ test("compare JSON export includes metadata block", async (t) => {
   const disposition = res.headers.get("content-disposition") ?? "";
   assert.ok(disposition.includes("npmtraffic__react__vue"));
   assert.ok(disposition.endsWith(".json\""));
+  assert.deepEqual(Object.keys(body), [
+    "days", "range", "packages", "series", "coverage", "observations", "meta", "export",
+  ]);
+
+  // Warm the data once, then compare the actual wire payloads across both routes.
+  for (const [handler, path] of [[getCompare, "compare"], [getCompareJson, "compare.json"]] as const) {
+    const url = `http://localhost/api/v1/${path}?packages=react,vue&days=30`;
+    const legacyResponse = await handler(new Request(url));
+    const legacy = await legacyResponse.json();
+    assert.equal(legacyResponse.status, 200);
+    assert.deepEqual(Object.keys(legacy), Object.keys(body));
+    for (const value of ["0", "true", "", "01", "%201", "1%20", "1"]) {
+      const response = await handler(new Request(`${url}&includeSelection=${value}`));
+      assert.equal(response.status, 200);
+      for (const header of ["content-disposition", "cache-control", "x-compare-exported-count", "x-compare-cap-applied"]) {
+        assert.equal(response.headers.get(header), legacyResponse.headers.get(header));
+      }
+      const payload = await response.json();
+      const { selection, ...fields } = payload;
+      assert.equal(Object.hasOwn(payload, "selection"), value === "1");
+      if (value === "1") {
+        assert.deepEqual(selection, {
+          requestedCount: 2, exportedPackages: ["react", "vue"], exportedCount: 2,
+          capApplied: false, capOmittedCount: 0, invalidCount: 0, unavailableCount: 0, duplicateCount: 0,
+        });
+      }
+      assert.deepEqual(fields, { ...legacy, export: { ...legacy.export, requestId: response.headers.get("x-request-id") } });
+    }
+  }
 });
 
 test("compare CSV export includes metadata comments", async (t) => {

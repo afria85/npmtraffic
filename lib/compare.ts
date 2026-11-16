@@ -1,6 +1,6 @@
 import { fetchTraffic, TrafficError, type TrafficResponse } from "@/lib/traffic";
 import { canonicalizePackages, clampDays, rangeForDays } from "@/lib/query";
-import { validatePackageName } from "@/lib/package-name";
+import { normalizePackageInput, validatePackageName } from "@/lib/package-name";
 import { summarizeCoverage, type Observation } from "@/lib/observations";
 import { listDatesBetween } from "@/lib/dates";
 
@@ -27,7 +27,21 @@ export function calculatePackageShares(packages: { name: string; total: number |
   }));
 }
 
+export const MAX_COMPARE_PACKAGES = 5;
+
+export type CompareSelection = {
+  requestedCount: number;
+  exportedPackages: string[];
+  exportedCount: number;
+  capApplied: boolean;
+  capOmittedCount: number;
+  invalidCount: number;
+  unavailableCount: number;
+  duplicateCount: number;
+};
+
 export type CompareData = {
+  selection: CompareSelection;
   days: number;
   range: ReturnType<typeof rangeForDays>;
   packages: CompareTotals[];
@@ -47,13 +61,14 @@ export async function buildCompareData(rawPackages: string[], rawDays?: string |
   const days = clampDays(rawDays);
   const now = new Date();
   const range = rangeForDays(days, now);
-  let pkgs = canonicalizePackages(rawPackages);
+  const normalized = rawPackages.map(normalizePackageInput).filter(Boolean);
+  const requested = canonicalizePackages(normalized);
+  const pkgs = requested.slice(0, MAX_COMPARE_PACKAGES);
+  const capOmittedCount = requested.length - pkgs.length;
   const warnings: string[] = [];
-  const maxPackages = 5;
 
-  if (pkgs.length > maxPackages) {
-    warnings.push(`Only the first ${maxPackages} packages are compared.`);
-    pkgs = pkgs.slice(0, maxPackages);
+  if (capOmittedCount > 0) {
+    warnings.push(`Only the first ${MAX_COMPARE_PACKAGES} packages are compared.`);
   }
 
   const validPkgs = pkgs.filter((pkg) => {
@@ -76,18 +91,18 @@ export async function buildCompareData(rawPackages: string[], rawDays?: string |
         return { name, data };
       } catch (error) {
         if (error instanceof TrafficError && error.code === "PACKAGE_NOT_FOUND") {
-          warnings.push(`Package not found: ${name}.`);
-          return null;
+          return { name, data: null };
         }
         throw error;
       }
     })
   );
 
-  const datasets = results.filter(Boolean) as Array<{
-    name: string;
-    data: Awaited<ReturnType<typeof fetchTraffic>>;
-  }>;
+  const datasets = results.flatMap(({ name, data }) => {
+    if (data) return [{ name, data }];
+    warnings.push(`Package not found: ${name}.`);
+    return [];
+  });
 
   if (datasets.length < 2) {
     throw new Error("BAD_REQUEST: compare requires 2-5 packages");
@@ -131,10 +146,22 @@ export async function buildCompareData(rawPackages: string[], rawDays?: string |
     : "HIT";
   const fetchedAt = metas.map((meta) => meta.fetchedAt).sort()[0];
 
+  const selection: CompareSelection = {
+    requestedCount: requested.length,
+    exportedPackages: totals.map(({ name }) => name),
+    exportedCount: totals.length,
+    capApplied: capOmittedCount > 0,
+    capOmittedCount,
+    invalidCount: pkgs.length - validPkgs.length,
+    unavailableCount: validPkgs.length - totals.length,
+    duplicateCount: normalized.length - requested.length,
+  };
+
   return {
     days,
     range,
     packages: totals,
+    selection,
     series,
     coverage,
     observations: Object.fromEntries(datasets.map(({ name, data }) =>

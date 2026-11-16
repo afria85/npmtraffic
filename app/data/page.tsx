@@ -64,7 +64,7 @@ const endpointGroups = [
     endpoints: [
       {
         path: "/api/v1/compare.json",
-        description: "Totals, share, daily downloads, daily deltas, cache metadata, and export metadata.",
+        description: "Totals, share, daily downloads, daily deltas, cache metadata, and export metadata. Add includeSelection=1 to include selection details in JSON.",
       },
       {
         path: "/api/v1/compare.csv",

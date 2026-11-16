@@ -8,6 +8,7 @@ globalThis.fetch = async (input, init) => {
     const [,start,end,name]=match;
     const count=(Date.parse(end)-Date.parse(start))/86400000+1;
     const packageName = name ? decodeURIComponent(name) : undefined;
+    if (packageName === 'missing-export-fixture') return new Response('', {status:404});
     const baseline = !name ? 50_000_000_000 : packageName === 'react' ? 40_000_000 : 2_000_000;
     const downloads = Array.from({length:count}, (_, i) => ({
       day: new Date(Date.parse(start) + i * 86_400_000).toISOString().slice(0, 10),
@@ -19,6 +20,7 @@ globalThis.fetch = async (input, init) => {
   if (url.hostname === 'registry.npmjs.org') {
     const latest = url.pathname.endsWith('/latest');
     const name = decodeURIComponent(url.pathname.slice(1, latest ? -7 : undefined));
+    if (name === 'missing-export-fixture') return new Response('', {status:404});
     if (latest) return Response.json({name, repository: {url: 'git+https://github.com/react/react.git', directory: 'packages/react'}});
     const time = name === 'react' ? {
       '1.0.0': '2020-01-01T00:00:00Z',

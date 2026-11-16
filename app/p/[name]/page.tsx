@@ -10,7 +10,6 @@ import PackageHeader from "@/components/package/PackageHeader";
 import RangeSelector from "@/components/RangeSelector";
 import ExportDropdown from "@/components/ExportDropdown";
 import ShareMenu from "@/components/ShareMenu";
-import { buildExportFilename } from "@/lib/export-filename";
 import EventsPanel from "@/components/events/EventsPanel";
 import TrafficChart from "@/components/package/TrafficChartClient";
 import VersionMetadataPanel from "@/components/package/VersionMetadataPanel";
@@ -203,31 +202,6 @@ export default async function PackagePage({ params, searchParams }: Props) {
     />
   );
 
-  const csvFilename = data?.range
-    ? buildExportFilename({
-        packages: [name],
-        days,
-        range: data.range,
-        format: "csv",
-      })
-    : undefined;
-  const excelFilename = data?.range
-    ? buildExportFilename({
-        packages: [name],
-        days,
-        range: data.range,
-        format: "excel.csv",
-      })
-    : undefined;
-  const jsonFilename = data?.range
-    ? buildExportFilename({
-        packages: [name],
-        days,
-        range: data.range,
-        format: "json",
-      })
-    : undefined;
-
   const exportItems = data?.range
     ? [
         {
@@ -235,21 +209,18 @@ export default async function PackagePage({ params, searchParams }: Props) {
           label: "CSV",
           description: "Comment header, UTC dates, derived columns",
           href: `/api/v1/package/${encodedName}/daily.csv?days=${days}`,
-          downloadName: csvFilename,
         },
         {
           key: "excel",
           label: "Excel CSV",
           description: "Semicolon-delimited for spreadsheet imports",
           href: `/api/v1/package/${encodedName}/daily.excel.csv?days=${days}`,
-          downloadName: excelFilename,
         },
         {
           key: "json",
           label: "JSON",
           description: "Normalized range, series, metadata, export block",
           href: `/api/v1/package/${encodedName}/daily.json?days=${days}`,
-          downloadName: jsonFilename,
         },
       ]
     : [];
