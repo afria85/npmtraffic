@@ -14,20 +14,45 @@ export function formatAxisTick(value: number, kind: ChartScaleKind) {
 }
 
 /** Round up to a human-readable scale without changing underlying observations. */
+function niceStep(raw: number) {
+  const magnitude = 10 ** Math.floor(Math.log10(raw));
+  const normalized = raw / magnitude;
+  const multiplier = [1, 1.25, 1.5, 2, 2.5, 5, 10].find((value) => value >= normalized - 1e-12) ?? 10;
+  return multiplier * magnitude;
+}
+
 export function buildNiceYAxis(peak: number, kind: ChartScaleKind = "downloads") {
   const safePeak = Number.isFinite(peak) && peak > 0 ? peak : 1;
   const minimumStep = kind === "downloads" ? 1 : 0.01;
   const rawStep = Math.max(minimumStep, safePeak / 4);
-  const magnitude = 10 ** Math.floor(Math.log10(rawStep));
-  const normalized = rawStep / magnitude;
-  const multiplier = [1, 2, 2.5, 5, 10].find((value) => value >= normalized - 1e-12) ?? 10;
-  const step = Math.max(minimumStep, multiplier * magnitude);
+  const step = Math.max(minimumStep, niceStep(rawStep));
   const maxValue = step * 4;
   const ticks = Array.from({ length: 5 }, (_, index) => {
     const value = Number((step * (4 - index)).toPrecision(12));
     return { value, ratio: index / 4, label: formatAxisTick(value, kind) };
   });
-  return { maxValue, ticks };
+  return { minValue: 0, maxValue, ticks };
+}
+
+/** Indexed trends zoom around the observed variation; include 100 for reference. */
+export function buildIndexedYAxis(values: number[]) {
+  const finite = values.filter((value) => Number.isFinite(value) && value >= 0);
+  const minimum = Math.min(100, ...finite);
+  const maximum = Math.max(100, ...finite);
+  const spread = Math.max(2, maximum - minimum);
+  let step = niceStep(spread / 4);
+  let minValue = Math.floor(minimum / step) * step;
+  while (minValue + 4 * step < maximum - 1e-9) {
+    step = niceStep(step * 1.01);
+    minValue = Math.floor(minimum / step) * step;
+  }
+  if (maximum === minimum) minValue = 100 - 2 * step;
+  const maxValue = minValue + 4 * step;
+  const ticks = Array.from({ length: 5 }, (_, index) => {
+    const value = Number((maxValue - index * step).toPrecision(12));
+    return { value, ratio: index / 4, label: formatAxisTick(value, "index") };
+  });
+  return { minValue, maxValue, ticks };
 }
 
 export type IndexedBaseline = { date: string; values: Record<string, number> };
