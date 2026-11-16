@@ -11,7 +11,7 @@ for (const [label, path, attachment] of [
     const trigger = page.locator('button[id$="-export-toggle"]');
     const first = page.getByRole("menuitem", { name: /^CSV\b/ });
     const share = page.getByRole("button", { name: "Share", exact: true });
-    const more = page.getByRole("group", { name: /range selector/i }).getByRole("button", { name: "More" });
+    const more = page.getByRole("group", { name: /range selector/i }).getByRole("button", { name: /^(More|\d+d, current range)$/ });
 
     for (const [key, neighbor] of [["Tab", share], ["Shift+Tab", more]] as const) {
       await trigger.focus();

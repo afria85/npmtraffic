@@ -343,6 +343,10 @@ details summary::marker { display: none; }
     margin-inline: auto;
     padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 3vw, 1.75rem);
   }
+  .observatory-reference {
+    padding-block: clamp(1.5rem, 4vw, 3rem);
+    padding-inline: clamp(1rem, 3vw, 1.75rem);
+  }
   .observatory-title {
     color: var(--foreground);
     font-size: clamp(1.75rem, 4vw, 3rem);
@@ -441,20 +445,6 @@ details summary::marker { display: none; }
     color: var(--ledger-ink);
     text-decoration: underline;
     text-underline-offset: .2em;
-  }
-  .observatory-series {
-    display: inline-flex;
-    align-items: center;
-    gap: .375rem;
-    max-width: 100%;
-    padding-block: .25rem;
-    padding-inline-end: .625rem;
-    font-family: ui-monospace, monospace;
-  }
-  .observatory-series-line {
-    width: 1.375rem;
-    flex: none;
-    border-top: 2px solid;
   }
   .observatory-source {
     border-top: 1px solid var(--ledger-rule);

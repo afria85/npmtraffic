@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import BrandText from "@/components/BrandText";
 import { getBaseUrl } from "@/lib/base-url";
 
 const shippingNow = [
   "Package pages with UTC-anchored daily tables",
   "Package insights for latest trend, peak day, consistency, and MAD outliers",
   "Compare 2–5 packages with aligned date ranges",
-  "Compare insights for leader, fastest mover, latest-day leader, and closest race",
+  "Save named comparisons in this browser without an account",
+  "Compare insights for leader, largest relative increase, latest-day leader, and closest race",
   "Deterministic exports (CSV, Excel CSV, JSON) with cache + generation metadata",
   "Chart exports (SVG/PNG) and chart controls for MA3, MA7, outliers, events, and releases",
   "Version metadata from the npm registry, including dist-tag latest and releases in range",
@@ -26,7 +25,6 @@ const nextUp = [
 const ideas = [
   "Long-range exports (>365 days) with explicit cost/latency tradeoffs",
   "Deeper release-to-traffic attribution beyond simple publish markers",
-  "Saved comparison presets without requiring user accounts",
   "Optional alerts (email/webhook) if there is clear demand",
 ];
 
@@ -78,16 +76,9 @@ function Section({ title, items }: { title: string; items: string[] }) {
 
 export default function RoadmapPage() {
   return (
-    <main className="mx-auto min-h-full max-w-4xl px-6 py-16 sm:py-20">
+    <main className="observatory-reference mx-auto min-h-full max-w-4xl">
       <header className="mb-8">
-        <Link
-          href="/"
-          className="inline-flex min-h-8 items-center"
-          aria-label="npmtraffic home"
-        >
-          <BrandText />
-        </Link>
-        <h1 className="mt-2 text-4xl font-semibold">Roadmap</h1>
+        <h1 className="observatory-title">Roadmap</h1>
         <p className="mt-2 text-sm text-[var(--foreground-tertiary)]">
           A lightweight, maintainer-focused tool. Shipping items reflect what is already in the app; future work keeps the same no-account, low-tracking posture.
         </p>

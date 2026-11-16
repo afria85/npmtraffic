@@ -27,11 +27,7 @@ for (const name of ["logshield-cli", "next"]) {
         <AppRouterContext.Provider value={router}>
           <div>
             <Header />
-            <PackageHeader
-              name={name}
-              updatedLabel="Updated recently"
-              updatedLabelCompact="Updated now"
-            />
+            <PackageHeader name={name} />
           </div>
         </AppRouterContext.Provider>
       );

@@ -1,0 +1,525 @@
+{
+  "name": "production",
+  "origin": "https://npmtraffic.com",
+  "access": "unauthenticated",
+  "steps": [
+    {
+      "phase": "probe",
+      "route": "/",
+      "status": 200,
+      "final": {
+        "origin": "same-origin",
+        "path": "/",
+        "rsc": false
+      },
+      "protectedPage": false
+    },
+    {
+      "phase": "rapid-hard-navigation",
+      "route": "/p/react?days=30",
+      "status": 200,
+      "final": {
+        "origin": "same-origin",
+        "path": "/p/react",
+        "rsc": false
+      },
+      "protectedPage": false
+    },
+    {
+      "phase": "rapid-hard-navigation",
+      "route": "/compare?packages=angular,axios,react,svelte,vue&days=30",
+      "status": 200,
+      "final": {
+        "origin": "same-origin",
+        "path": "/compare",
+        "rsc": false
+      },
+      "protectedPage": false
+    },
+    {
+      "phase": "rapid-hard-navigation",
+      "route": "/status",
+      "status": 200,
+      "final": {
+        "origin": "same-origin",
+        "path": "/status",
+        "rsc": false
+      },
+      "protectedPage": false
+    },
+    {
+      "phase": "client-navigation",
+      "actual": {
+        "origin": "same-origin",
+        "path": "/compare",
+        "rsc": false
+      },
+      "compare": true
+    }
+  ],
+  "requests": [
+    {
+      "id": 1,
+      "phase": "probe",
+      "origin": "same-origin",
+      "path": "/",
+      "rsc": false,
+      "fetch": "document",
+      "prefetch": null,
+      "segmentPrefetch": false
+    },
+    {
+      "id": 2,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/p/react",
+      "rsc": false,
+      "fetch": "document",
+      "prefetch": null,
+      "segmentPrefetch": false
+    },
+    {
+      "id": 3,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 4,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/compare",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 5,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/about",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 6,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/compare",
+      "rsc": false,
+      "fetch": "document",
+      "prefetch": null,
+      "segmentPrefetch": false
+    },
+    {
+      "id": 7,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 8,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/about",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 9,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/compare",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": false
+    },
+    {
+      "id": 10,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/about",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 11,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/about",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 12,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/status",
+      "rsc": false,
+      "fetch": "document",
+      "prefetch": null,
+      "segmentPrefetch": false
+    },
+    {
+      "id": 13,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 14,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/compare",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 15,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/about",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 16,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/transparency",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 17,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/compare",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": null,
+      "segmentPrefetch": false
+    },
+    {
+      "id": 18,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/about",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 19,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/about",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 20,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": false
+    },
+    {
+      "id": 21,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/compare",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": false
+    },
+    {
+      "id": 22,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/transparency",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": false
+    },
+    {
+      "id": 23,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/roadmap",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 24,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/donate",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 25,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/roadmap",
+      "rsc": true,
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": false
+    }
+  ],
+  "responses": [
+    {
+      "id": 1,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/html; charset=utf-8",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 2,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/html; charset=utf-8",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 6,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/html; charset=utf-8",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 8,
+      "status": 200,
+      "cache": "HIT",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": "*",
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 12,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/html; charset=utf-8",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 15,
+      "status": 200,
+      "cache": "HIT",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": "*",
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 18,
+      "status": 200,
+      "cache": "HIT",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": "*",
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 13,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 14,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 17,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 16,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 19,
+      "status": 200,
+      "cache": "HIT",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": "*",
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 20,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 21,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 22,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 23,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 24,
+      "status": 200,
+      "cache": "HIT",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": "*",
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 25,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    }
+  ],
+  "failed": [
+    {
+      "id": 3,
+      "reason": "Load request cancelled"
+    },
+    {
+      "id": 5,
+      "reason": "Load request cancelled"
+    },
+    {
+      "id": 4,
+      "reason": "Load request cancelled"
+    },
+    {
+      "id": 9,
+      "reason": "Load request cancelled"
+    },
+    {
+      "id": 11,
+      "reason": "Load request cancelled"
+    },
+    {
+      "id": 10,
+      "reason": "Load request cancelled"
+    },
+    {
+      "id": 7,
+      "reason": "Load request cancelled"
+    }
+  ],
+  "exceptions": []
+}

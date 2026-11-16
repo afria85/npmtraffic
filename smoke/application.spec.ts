@@ -30,7 +30,7 @@ test('fixture-backed package, scoped package, comparison, exports and local save
   for (const name of ['react','@scope/name']) {
     const response=await page.goto(`/p/${encodeURIComponent(name)}?days=7`);
     expect(response?.status()).toBe(200);
-    await expect(page.getByText('Complete observations through', {exact:false})).toBeVisible();
+    await expect(page.locator('details[data-freshness="complete"] summary')).toBeVisible();
     const csv=await request.get(`/api/v1/package/${encodeURIComponent(name)}/daily.csv?days=7`);
     expect(csv.status()).toBe(200);
     expect((await csv.text()).split('\n')).toContain('date,downloads,ma3,ma7,is_outlier,outlier_score,observation_status,upstream_downloads,registry_downloads');

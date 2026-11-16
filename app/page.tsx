@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const fallbackOgImage = `${baseUrl}/og-fallback.png`;
 
   return {
-    title: "npmtraffic",
+    title: "npm Download Trends & Comparisons | npmtraffic",
     description: config.site.tagline,
     alternates: {
       canonical: `${baseUrl}/`,
@@ -19,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       type: "website",
       siteName: "npmtraffic",
-      title: "npmtraffic",
+      title: "npm Download Trends & Comparisons | npmtraffic",
       description: config.site.tagline,
       url: `${baseUrl}/`,
       images: [{ 
@@ -38,7 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: "npmtraffic",
+      title: "npm Download Trends & Comparisons | npmtraffic",
       description: config.site.tagline,
       images: [{
         url: ogImage,
@@ -60,7 +60,7 @@ export default async function Home() {
     <main className="observatory-page observatory-home">
       <div className="observatory-home-grid">
         <section aria-labelledby="find-package" className="min-w-0">
-          <h1 id="find-package" className="observatory-home-title">Explore npm downloads</h1>
+          <h1 id="find-package" className="observatory-home-title">Explore <span className="text-[var(--accent)]">npm</span> downloads</h1>
           <p className="observatory-home-intro">
             Look up a package or compare up to five. Inspect daily downloads, coverage, and release dates on the same UTC timeline.
           </p>

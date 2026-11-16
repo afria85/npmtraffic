@@ -21,9 +21,7 @@ import CompareInsightsPanel from "@/components/compare/CompareInsightsPanel";
 import RetryButton from "@/components/ui/RetryButton";
 import {
   COMPARE_ACTION_CONTAINER_CLASSES,
-  COMPARE_TABLE_WRAPPER_CLASSES,
 } from "@/components/compare/compare-classes";
-import ScrollHintContainer from "@/components/ScrollHintContainer";
 import CompareUrlSync from "@/components/compare/CompareUrlSync";
 import { encodePkg } from "@/lib/og-encode";
 
@@ -270,7 +268,7 @@ export default async function ComparePage({ searchParams }: Props) {
     <main className="observatory-page">
       <CompareUrlSync packages={pkgs} />
       {renderBuilder(header)}
-      <DataQuality endDate={data.range.endDate} isStale={data.meta.isStale} coverage={data.coverage} shared />
+      <DataQuality range={data.range} fetchedAt={data.meta.fetchedAt} isStale={data.meta.isStale} coverage={data.coverage} shared />
       {data.meta.isStale ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
           <span>Showing cached data (upstream error).</span>
@@ -315,18 +313,12 @@ export default async function ComparePage({ searchParams }: Props) {
         <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3 text-sm text-[var(--foreground)]">
           <h2 className="text-sm font-semibold">Daily downloads ({days}d)</h2>
         </div>
-        <ScrollHintContainer
-          className={COMPARE_TABLE_WRAPPER_CLASSES}
-          leftHintOffset="var(--nt-date-col-w)"
-        >
-          <CompareSeriesTable series={data.series} packageNames={tablePackageNames} />
-        </ScrollHintContainer>
+        <CompareSeriesTable series={data.series} packageNames={tablePackageNames} />
         <p className="px-3 py-2 text-xs text-[var(--foreground-tertiary)]">
           &Delta; vs previous day = downloads today - downloads yesterday
         </p>
       </div>
 
-      <p className="observatory-source">Source <a href="https://api.npmjs.org/">api.npmjs.org</a></p>
     </main>
   );
 }

@@ -1,0 +1,179 @@
+{
+  "name": "checkpoint",
+  "origin": "https://npmtraffic-bckh9viz0-hendraafria85-5684s-projects.vercel.app",
+  "access": "unauthenticated",
+  "steps": [
+    {
+      "phase": "probe",
+      "route": "/",
+      "status": 200,
+      "final": {
+        "origin": "https://vercel.com",
+        "path": "/login",
+        "rsc": false,
+        "ref": null
+      },
+      "protectedPage": true
+    },
+    {
+      "phase": "protected-compare-probe",
+      "route": "/compare?packages=angular,axios,react,svelte,vue&days=30",
+      "status": 200,
+      "final": {
+        "origin": "https://vercel.com",
+        "path": "/login",
+        "rsc": false,
+        "ref": null
+      },
+      "protectedPage": true
+    }
+  ],
+  "requests": [
+    {
+      "id": 1,
+      "phase": "probe",
+      "origin": "same-origin",
+      "path": "/",
+      "rsc": false,
+      "ref": null,
+      "fetch": "document",
+      "prefetch": null,
+      "segmentPrefetch": false
+    },
+    {
+      "id": 2,
+      "phase": "probe",
+      "origin": "https://vercel.com",
+      "path": "/sso-api",
+      "rsc": false,
+      "ref": null,
+      "redirectedFrom": 1,
+      "fetch": "document",
+      "prefetch": null,
+      "segmentPrefetch": false
+    },
+    {
+      "id": 3,
+      "phase": "probe",
+      "origin": "https://vercel.com",
+      "path": "/login",
+      "rsc": false,
+      "ref": null,
+      "redirectedFrom": 2,
+      "fetch": "document",
+      "prefetch": null,
+      "segmentPrefetch": false
+    },
+    {
+      "id": 4,
+      "phase": "protected-compare-probe",
+      "origin": "same-origin",
+      "path": "/compare",
+      "rsc": false,
+      "ref": null,
+      "fetch": "document",
+      "prefetch": null,
+      "segmentPrefetch": false
+    },
+    {
+      "id": 5,
+      "phase": "protected-compare-probe",
+      "origin": "https://vercel.com",
+      "path": "/sso-api",
+      "rsc": false,
+      "ref": null,
+      "redirectedFrom": 4,
+      "fetch": "document",
+      "prefetch": null,
+      "segmentPrefetch": false
+    },
+    {
+      "id": 6,
+      "phase": "protected-compare-probe",
+      "origin": "https://vercel.com",
+      "path": "/login",
+      "rsc": false,
+      "ref": null,
+      "redirectedFrom": 5,
+      "fetch": "document",
+      "prefetch": null,
+      "segmentPrefetch": false
+    }
+  ],
+  "responses": [
+    {
+      "id": 1,
+      "status": 302,
+      "location": {
+        "origin": "https://vercel.com",
+        "path": "/sso-api",
+        "rsc": false,
+        "ref": null
+      },
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 2,
+      "status": 307,
+      "location": {
+        "origin": "https://vercel.com",
+        "path": "/login",
+        "rsc": false,
+        "ref": null
+      },
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 3,
+      "status": 200,
+      "cache": "HIT",
+      "contentType": "text/html; charset=utf-8",
+      "location": null,
+      "allowOrigin": "*",
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 4,
+      "status": 302,
+      "location": {
+        "origin": "https://vercel.com",
+        "path": "/sso-api",
+        "rsc": false,
+        "ref": null
+      },
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 5,
+      "status": 307,
+      "location": {
+        "origin": "https://vercel.com",
+        "path": "/login",
+        "rsc": false,
+        "ref": null
+      },
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 6,
+      "status": 200,
+      "cache": "HIT",
+      "contentType": "text/html; charset=utf-8",
+      "location": null,
+      "allowOrigin": "*",
+      "mitigation": null,
+      "vercelAuthHeader": false
+    }
+  ],
+  "failed": [],
+  "exceptions": []
+}

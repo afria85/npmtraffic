@@ -31,7 +31,7 @@ for (const [width, height] of [[320, 720], [390, 844], [768, 1024], [1024, 768],
       expect(geometry.plotBeforeAnalysis).toBe(true);
       expect(geometry.chartTop).toBeLessThan(height);
       expect(geometry.documentOverflow).toBe(false);
-      await expect(page.getByRole("button", { name: "More", exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: "365d, current range", exact: true })).toBeVisible();
       const slider = page.getByRole("slider", { name: /inspect daily downloads/i });
       await slider.press("Home");
       const start = await slider.getAttribute("aria-valuetext");
@@ -74,7 +74,7 @@ test("ledger labels and provenance pass automated contrast and name checks", asy
     await expect(page.getByRole("table", { name: "Downloads on shared days" })).toBeVisible();
     await expect(page.getByText("dashed line", { exact: true }).first()).toBeAttached();
     const result = await new AxeBuilder({ page }).include("main")
-      .withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
     expect(result.violations.filter(v => v.impact === "serious" || v.impact === "critical")).toEqual([]);
   }
 });
@@ -134,6 +134,6 @@ test("focused Compare chart and controls report no axe WCAG 2.2 AA violations", 
   await page.goto(five);
   await plot(page).waitFor();
   const result = await new AxeBuilder({ page }).include("main")
-    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa", "wcag22aa"]).analyze();
   expect(result.violations.map((item) => ({ id: item.id, impact: item.impact, nodes: item.nodes.length }))).toEqual([]);
 });
