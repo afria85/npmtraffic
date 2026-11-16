@@ -212,8 +212,9 @@ function buildDefaultColors(packageNames: string[]) {
 
 function buildDefaultLineStyles(packageNames: string[]) {
   const styles: Record<string, LineStyleKey> = {};
-  packageNames.forEach((pkg) => {
-    styles[pkg] = "solid";
+  const order: LineStyleKey[] = ["solid", "dashed", "dotted"];
+  packageNames.forEach((pkg, index) => {
+    styles[pkg] = order[index % order.length];
   });
   return styles;
 }
@@ -451,11 +452,11 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   };
 
   return (
-    <section className="relative rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+    <section className="observatory-chart">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-[var(--foreground-secondary)]">
+        <h2 className="observatory-section-title">
           Daily downloads ({days ? `${days}d` : "range"})
-        </p>
+        </h2>
       </div>
 
       <div ref={chartContainerRef} className="relative mt-4">
@@ -523,20 +524,20 @@ export default function CompareChart({ series, packageNames, days }: Props) {
         {/* Footer: legend on the left, actions on the right. Wraps safely on small screens. */}
         <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-wrap gap-2 text-xs text-[var(--foreground-secondary)]">
-            {packageNames.map((pkg) => (
-              <span
-                key={pkg}
-                className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1"
-              >
-                <span
-                  className="h-2.5 w-2.5 rounded-lg"
-                  style={{ background: paletteValue(settings.colors[pkg] ?? "slate") }}
-                />
-                <span className="min-w-0 max-w-[220px] truncate" title={pkg}>
-                  {pkg}
+            {packageNames.map((pkg) => {
+              const style = settings.lineStyles[pkg] ?? "solid";
+              return (
+                <span key={pkg} className="observatory-series">
+                  <span
+                    aria-hidden="true"
+                    className="observatory-series-line"
+                    style={{ borderColor: paletteValue(settings.colors[pkg] ?? "slate"), borderTopStyle: style }}
+                  />
+                  <span className="min-w-0 [overflow-wrap:anywhere]">{pkg}</span>
+                  <span className="sr-only">{style} line</span>
                 </span>
-              </span>
-            ))}
+              );
+            })}
           </div>
 
           <div className="flex w-full items-center justify-end gap-2 sm:w-auto">

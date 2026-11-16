@@ -1,13 +1,9 @@
-import crypto from "node:crypto";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { POPULAR_PACKAGES } from "@/lib/constants";
 import { getBaseUrl } from "@/lib/base-url";
 import { config } from "@/lib/config";
 import { homepageJsonLd } from "@/lib/jsonld";
-import { buildExportCommentHeader, buildExportMeta } from "@/lib/export";
-import { buildExportFilename } from "@/lib/export-filename";
-import { rangeForDays } from "@/lib/query";
 import SearchBox from "@/components/SearchBox";
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = await getBaseUrl();
@@ -59,197 +55,58 @@ export default async function Home() {
   const baseUrl = await getBaseUrl();
   const jsonLd = homepageJsonLd(baseUrl);
   const jsonLdText = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
-  const exampleDays = 30;
-  const examplePackage = "react";
-  const exampleRange = rangeForDays(exampleDays);
-  const exportFilename = buildExportFilename({
-    packages: [examplePackage],
-    days: exampleDays,
-    range: exampleRange,
-    format: "csv",
-  });
-  const exportMeta = buildExportMeta(
-    exampleRange,
-    new Date().toISOString(),
-    crypto.randomUUID(),
-    "HIT",
-    false,
-    null
-  );
-  const exportHeaderLines = buildExportCommentHeader(exportMeta).split("\n");
 
   return (
-    <main className="relative min-h-screen">
-      {/* Hero - Direct & Technical */}
-      <section className="relative overflow-visible px-6 py-16 sm:py-24">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-12 space-y-6 text-center">
-            <h1 className="text-5xl font-bold leading-tight tracking-tight text-[var(--foreground)] sm:text-6xl lg:text-7xl">
-              npm download analytics.
-              <br />
-              <span className="text-gradient">Daily data, full metadata,<br />zero guessing.</span>
-            </h1>
-            <p className="mx-auto max-w-3xl text-lg leading-relaxed text-[var(--foreground-secondary)] sm:text-xl">
-              UTC-anchored daily tables, compare insights, release context, and exports with traceable metadata. Built for reproducible package traffic analysis.
-            </p>
-          </div>
-
-          {/* Search */}
-          <div className="mb-8">
-            <SearchBox className="mx-auto w-full max-w-2xl" />
-          </div>
-
-          {/* Popular Packages */}
-          <div className="space-y-3">
-            <p className="text-center text-xs font-medium uppercase tracking-wider text-[var(--foreground-tertiary)]">
-              popular packages
-            </p>
-
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {POPULAR_PACKAGES.slice(0, 12).map((pkg) => (
-                <Link
-                  key={pkg}
-                  href={`/p/${encodeURIComponent(pkg)}?days=30`}
-                  className="group rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm font-mono text-[var(--foreground)] transition-all hover:border-[var(--accent)]/50 hover:bg-[var(--surface-hover)] hover:shadow-md"
-                >
-                  {pkg}
-                </Link>
-              ))}
-            </div>
-
-            <p className="text-center text-xs text-[var(--foreground-tertiary)]">
-              Start with a package, or <Link
-                href="/compare"
-                className="inline-flex min-h-8 items-center align-middle underline underline-offset-2 hover:text-[var(--foreground-secondary)]"
-              >compare</Link> 2 - 5 packages &bull;{" "}
-              <Link
-                href="/about"
-                className="inline-flex min-h-8 items-center align-middle underline underline-offset-2 hover:text-[var(--foreground-secondary)]"
-              >
-                Why this exists
-              </Link>{" "}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Technical Features - Real Examples */}
-      <section className="relative border-t border-[var(--border)] px-6 py-16 sm:py-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-12 text-center">
-            <h2 className="mb-4 text-3xl font-bold tracking-tight text-[var(--foreground)] sm:text-4xl">
-              Made for package maintainers
-            </h2>
-            <p className="mx-auto max-w-2xl text-lg text-[var(--foreground-secondary)]">
-              Not just charts. Tables you can audit, insights you can scan, exports you can trust, and events you can correlate.
-            </p>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Feature 1: UTC-anchored */}
-            <div className="min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg sm:p-8">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent-muted)]">
-                  <svg className="h-5 w-5 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-[var(--foreground)]">UTC-anchored daily rows</h3>
-              </div>
-              <p className="mb-4 text-[var(--foreground-secondary)]">
-                Date ranges end at yesterday UTC, matching npm&rsquo;s reporting window. Package tables also include deltas, MA3/MA7, and MAD outlier signals.
-              </p>
-              <div className="min-w-0 overflow-x-auto rounded-lg bg-[var(--background)] p-3 font-mono text-xs text-[var(--foreground-secondary)]">
-                <div className="text-[10px] uppercase tracking-widest text-[var(--foreground-tertiary)]">
-                  Example row (format)
-                </div>
-                <div className="mt-2 border-b border-[var(--border)] pb-1">
-                  <span>{exampleRange.endDate} (UTC)</span>
-                </div>
-                <div className="mt-1 text-[var(--foreground)]">Downloads: 123,456</div>
-                <div>Delta: +1,234</div>
-              </div>
-            </div>
-
-            {/* Feature 2: Deterministic exports */}
-            <div className="min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg sm:p-8">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent-muted)]">
-                  <svg className="h-5 w-5 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-[var(--foreground)]">Deterministic exports</h3>
-              </div>
-              <p className="mb-4 text-[var(--foreground-secondary)]">
-                CSV, Excel-friendly CSV, and JSON include cache status, generated_at, request_id, stale flags, and UTC date ranges for repeatable analysis.
-              </p>
-              <div className="min-w-0 overflow-x-auto rounded-lg bg-[var(--background)] p-3 font-mono text-xs text-[var(--foreground-secondary)]">
-                <div className="text-[10px] uppercase tracking-widest text-[var(--foreground-tertiary)]">
-                  Example output (format)
-                </div>
-                <div className="mt-2 break-all text-[var(--accent)]">{exportFilename}</div>
-                <div className="mt-2 text-[var(--foreground)]">Header metadata</div>
-                {exportHeaderLines.map((line) => (
-                  <div key={line}>{line}</div>
-                ))}
-              </div>
-            </div>
-
-            {/* Feature 3: Event correlation */}
-            <div className="min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg sm:p-8">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent-muted)]">
-                  <svg className="h-5 w-5 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-[var(--foreground)]">Events + release markers</h3>
-              </div>
-              <p className="mb-4 text-[var(--foreground-secondary)]">
-                Pin your own notes, import npm releases into local markers, and show publish markers on charts without syncing private context to the server.
-              </p>
-              <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-[var(--background)] p-3">
-                <div className="h-2 w-2 rounded-full bg-[var(--accent)]" />
-                <span className="min-w-0 break-words font-mono text-xs text-[var(--foreground)]">2024-12-05 · React v19.0.0 release</span>
-                <span className="text-xs text-[var(--foreground-tertiary)] sm:ml-auto">local marker</span>
-              </div>
-            </div>
-
-            {/* Feature 4: Cache/stale surfaced */}
-            <div className="min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg sm:p-8">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent-muted)]">
-                  <svg className="h-5 w-5 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-[var(--foreground)]">Insights + stale-aware UI</h3>
-              </div>
-              <p className="mb-4 text-[var(--foreground-secondary)]">
-                Package and compare pages summarize leaders, movers, peaks, consistency, and outliers. Stale responses show explicit warnings and retry controls.
-              </p>
-              <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg bg-[var(--background)] p-3">
-                <div className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-                <span className="min-w-0 text-xs text-[var(--foreground-secondary)]">Leader, fastest mover, peak day, outliers, cache state</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Compare */}
-      <section className="relative border-t border-[var(--border)] px-6 py-16 sm:py-20">
-        <div className="mx-auto max-w-4xl text-center">
-          <h2 className="mb-4 text-3xl font-bold tracking-tight text-[var(--foreground)] sm:text-4xl">
-            Compare packages side-by-side
-          </h2>
-          <p className="mb-8 text-lg text-[var(--foreground-secondary)]">
-            Up to 5 packages. Aligned date ranges. Leader and fastest-mover insights. Shareable URLs.
+    <main className="observatory-page observatory-home">
+      <div className="observatory-home-grid">
+        <section aria-labelledby="find-package" className="min-w-0">
+          <h1 id="find-package" className="observatory-home-title">Explore npm downloads</h1>
+          <p className="observatory-home-intro">
+            Look up a package or compare up to five. Inspect daily downloads, coverage, and release dates on the same UTC timeline.
           </p>
-          <Link href="/compare" className="inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] disabled:pointer-events-none disabled:opacity-50 bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] focus-visible:ring-[var(--accent)] shadow-sm h-12 px-6 text-base">Start Comparing</Link>
-        </div>
-      </section>
+          <SearchBox className="mt-5 w-full max-w-xl" />
+          <nav aria-label="Package analysis" className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <Link className="observatory-text-link" href="/compare">Compare packages</Link>
+            <Link className="observatory-text-link" href="/data">Data and exports</Link>
+          </nav>
+          <div className="observatory-package-index">
+            <h2 className="observatory-section-title">Open a package</h2>
+            <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+              {POPULAR_PACKAGES.slice(0, 12).map((pkg) => (
+                <li key={pkg}>
+                  <Link href={`/p/${encodeURIComponent(pkg)}?days=30`} className="observatory-text-link">
+                    {pkg}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section aria-labelledby="observation-rules" className="observatory-method">
+          <h2 id="observation-rules" className="observatory-section-title">How to read an observation</h2>
+          <p className="mt-2 text-sm text-[var(--foreground-secondary)]">
+            Dates end at yesterday UTC. Coverage shows how many requested days have usable counts.
+          </p>
+          <table className="mt-3 w-full border-collapse text-sm">
+            <thead>
+              <tr><th scope="col">Observation</th><th scope="col">In totals</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Verified count</th><td>Included, even when zero</td></tr>
+              <tr><th scope="row">Missing</th><td>Excluded</td></tr>
+              <tr><th scope="row">Unverified</th><td>Excluded</td></tr>
+            </tbody>
+          </table>
+          <p className="mt-3 text-sm text-[var(--foreground-secondary)]">
+            Comparisons count only the days available for every selected package.
+          </p>
+          <div className="mt-1 flex flex-wrap gap-x-4 text-sm">
+            <Link className="observatory-text-link" href="/transparency">Read the methodology</Link>
+            <Link className="observatory-text-link" href="/about">About npmtraffic</Link>
+          </div>
+        </section>
+      </div>
 
       <script
         type="application/ld+json"

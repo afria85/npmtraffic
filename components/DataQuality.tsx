@@ -13,7 +13,7 @@ type Props = {
 
 export default function DataQuality({ endDate, isStale, coverage, shared }: Props) {
   const complete = coverage.includedDays === coverage.requestedDays;
-  return <p className="text-sm text-[var(--foreground-tertiary)]">
+  return <p className="observatory-coverage" data-freshness={isStale ? "cached" : complete ? "complete" : "partial"}>
     {isStale ? "Cached observations" : complete ? "Complete observations" : "Partial observations"} through {endDate} UTC.
     {" "}{coverage.includedDays} of {coverage.requestedDays} days included{shared ? " across all packages" : ""}.
     {coverage.missingDays ? ` ${coverage.missingDays} missing.` : ""}

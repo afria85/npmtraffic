@@ -356,7 +356,7 @@ export default function EventsPanel({ pkgName, encoded, releaseImports }: Props)
             Add releases, posts, and docs changes for context. Markers are stored locally in your browser.
           </p>
         </div>
-        <div className="ml-auto flex flex-nowrap items-center justify-end gap-2">
+        <div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
           <button
             type="button"
             onClick={onImportReleases}

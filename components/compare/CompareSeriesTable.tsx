@@ -37,6 +37,7 @@ export default function CompareSeriesTable({ series, packageNames }: Props) {
 
   return (
     <table className="min-w-[760px] w-max table-fixed text-sm sm:w-full">
+      <caption className="sr-only">Daily observations</caption>
       <colgroup>
         <col className="w-[var(--nt-date-col-w)]" />
         {packageNames.map((pkg) => (

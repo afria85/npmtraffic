@@ -117,15 +117,15 @@
   --chart-grid: rgba(15, 23, 42, 0.04);
   --chart-tooltip-bg: rgba(255, 255, 255, 0.98);
   --chart-tooltip-border: rgba(15, 23, 42, 0.08);
-  --chart-palette-accent: rgba(6, 182, 212, 0.9);
-  --chart-palette-slate: rgba(71, 85, 105, 0.7);
-  --chart-palette-blue: rgba(37, 99, 235, 0.85);
-  --chart-palette-emerald: rgba(16, 185, 129, 0.85);
-  --chart-palette-violet: rgba(124, 58, 237, 0.8);
-  --chart-palette-amber: rgba(245, 158, 11, 0.85);
-  --chart-palette-orange: rgba(249, 115, 22, 0.85);
-  --chart-palette-pink: rgba(236, 72, 153, 0.85);
-  --chart-palette-cyan: rgba(6, 182, 212, 0.85);
+  --chart-palette-accent: #067a8b;
+  --chart-palette-slate: #586879;
+  --chart-palette-blue: #2457c5;
+  --chart-palette-emerald: #0b7852;
+  --chart-palette-violet: #7142bf;
+  --chart-palette-amber: #945514;
+  --chart-palette-orange: #a64913;
+  --chart-palette-pink: #ad306a;
+  --chart-palette-cyan: #006778;
   
   --danger: #be123c;
   --signed-pos: #047857;
@@ -318,3 +318,220 @@ details summary::marker { display: none; }
 :root[data-theme="light"] .text-slate-600 {
   color: var(--muted);
 }
+
+/* Registry Ledger presentation. Chart and table data remain owned by their existing components. */
+:root {
+  --ledger-rule: #40544c;
+  --ledger-ink: #a8d9c1;
+  --ledger-surface: #141c19;
+  --ledger-partial: #f5ce83;
+}
+:root[data-theme="light"] {
+  --ledger-rule: #a8bbb2;
+  --ledger-ink: #145e49;
+  --ledger-surface: #f5f8f3;
+  --ledger-partial: #804615;
+}
+
+@layer components {
+  .observatory-page {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1rem, 2.5vw, 1.75rem);
+    max-width: 70rem;
+    min-height: 100%;
+    margin-inline: auto;
+    padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 3vw, 1.75rem);
+  }
+  .observatory-title {
+    color: var(--foreground);
+    font-size: clamp(1.75rem, 4vw, 3rem);
+    font-weight: 650;
+    letter-spacing: -.05em;
+    line-height: 1.08;
+    overflow-wrap: anywhere;
+  }
+  .observatory-package-name {
+    font-family: ui-monospace, monospace;
+    letter-spacing: -.065em;
+  }
+  .observatory-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: .5rem;
+  }
+  .observatory-coverage {
+    box-shadow: inset 2px 0 var(--ledger-ink);
+    padding-inline-start: .75rem;
+    color: var(--foreground-secondary);
+    font-size: .8125rem;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+  .observatory-coverage[data-freshness="cached"],
+  .observatory-coverage[data-freshness="partial"] {
+    box-shadow: inset 2px 0 var(--ledger-partial);
+  }
+  .observatory-toolbar > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .observatory-toolbar > div:last-child {
+    flex-wrap: wrap;
+  }
+  .observatory-totals {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .75rem;
+    padding-block: .625rem;
+    border-block: 1px solid var(--ledger-rule);
+  }
+  .observatory-totals dt {
+    color: var(--foreground-secondary);
+    font-size: .75rem;
+  }
+  .observatory-totals dd {
+    color: var(--foreground);
+    font: 650 clamp(1rem, 3.4vw, 1.7rem)/1.3 ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .observatory-chart {
+    position: relative;
+    min-width: 0;
+    min-height: 23.75rem;
+    border: 1px solid;
+    box-shadow: inset 0 2px var(--ledger-ink);
+    border-radius: .25rem;
+    background: var(--ledger-surface);
+    padding: clamp(.625rem, 2vw, 1.125rem);
+  }
+  .observatory-section-title {
+    font-weight: 650;
+    letter-spacing: -.02em;
+  }
+  .observatory-ledger {
+    width: 100%;
+    margin-top: .625rem;
+    border-block: 1px solid;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+  .observatory-ledger th,
+  .observatory-ledger td {
+    padding: .5rem .375rem;
+    text-align: end;
+    overflow-wrap: anywhere;
+  }
+  .observatory-ledger th:first-child {
+    width: 44%;
+    text-align: start;
+  }
+  .observatory-ledger thead {
+    color: var(--foreground-secondary);
+    font-size: .75rem;
+  }
+  .observatory-ledger tbody tr {
+    border-top: 1px solid;
+    font: .8125rem/1.45 ui-monospace, monospace;
+  }
+  .observatory-ledger a {
+    color: var(--ledger-ink);
+    text-decoration: underline;
+    text-underline-offset: .2em;
+  }
+  .observatory-series {
+    display: inline-flex;
+    align-items: center;
+    gap: .375rem;
+    max-width: 100%;
+    padding-block: .25rem;
+    padding-inline-end: .625rem;
+    font-family: ui-monospace, monospace;
+  }
+  .observatory-series-line {
+    width: 1.375rem;
+    flex: none;
+    border-top: 2px solid;
+  }
+  .observatory-source {
+    border-top: 1px solid var(--ledger-rule);
+    padding-top: .75rem;
+    color: var(--foreground-secondary);
+    font-size: .8125rem;
+  }
+  .observatory-source a { text-decoration: underline; }
+
+  .observatory-home {
+    padding-block: clamp(1.5rem, 6vw, 5rem) clamp(3rem, 8vw, 7rem);
+  }
+  .observatory-home-grid {
+    display: grid;
+    gap: clamp(1.75rem, 6vw, 5rem);
+  }
+  .observatory-home-title {
+    max-width: 13ch;
+    overflow-wrap: anywhere;
+    font-size: clamp(2.5rem, 6vw, 5.25rem);
+    font-weight: 650;
+    letter-spacing: -.065em;
+    line-height: 1;
+  }
+  .observatory-home-intro {
+    max-width: 44ch;
+    margin-top: .875rem;
+    color: var(--foreground-secondary);
+    font-size: clamp(.9375rem, 1.8vw, 1.125rem);
+    line-height: 1.55;
+  }
+  .observatory-text-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    color: var(--ledger-ink);
+    text-decoration: underline;
+    text-underline-offset: .18em;
+  }
+  .observatory-package-index {
+    margin-top: clamp(1.25rem, 3vw, 2rem);
+    border-top: 1px solid;
+    padding-top: .75rem;
+  }
+  .observatory-package-index li {
+    font: .875rem ui-monospace, monospace;
+  }
+  .observatory-method {
+    min-width: 0;
+    align-self: start;
+    background: var(--ledger-surface);
+    box-shadow: inset 0 2px var(--ledger-ink);
+    padding: clamp(.875rem, 2.5vw, 1.5rem);
+  }
+  .observatory-method table { table-layout: fixed; }
+  .observatory-method th,
+  .observatory-method td {
+    overflow-wrap: anywhere;
+    padding: .625rem .25rem;
+    border-bottom: 1px solid;
+    text-align: start;
+  }
+  .observatory-method thead {
+    color: var(--foreground-secondary);
+    font-size: .8125rem;
+  }
+  .observatory-method tbody th {
+    font-weight: 600;
+  }
+  @media (min-width: 50rem) {
+    .observatory-home-grid {
+      grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr);
+      align-items: start;
+    }
+  }
+}
+
+.observatory-totals,
+.observatory-ledger,
+.observatory-package-index { border-color: var(--ledger-rule); }

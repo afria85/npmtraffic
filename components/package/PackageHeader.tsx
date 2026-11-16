@@ -36,13 +36,13 @@ export default function PackageHeader({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h1
-              className="min-w-0 break-all text-2xl font-semibold tracking-tight sm:text-3xl"
+              className="observatory-title observatory-package-name"
               title={name}
             >
               {name}
             </h1>
             <span
-              className="inline-flex w-fit items-center whitespace-nowrap rounded-full border border-[color:var(--border)] bg-transparent px-3 py-1 text-[11px] font-medium text-[color:var(--muted)]"
+              className="text-xs text-[var(--foreground-tertiary)]"
               title={updatedLabel ?? "Updated recently"}
             >
               <span className="sm:hidden">{updatedLabelCompact ?? "Updated recently"}</span>

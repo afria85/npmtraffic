@@ -607,9 +607,9 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
   const toggleGroupClass = "ml-auto flex items-center justify-end gap-2 sm:gap-3";
 
   return (
-    <section className="relative rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 sm:p-4">
+    <section className="observatory-chart">
       <div className={headerRowClass}>
-        <p className="text-sm font-semibold text-[var(--foreground-secondary)]">Daily downloads ({days}d)</p>
+        <h2 className="observatory-section-title">Daily downloads ({days}d)</h2>
         <div className={toggleGroupClass}>
           {versionMarkers?.length ? (
             <MetricCheckbox

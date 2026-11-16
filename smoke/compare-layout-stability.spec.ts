@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const width of [320, 390, 768]) {
+for (const width of [320, 390, 768, 1440]) {
   test("Compare keeps the chart above the hydrated tray at " + width + "px", async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ colorScheme: width === 390 ? "dark" : "light" });
@@ -9,7 +9,7 @@ for (const width of [320, 390, 768]) {
     const tray = page.getByTestId("compare-tray-container");
     await expect(chart).toBeVisible({ timeout: 20_000 });
     await expect(tray.getByRole("button", { name: "Remove react from compare" })).toBeVisible();
-    await expect(page.locator("tbody tr")).toHaveCount(365);
+    await expect(page.getByRole("table", { name: "Daily observations", exact: true }).locator("tbody tr")).toHaveCount(365);
     const geometry = await tray.evaluate(element => {
       const main = document.querySelector("main")!;
       return {
@@ -21,7 +21,7 @@ for (const width of [320, 390, 768]) {
     expect(geometry).toEqual({ afterContent: true, belowContent: true, overflow: false });
     await page.setViewportSize({ width: 1100, height: 900 });
     await expect.poll(() => tray.evaluate(element => Boolean(
-      element.compareDocumentPosition(document.querySelector("main")!) & Node.DOCUMENT_POSITION_FOLLOWING,
+      document.querySelector("main")!.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING,
     ))).toBe(true);
     await expect(tray).toHaveCount(1);
   });
@@ -54,7 +54,7 @@ test("tray focus survives both viewport transitions with six saved comparisons",
   await expect(vue).toBeFocused();
 
   await page.setViewportSize({ width: 1100, height: 900 });
-  await expect(page.locator("#compare-tray-after-content").getByTestId("compare-tray-container")).toHaveCount(0);
+  await expect(page.locator("#compare-tray-after-content").getByTestId("compare-tray-container")).toHaveCount(1);
   await expect(vue).toBeFocused();
 
   await page.setViewportSize({ width: 390, height: 900 });
