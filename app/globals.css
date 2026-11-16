@@ -442,20 +442,6 @@ details summary::marker { display: none; }
     text-decoration: underline;
     text-underline-offset: .2em;
   }
-  .observatory-series {
-    display: inline-flex;
-    align-items: center;
-    gap: .375rem;
-    max-width: 100%;
-    padding-block: .25rem;
-    padding-inline-end: .625rem;
-    font-family: ui-monospace, monospace;
-  }
-  .observatory-series-line {
-    width: 1.375rem;
-    flex: none;
-    border-top: 2px solid;
-  }
   .observatory-source {
     border-top: 1px solid var(--ledger-rule);
     padding-top: .75rem;

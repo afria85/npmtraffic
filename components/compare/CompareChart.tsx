@@ -198,6 +198,75 @@ async function svgToPngBlob(svgEl: SVGSVGElement, background: string) {
   return pngBlob;
 }
 
+type LegendSeries = { name: string; color: string; style: LineStyleKey };
+
+function CompareChartLegend({ series }: { series: LegendSeries[] }) {
+  const viewport = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLUListElement>(null);
+  const [overflow, setOverflow] = useState(false);
+  const [atEnd, setAtEnd] = useState(false);
+  const viewportId = useId();
+
+  useLayoutEffect(() => {
+    const rail = viewport.current;
+    const entries = list.current;
+    const container = rail?.parentElement;
+    if (!rail || !entries || !container) return;
+
+    const measure = () => {
+      const maxScroll = rail.scrollWidth - rail.clientWidth;
+      setOverflow(entries.scrollWidth > container.clientWidth + 1);
+      setAtEnd(rail.scrollLeft >= maxScroll - 1);
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(rail);
+    observer.observe(entries);
+    rail.addEventListener("scroll", measure, { passive: true });
+    return () => {
+      observer.disconnect();
+      rail.removeEventListener("scroll", measure);
+    };
+  }, []);
+
+  return (
+    <div className="mt-2 flex min-h-8 items-center gap-1">
+      <div
+        ref={viewport}
+        id={viewportId}
+        role="region"
+        aria-label="Chart legend"
+        tabIndex={overflow ? 0 : undefined}
+        className="relative min-w-0 flex-1 overflow-x-auto rounded-sm [scrollbar-width:thin] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--ring)]"
+      >
+        <ul ref={list} role="list" aria-label="Chart series"
+          className="flex w-max items-center gap-3 py-1 text-xs leading-4 text-[var(--foreground-secondary)]">
+          {series.map(({ name, color, style }) => (
+            <li key={name} className="flex max-w-[min(18rem,calc(100vw-6rem))] items-center gap-1.5 font-mono">
+              <span aria-hidden="true" className="w-[1.375rem] shrink-0 border-t-2"
+                style={{ borderColor: color, borderTopStyle: style }} />
+              <span className="min-w-0 [overflow-wrap:anywhere]">{name}</span>
+              <span className="sr-only">{style} line</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {overflow ? (
+        <button type="button" aria-controls={viewportId}
+          aria-label={atEnd ? "Scroll legend left" : "Scroll legend right"}
+          className="flex size-8 shrink-0 items-center justify-center rounded-md border border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-[var(--ring)]"
+          onClick={() => {
+            const rail = viewport.current;
+            if (rail) rail.scrollBy({ left: rail.clientWidth * (atEnd ? -0.8 : 0.8) });
+          }}>
+          <IconChevronDown className={atEnd ? "size-4 rotate-90" : "size-4 -rotate-90"} />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export default function CompareChart({ series, packageNames, days }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
@@ -431,7 +500,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
 
   return (
     <section className="observatory-chart">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         <h2 className="observatory-section-title">
           {indexed ? "Indexed download trend" : "Daily downloads"} ({days ? `${days}d` : "range"})
         </h2>
@@ -443,29 +512,18 @@ export default function CompareChart({ series, packageNames, days }: Props) {
             onClick={() => setScaleMode("indexed")}>Indexed (base 100)</button>
         </div>
       </div>
-      <p className="mt-2 text-xs text-[var(--foreground-secondary)]" aria-live="polite">
+      <p className={indexed ? "mt-2 text-xs text-[var(--foreground-secondary)]" : "sr-only"} aria-live="polite">
         {indexed && baseline
-          ? `Each package equals 100 on ${baseline.date} UTC; y-axis zooms to relative variation, not download volume.`
-          : "Absolute downloads per day. Shared-day totals and downloads exports always use raw counts."}
+          ? `Each package equals 100 on ${baseline.date} UTC; the y-axis shows relative change.`
+          : ""}
       </p>
+      <CompareChartLegend series={packageNames.map(name => ({
+        name,
+        color: paletteValue(settings.colors[name] ?? defaultColors[name]),
+        style: settings.lineStyles[name] ?? "solid",
+      }))} />
 
-      <div ref={chartContainerRef} className="relative mt-4">
-        <div aria-label="Chart series" role="list" className="mb-2 flex flex-wrap gap-2 text-xs text-[var(--foreground-secondary)]">
-          {packageNames.map((pkg) => {
-            const style = settings.lineStyles[pkg] ?? "solid";
-            return (
-              <span key={pkg} role="listitem" className="observatory-series">
-                <span
-                  aria-hidden="true"
-                  className="observatory-series-line"
-                  style={{ borderColor: paletteValue(settings.colors[pkg] ?? defaultColors[pkg]), borderTopStyle: style }}
-                />
-                <span className="min-w-0 [overflow-wrap:anywhere]">{pkg}</span>
-                <span className="sr-only">{style} line</span>
-              </span>
-            );
-          })}
-        </div>
+      <div ref={chartContainerRef} className="relative mt-1">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${width} ${height}`}
@@ -661,6 +719,9 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           return row.date + " UTC, " + values.join("; ");
         }}
       />
+      <p className="mt-2 text-xs text-[var(--foreground-secondary)]">
+        Shared-day totals and downloads exports use raw counts in both scales.
+      </p>
     </section>
   );
 }
