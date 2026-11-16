@@ -19,6 +19,11 @@ import {
 } from "@/components/compare/compare-chart-settings";
 
 const CHART_BUTTON_CLASSES = "inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold leading-none text-[var(--foreground)] transition-colors hover:bg-[var(--surface-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]";
+const ACTIVE_SCALE_CLASSES = "!border-[var(--accent)] !bg-[var(--accent)] !text-[var(--accent-foreground)] hover:!bg-[var(--accent-hover)]";
+function scaleButtonClasses(active: boolean) {
+  return `${CHART_BUTTON_CLASSES} min-h-11 gap-1.5 disabled:cursor-not-allowed disabled:opacity-50 ${active ? ACTIVE_SCALE_CLASSES : ""}`;
+}
+
 
 type Props = {
   series: CompareSeriesRow[];
@@ -505,11 +510,15 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           {indexed ? "Indexed download trend" : "Daily downloads"} ({days ? `${days}d` : "range"})
         </h2>
         <div role="group" aria-label="Compare chart scale" className="flex flex-wrap items-center gap-2">
-          <button type="button" className={CHART_BUTTON_CLASSES + " min-h-11"} aria-pressed={!indexed}
-            onClick={() => setScaleMode("absolute")}>Absolute</button>
-          <button type="button" className={CHART_BUTTON_CLASSES + " min-h-11"} aria-pressed={indexed}
+          <button type="button" className={scaleButtonClasses(!indexed)} aria-pressed={!indexed}
+            onClick={() => setScaleMode("absolute")}>
+            {!indexed ? <span aria-hidden="true">✓</span> : null}Absolute
+          </button>
+          <button type="button" className={scaleButtonClasses(indexed)} aria-pressed={indexed}
             disabled={!baseline} title={baseline ? "Compare each package to a common positive baseline day" : "No common day with positive observations for all packages"}
-            onClick={() => setScaleMode("indexed")}>Indexed (base 100)</button>
+            onClick={() => setScaleMode("indexed")}>
+            {indexed ? <span aria-hidden="true">✓</span> : null}Indexed (base 100)
+          </button>
         </div>
       </div>
       <p className={indexed ? "mt-2 text-xs text-[var(--foreground-secondary)]" : "sr-only"} aria-live="polite">
