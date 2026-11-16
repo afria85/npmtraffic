@@ -33,6 +33,14 @@ The selected row adds a visible touch and keyboard pager, confines scrolling to 
 
 Native Chromium was set to 200% and 400% using the browser's tab zoom API. The scoped chart retained five labels, keyboard legend paging, the Indexed baseline and chart inspection with no root overflow at 632 and 316 CSS px. [Zoom data](native-zoom.json) · [200%](compare-indexed-200.png) · [400%](compare-indexed-400.png). Real OS screen-reader and physical-device checks remain open.
 
+## Cross-engine geometry
+
+A matched 24-record Playwright geometry run measured Chromium, Firefox and WebKit on the checkpoint and candidate. Firefox matched Chromium to rounding. WebKit ran with its classic vertical scrollbar. The top navigation wrapped at 320 px and added 40 px on both commits. At 390 px the Compare toolbar occupied one extra row on both.
+
+At 320 px WebKit went from 1% to 32% visible with familiar packages and from 0% to 9% with the very long scoped fixture. At 390 px it went from 65% to 96% and from 26% to 73%, respectively. The familiar 320 px improvement is 80 CSS px in all three engines. Chromium and Firefox retain the 42% minimum at 320 px. WebKit uses measured narrow-layout floors that would also fail against the checkpoint.
+
+[Cross-engine metrics](cross-engine-geometry.json) · [WebKit checkpoint at 320 px](webkit-checkpoint-320-familiar.png) · [WebKit candidate at 320 px](webkit-candidate-320-familiar.png) · [WebKit scoped candidate at 390 px](webkit-candidate-390-scoped.png).
+
 ## WebKit trace
 
 Network recording includes document requests, redirects, RSC prefetch markers, selected response headers, request failures and exception categories. It omits cookies, auth values, response bodies and query tokens. No Vercel protection settings were changed.
