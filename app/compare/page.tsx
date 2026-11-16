@@ -235,7 +235,7 @@ export default async function ComparePage({ searchParams }: Props) {
       )}
       <div className="observatory-toolbar">
         <div className="min-w-0">{rangeSelector}</div>
-        <div className={`${COMPARE_ACTION_CONTAINER_CLASSES} flex-shrink-0 self-start sm:self-end`}>
+        <div className={`${COMPARE_ACTION_CONTAINER_CLASSES} flex-shrink-0 self-end`}>
           {exportItems.length ? (
             <ExportDropdown
               items={exportItems}
