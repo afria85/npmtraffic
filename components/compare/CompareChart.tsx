@@ -7,6 +7,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import ActionMenu from "@/components/ui/ActionMenu";
 import { IconChevronDown } from "@/components/ui/icons";
 import { computeLeftPad } from "@/components/charts/axis-padding";
+import { buildNiceYAxis, findIndexedBaseline, indexedPoint, formatAxisTick } from "@/components/charts/scale-utils";
 import { toObservationPath } from "@/components/charts/observation-path";
 import { serializeChartSvg } from "@/components/charts/serialize-svg";
 import { TimelineAxis } from "@/components/charts/TimelineAxis";
@@ -230,6 +231,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   const { hoverIndex, setHoverIndex, inspect, control, setControlIndex } = useChartInspection(svgRef, series.length);
   const [styleOpen, setStyleOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [scaleMode, setScaleMode] = useState<"absolute" | "indexed">("absolute");
   const [settings, setSettings] = useState<CompareChartSettings>(() => {
     if (typeof window === "undefined") {
       return { lineStyles: buildDefaultLineStyles(packageNames), colors: buildDefaultColors(packageNames) };
@@ -279,23 +281,30 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     };
   }, [styleOpen]);
 
-  const maxValue = useMemo(() => {
-    const values: number[] = [];
-    for (const row of series) {
-      for (const pkg of packageNames) {
-        const v = row.values[pkg]?.downloads;
-        if (typeof v === "number" && Number.isFinite(v)) values.push(v);
-      }
-    }
-    return Math.max(1, ...values);
-  }, [series, packageNames]);
+  const baseline = useMemo(() => findIndexedBaseline(series, packageNames), [series, packageNames]);
+  const indexed = scaleMode === "indexed" && baseline !== null;
 
+  const plotValues = useMemo(() => series.map((row) =>
+    Object.fromEntries(packageNames.map((pkg) => [
+      pkg,
+      indexed ? indexedPoint(row, pkg, baseline) : (row.values[pkg]?.downloads ?? null),
+    ])) as Record<string, number | null>
+  ), [series, packageNames, indexed, baseline]);
+
+  const peak = useMemo(() => {
+    const values = plotValues.flatMap((row) => packageNames.flatMap((pkg) =>
+      typeof row[pkg] === "number" && Number.isFinite(row[pkg]) ? [row[pkg]] : []
+    ));
+    return Math.max(1, ...values);
+  }, [plotValues, packageNames]);
+
+  const axis = useMemo(() => buildNiceYAxis(peak, indexed ? "index" : "downloads"), [peak, indexed]);
   const { width, height } = useChartViewport(svgRef);
   const axisFontSize = isMobile ? 13 : 12;
   const yLabelOffset = isMobile ? 10 : 8;
   const leftPad = useMemo(
-    () => computeLeftPad(numberFormatter.format(maxValue), axisFontSize),
-    [maxValue, axisFontSize]
+    () => computeLeftPad(axis.ticks[0].label, axisFontSize),
+    [axis, axisFontSize]
   );
   const pad = { l: leftPad, r: 20, t: 16, b: isMobile ? 48 : 40 };
   const innerW = width - pad.l - pad.r;
@@ -303,32 +312,22 @@ export default function CompareChart({ series, packageNames, days }: Props) {
 
   const pointsByPkg = useMemo(() => {
     const xFor = (i: number) => pad.l + innerW * (series.length <= 1 ? 0 : i / (series.length - 1));
-    const yFor = (v: number) => pad.t + innerH * (1 - v / maxValue);
+    const yFor = (v: number) => pad.t + innerH * (1 - v / axis.maxValue);
 
-    const pointsByPkg = new Map<string, Point[]>();
+    const points = new Map<string, Point[]>();
     for (const pkg of packageNames) {
-      pointsByPkg.set(
-        pkg,
-        series.map((row, i) => {
-          const value = row.values[pkg]?.downloads;
-          return { x: xFor(i), y: value == null ? null : yFor(value) };
-        })
-      );
+      points.set(pkg, plotValues.map((row, i) => ({
+        x: xFor(i),
+        y: row[pkg] == null ? null : yFor(row[pkg]),
+      })));
     }
-    return pointsByPkg;
-  }, [innerH, innerW, maxValue, packageNames, pad.l, pad.t, series]);
+    return points;
+  }, [innerH, innerW, axis.maxValue, packageNames, pad.l, pad.t, plotValues, series.length]);
 
-  const yTicks = useMemo(() => {
-    const ticks = 4;
-    const values: { y: number; label: string }[] = [];
-    for (let i = 0; i <= ticks; i += 1) {
-      const ratio = i / ticks;
-      const value = Math.round(maxValue * (1 - ratio));
-      const y = pad.t + innerH * ratio;
-      values.push({ y, label: numberFormatter.format(value) });
-    }
-    return values;
-  }, [maxValue, innerH, pad.t]);
+  const yTicks = useMemo(() => axis.ticks.map((tick) => ({
+    y: pad.t + innerH * tick.ratio,
+    label: tick.label,
+  })), [axis, innerH, pad.t]);
 
   const hovered = hoverIndex == null ? null : series[hoverIndex];
 
@@ -455,9 +454,21 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     <section className="observatory-chart">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="observatory-section-title">
-          Daily downloads ({days ? `${days}d` : "range"})
+          {indexed ? "Indexed download trend" : "Daily downloads"} ({days ? `${days}d` : "range"})
         </h2>
+        <div role="group" aria-label="Compare chart scale" className="flex flex-wrap items-center gap-2">
+          <button type="button" className={CHART_BUTTON_CLASSES + " min-h-11"} aria-pressed={!indexed}
+            onClick={() => setScaleMode("absolute")}>Absolute</button>
+          <button type="button" className={CHART_BUTTON_CLASSES + " min-h-11"} aria-pressed={indexed}
+            disabled={!baseline} title={baseline ? "Compare each package to a common positive baseline day" : "No common day with positive observations for all packages"}
+            onClick={() => setScaleMode("indexed")}>Indexed (base 100)</button>
+        </div>
       </div>
+      <p className="mt-2 text-xs text-[var(--foreground-secondary)]" aria-live="polite">
+        {indexed && baseline
+          ? `Each package equals 100 on ${baseline.date} UTC; lines show relative change, not download volume.`
+          : "Absolute downloads per day. Shared-day totals and downloads exports always use raw counts."}
+      </p>
 
       <div ref={chartContainerRef} className="relative mt-4">
         <svg
@@ -465,7 +476,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           viewBox={`0 0 ${width} ${height}`}
           className="h-64 w-full touch-pan-y"
           role="img"
-          aria-label={`Compare daily downloads line chart${days ? ` (${days} days)` : ""}`}
+          aria-label={`Compare daily downloads line chart${days ? ` (${days} days)` : ""}${indexed ? ", indexed to 100" : ", absolute counts"}`}
           onPointerDown={handlePointerEvent}
           onPointerMove={handlePointerEvent}
           onPointerLeave={(event) => {
@@ -636,7 +647,14 @@ export default function CompareChart({ series, packageNames, days }: Props) {
                 const value = hovered.values[pkg];
                 return <div key={pkg} className="flex items-center justify-between gap-2">
                   <span className="min-w-0 [overflow-wrap:anywhere] text-[var(--foreground-tertiary)]">{pkg}</span>
-                  <span className="font-mono">{value?.downloads != null ? numberFormatter.format(value.downloads) : value?.status === "available" ? "Excluded" : value?.status === "unverified" ? "Unverified" : "Missing"}</span>
+                  <span className="font-mono text-right">
+                    {value?.downloads != null ? numberFormatter.format(value.downloads) : value?.status === "available" ? "Excluded" : value?.status === "unverified" ? "Unverified" : "Missing"}
+                    {indexed && value?.downloads != null ? (
+                      <span className="block text-[var(--foreground-secondary)]">
+                        Index {formatAxisTick(indexedPoint(hovered, pkg, baseline) ?? 0, "index")}
+                      </span>
+                    ) : null}
+                  </span>
                 </div>;
               })}
             </div>
@@ -653,7 +671,9 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           const row = series[index];
           const values = packageNames.map(pkg => {
             const value = row.values[pkg];
-            return pkg + ": " + describeDownloads(value?.downloads ?? null, value?.status);
+            const normalized = indexed ? indexedPoint(row, pkg, baseline) : null;
+            return pkg + ": " + describeDownloads(value?.downloads ?? null, value?.status) +
+              (normalized == null ? "" : ", index " + normalized.toFixed(1));
           });
           return row.date + " UTC, " + values.join("; ");
         }}
