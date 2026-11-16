@@ -1,10 +1,11 @@
-const fs = require("node:fs");
-const path = require("node:path");
-const { spawn } = require("node:child_process");
-const { pathToFileURL } = require("node:url");
-const { setTimeout: wait } = require("node:timers/promises");
-const { chromium } = require(path.join(process.cwd(), "node_modules/playwright"));
+import fs from "node:fs";
+import path from "node:path";
+import { spawn } from "node:child_process";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { setTimeout as wait } from "node:timers/promises";
+import { chromium } from "playwright";
 
+const directory = path.dirname(fileURLToPath(import.meta.url));
 const out = path.resolve(process.argv[2]);
 const port = Number(process.env.M7_PORT ?? 3110);
 const host = "http://127.0.0.1:" + port;
@@ -15,7 +16,7 @@ const env = { ...process.env, M7_STATE: state,
   M7_FIXTURE_MODULE: pathToFileURL(path.resolve("smoke/upstream-fixture.mjs")).href };
 delete env.UPSTASH_REDIS_REST_URL;
 delete env.UPSTASH_REDIS_REST_TOKEN;
-const child = spawn(process.execPath, ["--import", pathToFileURL(path.join(__dirname, "fixture.mjs")).href,
+const child = spawn(process.execPath, ["--import", pathToFileURL(path.join(directory, "fixture.mjs")).href,
   "node_modules/next/dist/bin/next", "start", "--hostname", "127.0.0.1", "--port", String(port)], { env, stdio: "ignore" });
 
 const routes = {

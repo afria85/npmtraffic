@@ -1,7 +1,10 @@
-const { createServer }=require("node:http");
-const {readFileSync,mkdirSync}=require("node:fs");
-const path=require("node:path");
-const {chromium}=require(path.join(process.cwd(),"node_modules/playwright"));
+import { createServer } from "node:http";
+import { readFileSync, mkdirSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { chromium } from "playwright";
+
+const directory = path.dirname(fileURLToPath(import.meta.url));
 const dest=path.resolve(process.argv[2]);
 mkdirSync(dest,{recursive:true});
 const files={ "/prototype.html":"text/html", "/prototype.css":"text/css", "/prototype.js":"text/javascript" };
@@ -9,7 +12,7 @@ const server=createServer((req,res)=>{
  const name = new URL(req.url,"http://localhost").pathname;
  if(!files[name])return res.writeHead(404).end();
  res.setHeader("Content-Type",files[name]);
- res.end(readFileSync(path.join(__dirname,name)));
+ res.end(readFileSync(path.join(directory,name)));
 });
 (async()=>{
  await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
