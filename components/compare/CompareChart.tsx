@@ -408,7 +408,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           if (!svg) return;
           const bg = readCssVar("--surface");
           const blob = svgToBlob(svg, bg);
-          downloadBlob(blob, `compare-${packageNames.length}-packages.svg`);
+          downloadBlob(blob, `compare-${packageNames.length}-packages${indexed && baseline ? `-indexed-${baseline.date}` : ""}.svg`);
         },
       },
       {
@@ -419,11 +419,11 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           if (!svg) return;
           const bg = readCssVar("--surface");
           const blob = await svgToPngBlob(svg, bg);
-          downloadBlob(blob, `compare-${packageNames.length}-packages.png`);
+          downloadBlob(blob, `compare-${packageNames.length}-packages${indexed && baseline ? `-indexed-${baseline.date}` : ""}.png`);
         },
       },
     ],
-    [packageNames.length]
+    [packageNames.length, indexed, baseline]
   );
 
   const clientPointToSvgX = (clientX: number, clientY: number, svg: SVGSVGElement) => {
@@ -476,7 +476,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           viewBox={`0 0 ${width} ${height}`}
           className="h-64 w-full touch-pan-y"
           role="img"
-          aria-label={`Compare daily downloads line chart${days ? ` (${days} days)` : ""}${indexed ? ", indexed to 100" : ", absolute counts"}`}
+          aria-label={`Compare daily downloads line chart${days ? ` (${days} days)` : ""}${indexed && baseline ? `, indexed to 100 on ${baseline.date} UTC` : ", absolute counts"}`}
           onPointerDown={handlePointerEvent}
           onPointerMove={handlePointerEvent}
           onPointerLeave={(event) => {
@@ -500,6 +500,11 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           ))}
 
           <TimelineAxis series={series} left={pad.l} plotWidth={innerW} y={pad.t + innerH} fontSize={axisFontSize} />
+          {indexed && baseline ? (
+            <text data-chart-index-note x={pad.l} y={height - 7} fontSize={10} fill="var(--chart-axis)">
+              Index 100 = {baseline.date} UTC · relative change
+            </text>
+          ) : null}
 
           {packageNames.map((pkg) => {
             const points = pointsByPkg.get(pkg) ?? [];
