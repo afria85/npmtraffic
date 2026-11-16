@@ -42,7 +42,7 @@ export async function generateMetadata({
   if (!p?.name) {
     return {
       title: "npmtraffic",
-      description: "Daily npm download history in a GitHub-style table",
+      description: "Daily npm download observations with UTC coverage, charts, and auditable exports",
       alternates: { canonical: `${baseUrl}/` },
     };
   }
@@ -52,7 +52,7 @@ export async function generateMetadata({
   } catch {
     return {
       title: "npmtraffic",
-      description: "Daily npm download history in a GitHub-style table",
+      description: "Daily npm download observations with UTC coverage, charts, and auditable exports",
       alternates: { canonical: `${baseUrl}/` },
     };
   }
@@ -60,7 +60,7 @@ export async function generateMetadata({
   const canonical = buildPackageCanonical(baseUrl, name);
   const title = `${name} npm downloads (${days} days)`;
   const socialTitle = `${title} | npmtraffic`;
-  const description = `Daily npm download history for ${name} in a GitHub-style table`;
+  const description = `UTC-anchored npm download observations for ${name}, including coverage, charts, and reproducible exports`;
   // Some scrapers (notably WhatsApp) are more reliable when og:image URLs end with an image extension.
   // Use the dedicated /og/p route (supports "{days}" and "{days}.png") and keep a static fallback.
   const encodedPkg = encodePkg(name);
