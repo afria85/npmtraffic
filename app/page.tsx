@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const fallbackOgImage = `${baseUrl}/og-fallback.png`;
 
   return {
-    title: "npmtraffic",
+    title: "npm Download Trends & Comparisons",
     description: config.site.tagline,
     alternates: {
       canonical: `${baseUrl}/`,
@@ -19,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       type: "website",
       siteName: "npmtraffic",
-      title: "npmtraffic",
+      title: "npm Download Trends & Comparisons | npmtraffic",
       description: config.site.tagline,
       url: `${baseUrl}/`,
       images: [{ 
@@ -38,7 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: "npmtraffic",
+      title: "npm Download Trends & Comparisons | npmtraffic",
       description: config.site.tagline,
       images: [{
         url: ogImage,
