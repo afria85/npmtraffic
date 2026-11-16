@@ -87,3 +87,42 @@ test("home puts package search inside the first 320px reading viewport", async (
   await expect(page.getByRole("link", { name: "Compare packages" })).toBeVisible();
   await expect(page.getByRole("rowheader", { name: "Verified count" })).toBeVisible();
 });
+
+test("Compare scale is opt-in and keeps shared absolute totals unchanged", async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(five);
+  const chart = plot(page);
+  await expect(chart).toBeVisible({ timeout: 20_000 });
+  const line = chart.locator("path[stroke]").first();
+  await expect(line).toHaveAttribute("d", /[ML]/);
+  const before = await line.getAttribute("d");
+  const totals = page.getByRole("table", { name: "Downloads on shared days" });
+  const rawTotals = await totals.innerText();
+  const absolute = page.getByRole("button", { name: "Absolute", exact: true });
+  const indexed = page.getByRole("button", { name: "Indexed (base 100)", exact: true });
+  await expect(absolute).toHaveAttribute("aria-pressed", "true");
+  await expect(indexed).toBeEnabled();
+
+  await indexed.click();
+  await expect(indexed).toHaveAttribute("aria-pressed", "true");
+  await expect(chart).toHaveAttribute("aria-label", /indexed to 100/);
+  await expect(page.getByText(/Each package equals 100 on .* UTC/)).toBeVisible();
+  await expect.poll(() => line.getAttribute("d")).not.toBe(before);
+  expect(await totals.innerText()).toBe(rawTotals);
+
+  await absolute.click();
+  await expect(absolute).toHaveAttribute("aria-pressed", "true");
+  await expect(chart).toHaveAttribute("aria-label", /absolute counts/);
+  await expect(line).toHaveAttribute("d", before!);
+});
+
+test("focused Compare chart and controls report no axe WCAG 2.2 AA violations", async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(five);
+  await plot(page).waitFor();
+  const result = await new AxeBuilder({ page }).include("main")
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
+  expect(result.violations.map((item) => ({ id: item.id, impact: item.impact, nodes: item.nodes.length }))).toEqual([]);
+});
