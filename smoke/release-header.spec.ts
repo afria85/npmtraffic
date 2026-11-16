@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { STORAGE_KEY } from "../lib/compare-store";
 
 const compare = "/compare?packages=%40angular%2Fcore,axios,react,svelte,vue&days=30";
 
@@ -33,12 +34,18 @@ for (const [width, height] of [[312, 720], [320, 720], [390, 844]]) {
       });
       expect(visible).toBeGreaterThanOrEqual(0.42);
     }
-    for (const name of ["npmtraffic home", "Compare", "About", "GitHub repository"]) {
-      await page.keyboard.press("Tab");
-      await expect(banner.getByRole("link", { name, exact: true })).toBeFocused();
-    }
     const toggle = banner.getByRole("button", { name: "Toggle theme" });
-    await page.keyboard.press("Tab");
+    const stops = ["npmtraffic home", "Compare", "About", "GitHub repository"]
+      .map(name => banner.getByRole("link", { name, exact: true }))
+      .concat(toggle);
+    // This Playwright WebKit port does not expose Safari's link-tab preference.
+    // Verify each stop can take focus there. Chromium and Firefox also check Tab order.
+    if (browserName === "webkit") await page.keyboard.press("Tab");
+    for (const stop of stops) {
+      if (browserName === "webkit") await stop.focus();
+      else await page.keyboard.press("Tab");
+      await expect(stop).toBeFocused();
+    }
     await expect(toggle).toBeFocused();
     await expect(toggle).not.toHaveCSS("box-shadow", "none");
     await page.evaluate(() => scrollTo(0, 500));
@@ -50,6 +57,7 @@ test.describe("mobile header touch", () => {
   test.use({ hasTouch: true, viewport: { width: 320, height: 720 }, colorScheme: "light" });
 
   test("theme and About are both reachable and footer navigation stays named", async ({ page }) => {
+    await page.addInitScript(key => localStorage.setItem(key, JSON.stringify(["react", "vue"])), STORAGE_KEY);
     await page.goto(compare);
     const banner = page.getByRole("banner");
     await banner.getByRole("button", { name: "Toggle theme" }).tap();
@@ -57,6 +65,7 @@ test.describe("mobile header touch", () => {
     await banner.getByRole("link", { name: "About", exact: true }).tap();
     await expect(page).toHaveURL(/\/about$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+    await expect(page.getByRole("region", { name: "Compare tray" })).toBeVisible();
     const footer = page.getByRole("contentinfo");
     for (const group of ["Product", "Resources", "Support"]) {
       await expect(footer.getByRole("navigation", { name: group })).toBeAttached();
