@@ -59,6 +59,7 @@ export default function CompareSeriesTable({ series, packageNames }: Props) {
       <ScrollHintContainer
         className={COMPARE_TABLE_WRAPPER_CLASSES}
         leftHintOffset="var(--nt-date-col-w)"
+        horizontalScrollHints={!focusedPackage}
       >
         <table className={focusedPackage ? "w-full table-fixed text-sm" : "min-w-[760px] w-max table-fixed text-sm sm:w-full"}>
           <caption className="sr-only">Daily observations</caption>

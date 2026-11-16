@@ -37,7 +37,10 @@ test("Compare focuses a single package without changing shared eligibility or th
   const compareUrl = page.url();
   const select = page.getByRole("combobox", { name: "Table packages" });
   await expect(select.getByRole("option")).toHaveCount(6);
+  const scrollRight = page.getByRole("button", { name: "Scroll right" });
+  await expect(scrollRight).toBeVisible();
   await select.selectOption("integrity-fixture");
+  await expect(scrollRight).toHaveCount(0);
   await expect(table.getByRole("columnheader", { name: "axios" })).toHaveCount(0);
   await expect(table.getByRole("cell", { name: "Missing", exact: true })).toBeVisible();
   await expect(table.getByRole("cell", { name: "Unverified", exact: true })).toBeVisible();
@@ -46,5 +49,6 @@ test("Compare focuses a single package without changing shared eligibility or th
   await expect(page).toHaveURL(compareUrl);
   await expect(legend.getByRole("listitem")).toHaveCount(5);
   await select.selectOption("");
+  await expect(scrollRight).toBeVisible();
   await expect(table.getByRole("columnheader", { name: "axios" })).toBeVisible();
 });
