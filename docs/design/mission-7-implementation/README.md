@@ -25,3 +25,17 @@ At 390×844 the entire 365-day Package and Compare plots fit in the first viewpo
 ## Boundaries
 
 The table denominator, chart rows, gaps, UTC ranges, derived insight math, exporter behavior and API contracts are unchanged. The new named totals and daily table support navigation through the browser accessibility tree. Real operating-system screen reader output and field metrics require separate evidence. The proposed visual identity and tray presentation are for owner review.
+
+
+## Focused iteration — Compare scale and readable axes (16 Nov 2026)
+
+This additional draft-only revision follows independent critiques by Claude, DeepSeek and Gemini. These reviews did not independently open all three concept galleries or live PR previews; their overlap is triage guidance, not a visual research sample.
+
+- Both Package and Compare chart Y axes now round upward to friendly intervals with compact download labels. Original integer downloads remain unchanged in tooltips, tables, derived metrics, JSON, CSV and Excel CSV.
+- Compare defaults to **Absolute** daily downloads. A keyboard-operable button provides opt-in **Indexed (base 100)** trends to compare growth when package volumes differ. The baseline is the first UTC day when **all selected packages have a shared, strictly positive observation**. Each is 100 on that same date. If no such day exists, indexed mode is disabled rather than inventing an observation. Verified zero after the baseline is zero; missing/unverified remain gaps. The indexed Y axis is explicitly zoomed around the visible relative variation and must never be interpreted as absolute traffic.
+- The selected chart mode affects only rendered SVG/PNG chart representation and its accessibility description. Compare absolute shared-day totals, source status, semantic table, hover raw counts, keyboard observation control, data downloads, and API v1 contracts remain unchanged.
+- Unit regression tests cover nice ticks, shared baseline, no-positive-baseline, verified zero, and null gaps. A focused Chromium smoke test exercises toggling back to Absolute and checks unchanged totals, with an all-severity WCAG 2.2 AA axe scan (not a substitute for native screen-reader or zoom testing).
+
+### Release gates still pending
+
+This is a **Draft, not approved for merge or production**. Require exact-head CI, exact-SHA Vercel Preview and hosted interactions, light/dark 320/390/768/1440 screenshots, pointer/keyboard/tooltip touch checks in both modes, native 200%/400% browser zoom, focus visibility and touch target inspection, manual screen-reader evaluation where feasible, and before/after cold-load performance. The new relative axis must be labeled clearly in any screenshot. A11y and real-user performance must not be claimed from CI alone. No Redis, secrets, production environment, public API, payment or infrastructure changes are in scope.
