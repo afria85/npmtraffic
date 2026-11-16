@@ -36,7 +36,7 @@ export default function AboutPage() {
             {[
               ["Daily breakdown table", "Read UTC daily rows, deltas, MA3/MA7, and outlier scores date-by-date."],
               ["Package insights", "Scan latest trend, peak day, active rate, consistency, and strongest outlier."],
-              ["Compare packages", "Compare 2-5 packages with aligned ranges, share, leader, fastest mover, and closest race."],
+              ["Compare packages", "Compare 2–5 packages with aligned ranges, shared-day leaders, largest relative increase, and closest race."],
               ["Release context", "Show npm publish markers, version metadata, dist-tag latest, and releases in range."],
               ["Local event markers", "Add incidents, posts, or releases; import/export JSON; share events only when you choose."],
               ["Deterministic exports", "CSV, Excel CSV, JSON, chart SVG, and chart PNG exports with traceable metadata where relevant."],
