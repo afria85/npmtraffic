@@ -28,3 +28,15 @@ for (const theme of ["light", "dark"] as const) {
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
   });
 }
+
+test("generic unknown routes show an accurate Page not found message", async ({ page }) => {
+  const response = await page.goto("/this-is-not-an-npmtraffic-route");
+  expect(response?.status()).toBe(404);
+  await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
+  await expect(page.getByText("The requested page or npm package could not be found.")).toBeVisible();
+});
+
+test("About feature copy matches the measured Compare insight", async ({ page }) => {
+  await page.goto("/about");
+  await expect(page.getByText(/largest relative increase, and closest race/)).toBeVisible();
+});
