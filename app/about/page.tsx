@@ -1,10 +1,27 @@
 import type { Metadata } from "next";
 import AboutActions from "@/components/about/AboutActions";
 
+const aboutDescription =
+  "Why npmtraffic exists: daily npm download tables, compare insights, release context, local event markers, and deterministic exports.";
+
 export const metadata: Metadata = {
   title: "About",
-  description:
-    "Why npmtraffic exists: daily npm download tables, compare insights, release context, local event markers, and deterministic exports.",
+  description: aboutDescription,
+  alternates: { canonical: "/about" },
+  openGraph: {
+    type: "website",
+    siteName: "npmtraffic",
+    title: "About | npmtraffic",
+    description: aboutDescription,
+    url: "/about",
+    images: [{ url: "/og.png", alt: "npmtraffic — npm download analytics" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About | npmtraffic",
+    description: aboutDescription,
+    images: ["/og.png"],
+  },
 };
 
 export default function AboutPage() {
