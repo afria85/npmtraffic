@@ -9,6 +9,7 @@ import type { VersionTimelineMarker } from "@/lib/npm-versions";
 import ActionMenu from "@/components/ui/ActionMenu";
 import { IconChevronDown } from "@/components/ui/icons";
 import { computeLeftPad } from "@/components/charts/axis-padding";
+import { buildNiceYAxis } from "@/components/charts/scale-utils";
 import { toObservationPath } from "@/components/charts/observation-path";
 import { serializeChartSvg } from "@/components/charts/serialize-svg";
 import { TimelineAxis } from "@/components/charts/TimelineAxis";
@@ -394,10 +395,11 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
     return Math.max(1, ...candidateValues);
   }, [series, derived]);
 
+  const axis = useMemo(() => buildNiceYAxis(maxValue), [maxValue]);
   const { width, height } = useChartViewport(svgRef);
   const axisFontSize = isMobile ? 14 : 13;
   const yLabelOffset = isMobile ? 10 : 8;
-  const leftPad = useMemo(() => computeLeftPad(numberFormatter.format(maxValue), axisFontSize), [maxValue, axisFontSize]);
+  const leftPad = useMemo(() => computeLeftPad(axis.ticks[0].label, axisFontSize), [axis, axisFontSize]);
   const pad = { l: leftPad, r: 20, t: 16, b: isMobile ? 48 : 40 };
   const innerW = width - pad.l - pad.r;
   const innerH = height - pad.t - pad.b;
@@ -407,7 +409,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
     const ma3 = derived?.ma3?.map((v) => v?.value ?? null) ?? [];
 
     const xFor = (i: number) => pad.l + innerW * (series.length <= 1 ? 0 : i / (series.length - 1));
-    const yFor = (v: number) => pad.t + innerH * (1 - v / maxValue);
+    const yFor = (v: number) => pad.t + innerH * (1 - v / axis.maxValue);
 
     const downloadsPoints = series.map((row, i) => ({ x: xFor(i), y: row.downloads === null ? null : yFor(row.downloads) }));
     const ma7Points = series.map((_, i) => {
@@ -422,7 +424,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
     });
 
     return { downloadsPoints, ma7Points, ma3Points };
-  }, [series, derived, innerH, innerW, maxValue, pad.l, pad.t]);
+  }, [series, derived, innerH, innerW, axis.maxValue, pad.l, pad.t]);
 
   const downloadsPath = useMemo(() => toObservationPath(downloadsPoints), [downloadsPoints]);
   const ma7Path = useMemo(() => toObservationPath(ma7Points), [ma7Points]);
@@ -441,17 +443,10 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
     return pts;
   }, [derived, downloadsPoints]);
 
-  const yTicks = useMemo(() => {
-    const ticks = 4;
-    const values: { y: number; label: string }[] = [];
-    for (let i = 0; i <= ticks; i += 1) {
-      const ratio = i / ticks;
-      const value = Math.round(maxValue * (1 - ratio));
-      const y = pad.t + innerH * ratio;
-      values.push({ y, label: numberFormatter.format(value) });
-    }
-    return values;
-  }, [maxValue, innerH, pad.t]);
+  const yTicks = useMemo(() => axis.ticks.map((tick) => ({
+    y: pad.t + innerH * tick.ratio,
+    label: tick.label,
+  })), [axis, innerH, pad.t]);
 
   const hovered = hoverIndex == null ? null : series[hoverIndex];
   const hoverPoint = hoverIndex == null ? null : downloadsPoints[hoverIndex] ?? null;
