@@ -18,6 +18,20 @@ function DateSortIcon({ dir }: { dir: DateSortDir }) {
   );
 }
 
+function WeekendBadgeUTC({ date }: { date: string }) {
+  const day = new Date(`${date}T00:00:00Z`).getUTCDay();
+  const weekend = day === 6 ? "Sat" : day === 0 ? "Sun" : null;
+  if (!weekend) return null;
+  return (
+    <abbr
+      title={weekend === "Sat" ? "Saturday (UTC), weekend" : "Sunday (UTC), weekend"}
+      className="flex-none rounded border border-[var(--border)] px-0.5 text-[9px] font-semibold leading-4 text-[var(--foreground-secondary)] no-underline"
+    >
+      {weekend}
+    </abbr>
+  );
+}
+
 type Props = {
   series: CompareSeriesRow[];
   packageNames: string[];
@@ -131,18 +145,7 @@ export default function CompareSeriesTable({ series, packageNames }: Props) {
                 <td className="sticky left-0 z-10 bg-[var(--surface)] px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-[var(--foreground-tertiary)] whitespace-nowrap sm:px-3 sm:text-xs">
                   <div className="flex min-w-0 items-center gap-1 whitespace-nowrap">
                     <span className="flex-none">{row.date}</span>
-                    {(() => {
-                      const day = new Date(`${row.date}T00:00:00Z`).getUTCDay();
-                      const weekend = day === 6 ? "Sat" : day === 0 ? "Sun" : null;
-                      return weekend ? (
-                        <abbr
-                          title={weekend === "Sat" ? "Saturday (UTC), weekend" : "Sunday (UTC), weekend"}
-                          className="flex-none rounded border border-[var(--border)] px-0.5 text-[9px] font-semibold leading-4 text-[var(--foreground-secondary)] no-underline"
-                        >
-                          {weekend}
-                        </abbr>
-                      ) : null;
-                    })()}
+                    <WeekendBadgeUTC date={row.date} />
                   </div>
                 </td>
                 {visiblePackages.map((pkg) => (
