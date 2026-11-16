@@ -303,7 +303,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   const axisFontSize = isMobile ? 13 : 12;
   const yLabelOffset = isMobile ? 10 : 8;
   const leftPad = useMemo(
-    () => computeLeftPad(axis.ticks[0].label, axisFontSize),
+    () => computeLeftPad(axis.ticks[0].label, axisFontSize) + 12,
     [axis, axisFontSize]
   );
   const pad = { l: leftPad, r: 20, t: 16, b: isMobile ? 48 : 40 };
