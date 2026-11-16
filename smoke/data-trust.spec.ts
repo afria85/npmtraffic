@@ -23,7 +23,7 @@ test("Package metadata describes npmtraffic data and preserves intentional share
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/p\/react$/);
   await expect(page.locator('meta[property="og:url"]')).toHaveAttribute("content", /\/p\/react\?days=30$/);
   await expect(page.locator('meta[property="og:image"]').first()).toHaveAttribute(
-    "content", /\/og\/p\/react\/30\.png$/
+    "content", /\/og\/p\/cmVhY3Q\/30\.png$/
   );
 });
 
