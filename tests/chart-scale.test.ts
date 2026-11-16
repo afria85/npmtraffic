@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { CompareSeriesRow } from "../lib/compare";
-import { buildNiceYAxis, findIndexedBaseline, indexedPoint } from "../components/charts/scale-utils";
+import { buildNiceYAxis, buildIndexedYAxis, findIndexedBaseline, indexedPoint } from "../components/charts/scale-utils";
 
 const row = (date: string, a: number | null, b: number | null): CompareSeriesRow => ({
   date,
@@ -45,4 +45,13 @@ test("index is unavailable without a common positive baseline", () => {
 test("indexed scale uses plain labels and downloaded count axis supports sparse counts", () => {
   assert.deepEqual(buildNiceYAxis(145, "index").ticks.map((tick) => tick.label), ["200", "150", "100", "50", "0"]);
   assert.equal(buildNiceYAxis(1, "downloads").maxValue, 4);
+});
+
+test("indexed axis zooms around the shared base 100 without implying raw counts", () => {
+  const axis = buildIndexedYAxis([96, 100, 104]);
+  assert.equal(axis.minValue, 96);
+  assert.equal(axis.maxValue, 104);
+  assert.deepEqual(axis.ticks.map((tick) => tick.label), ["104", "102", "100", "98", "96"]);
+  const flat = buildIndexedYAxis([100]);
+  assert.ok(flat.minValue < 100 && flat.maxValue > 100);
 });
