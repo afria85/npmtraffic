@@ -141,7 +141,11 @@ test("shared verified-zero observations remain eligible while missing dates do n
   globalThis.fetch = async (input) => {
     const response = completeResponse(input);
     const payload = await response.json();
-    payload.downloads[0].downloads = 0;
+    // Keep the registry-wide daily total positive: a package-level zero is verified
+    // only when the registry-wide observation for that date remains nonzero.
+    if (payload.package === "react" || payload.package === "vue") {
+      payload.downloads[0].downloads = 0;
+    }
     return Response.json(payload);
   };
   t.after(() => { globalThis.fetch = originalFetch; cacheClear(); });
