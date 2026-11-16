@@ -3,9 +3,26 @@ import { getDonateLinks } from "@/lib/donate";
 import { config } from "@/lib/config";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
+const donateDescription = "Support npmtraffic with optional donations that keep the project fast, free, and reliable.";
+
 export const metadata: Metadata = {
   title: "Donate",
-  description: "Support npmtraffic with optional donations that keep the project fast, free, and reliable.",
+  description: donateDescription,
+  alternates: { canonical: "/donate" },
+  openGraph: {
+    type: "website",
+    siteName: "npmtraffic",
+    title: "Donate | npmtraffic",
+    description: donateDescription,
+    url: "/donate",
+    images: [{ url: "/og.png", alt: "npmtraffic — npm download analytics" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Donate | npmtraffic",
+    description: donateDescription,
+    images: ["/og.png"],
+  },
 };
 
 export default function DonatePage() {
