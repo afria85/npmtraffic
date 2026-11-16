@@ -399,7 +399,7 @@ export default function TrafficChart({ series, derived, pkgName, days, versionMa
   const { width, height } = useChartViewport(svgRef);
   const axisFontSize = isMobile ? 14 : 13;
   const yLabelOffset = isMobile ? 10 : 8;
-  const leftPad = useMemo(() => computeLeftPad(axis.ticks[0].label, axisFontSize), [axis, axisFontSize]);
+  const leftPad = useMemo(() => computeLeftPad(axis.ticks[0].label, axisFontSize) + 12, [axis, axisFontSize]);
   const pad = { l: leftPad, r: 20, t: 16, b: isMobile ? 48 : 40 };
   const innerW = width - pad.l - pad.r;
   const innerH = height - pad.t - pad.b;
