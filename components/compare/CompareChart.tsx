@@ -13,6 +13,10 @@ import { serializeChartSvg } from "@/components/charts/serialize-svg";
 import { TimelineAxis } from "@/components/charts/TimelineAxis";
 import ChartObservationControl, { describeDownloads, useChartInspection } from "@/components/charts/ChartObservationControl";
 import { useChartViewport } from "@/components/charts/use-chart-viewport";
+import {
+  defaultCompareColors, hydrateCompareChartSettings,
+  type CompareChartSettings, type PaletteKey, type LineStyleKey,
+} from "@/components/compare/compare-chart-settings";
 
 const CHART_BUTTON_CLASSES = "inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold leading-none text-[var(--foreground)] transition-colors hover:bg-[var(--surface-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]";
 
@@ -23,14 +27,6 @@ type Props = {
 };
 
 type Point = { x: number; y: number | null };
-
-type PaletteKey = "accent" | "slate" | "blue" | "emerald" | "violet" | "amber" | "orange" | "pink" | "cyan";
-type LineStyleKey = "solid" | "dashed" | "dotted";
-
-type CompareChartSettings = {
-  lineStyles: Record<string, LineStyleKey>;
-  colors: Record<string, PaletteKey>;
-};
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 
@@ -202,24 +198,6 @@ async function svgToPngBlob(svgEl: SVGSVGElement, background: string) {
   return pngBlob;
 }
 
-function buildDefaultColors(packageNames: string[]) {
-  const order: PaletteKey[] = ["accent", "amber", "pink", "blue", "emerald", "violet", "cyan", "orange", "slate"];
-  const colors: Record<string, PaletteKey> = {};
-  packageNames.forEach((pkg, idx) => {
-    colors[pkg] = order[idx] ?? "slate";
-  });
-  return colors;
-}
-
-function buildDefaultLineStyles(packageNames: string[]) {
-  const styles: Record<string, LineStyleKey> = {};
-  const order: LineStyleKey[] = ["solid", "dashed", "dotted"];
-  packageNames.forEach((pkg, index) => {
-    styles[pkg] = order[index % order.length];
-  });
-  return styles;
-}
-
 export default function CompareChart({ series, packageNames, days }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
@@ -227,20 +205,21 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   const tooltipRef = useRef<HTMLDivElement | null>(null);
 
   const settingsKey = `npmtraffic_chart_settings:compare:${packageNames.join("|")}`;
+  const defaultColors = useMemo(() => defaultCompareColors(packageNames), [packageNames]);
 
   const { hoverIndex, setHoverIndex, inspect, control, setControlIndex } = useChartInspection(svgRef, series.length);
   const [styleOpen, setStyleOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [scaleMode, setScaleMode] = useState<"absolute" | "indexed">("absolute");
   const [settings, setSettings] = useState<CompareChartSettings>(() => {
-    if (typeof window === "undefined") {
-      return { lineStyles: buildDefaultLineStyles(packageNames), colors: buildDefaultColors(packageNames) };
+    if (typeof window === "undefined") return hydrateCompareChartSettings(packageNames);
+    try {
+      return hydrateCompareChartSettings(
+        packageNames, safeParseSettings(window.localStorage.getItem(settingsKey)),
+      );
+    } catch {
+      return hydrateCompareChartSettings(packageNames);
     }
-    const saved = safeParseSettings(window.localStorage.getItem(settingsKey));
-    return {
-      lineStyles: { ...buildDefaultLineStyles(packageNames), ...(saved.lineStyles ?? {}) },
-      colors: { ...buildDefaultColors(packageNames), ...(saved.colors ?? {}) },
-    };
   });
 
   useEffect(() => {
@@ -510,7 +489,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
             const points = pointsByPkg.get(pkg) ?? [];
             const path = toObservationPath(points);
             if (!path) return null;
-            const color = paletteValue(settings.colors[pkg] ?? "slate");
+            const color = paletteValue(settings.colors[pkg] ?? defaultColors[pkg]);
             const style = settings.lineStyles[pkg] ?? "solid";
             return (
               <path
@@ -547,7 +526,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
                   <span
                     aria-hidden="true"
                     className="observatory-series-line"
-                    style={{ borderColor: paletteValue(settings.colors[pkg] ?? "slate"), borderTopStyle: style }}
+                    style={{ borderColor: paletteValue(settings.colors[pkg] ?? defaultColors[pkg]), borderTopStyle: style }}
                   />
                   <span className="min-w-0 [overflow-wrap:anywhere]">{pkg}</span>
                   <span className="sr-only">{style} line</span>
@@ -607,11 +586,12 @@ export default function CompareChart({ series, packageNames, days }: Props) {
                         <ChartSelect
                           label="Color"
                           labelClassName="text-[11px] uppercase tracking-[0.35em] text-[var(--foreground-tertiary)]"
-                          value={settings.colors[pkg] ?? "slate"}
+                          value={settings.colors[pkg] ?? defaultColors[pkg]}
                           onChange={(value) =>
                             setSettings((prev) => ({
                               ...prev,
                               colors: { ...prev.colors, [pkg]: value as PaletteKey },
+                              customColors: [...new Set([...(prev.customColors ?? []), pkg])],
                             }))
                           }
                           options={PALETTE.map((p) => ({ label: p.label, value: p.key }))}
