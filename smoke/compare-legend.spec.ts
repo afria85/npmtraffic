@@ -64,22 +64,25 @@ test.describe("touch legend paging", () => {
   test("touch reaches the last package and can return to earlier series", async ({ page }) => {
     await page.goto(compare(scoped));
     const legend = page.getByRole("region", { name: "Chart legend" });
-    const next = page.getByRole("button", { name: "Scroll legend right" });
-    const previous = page.getByRole("button", { name: "Scroll legend left" });
-    await expect(next).toBeVisible();
-    for (let step = 0; step < 4 && await next.isVisible(); step++) {
-      const before = await legend.evaluate(el => el.scrollLeft);
-      await next.tap();
-      await expect.poll(() => legend.evaluate(el => el.scrollLeft)).toBeGreaterThan(before);
+    const pager = page.getByRole("button", { name: /Scroll legend (right|left)/ });
+    await expect(pager).toHaveAccessibleName("Scroll legend right");
+    for (let step = 0; step < 4; step++) {
+      const { offset, remaining } = await legend.evaluate(el => ({
+        offset: el.scrollLeft,
+        remaining: el.scrollWidth - el.clientWidth - el.scrollLeft,
+      }));
+      if (remaining <= 1) break;
+      await pager.tap();
+      await expect.poll(() => legend.evaluate(el => el.scrollLeft)).toBeGreaterThan(offset);
     }
-    await expect(previous).toBeVisible();
+    await expect(pager).toHaveAccessibleName("Scroll legend left");
     await expect.poll(() => legend.getByText("vue", { exact: true }).evaluate(last => {
       const a = last.getBoundingClientRect();
       const b = last.closest("[aria-label='Chart legend']")!.getBoundingClientRect();
       return a.left >= b.left - 1 && a.right <= b.right + 1;
     })).toBe(true);
     const end = await legend.evaluate(el => el.scrollLeft);
-    await previous.tap();
+    await pager.tap();
     await expect.poll(() => legend.evaluate(el => el.scrollLeft)).toBeLessThan(end);
   });
 });
