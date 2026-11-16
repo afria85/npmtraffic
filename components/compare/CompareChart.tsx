@@ -21,7 +21,7 @@ import {
 const CHART_BUTTON_CLASSES = "inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold leading-none text-[var(--foreground)] transition-colors hover:bg-[var(--surface-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]";
 const ACTIVE_SCALE_CLASSES = "!border-[var(--accent)] !bg-[var(--accent)] !text-[var(--accent-foreground)] hover:!bg-[var(--accent-hover)]";
 function scaleButtonClasses(active: boolean) {
-  return `${CHART_BUTTON_CLASSES} min-h-11 gap-1.5 !transition-none disabled:cursor-not-allowed disabled:opacity-50 ${active ? ACTIVE_SCALE_CLASSES : ""}`;
+  return `${CHART_BUTTON_CLASSES} min-h-11 !transition-none disabled:cursor-not-allowed disabled:opacity-50 ${active ? ACTIVE_SCALE_CLASSES : ""}`;
 }
 
 
@@ -512,12 +512,12 @@ export default function CompareChart({ series, packageNames, days }: Props) {
         <div role="group" aria-label="Compare chart scale" className="flex flex-wrap items-center gap-2">
           <button type="button" className={scaleButtonClasses(!indexed)} aria-pressed={!indexed}
             onClick={() => setScaleMode("absolute")}>
-            {!indexed ? <span aria-hidden="true">✓</span> : null}Absolute
+            Absolute
           </button>
           <button type="button" className={scaleButtonClasses(indexed)} aria-pressed={indexed}
             disabled={!baseline} title={baseline ? "Compare each package to a common positive baseline day" : "No common day with positive observations for all packages"}
             onClick={() => setScaleMode("indexed")}>
-            {indexed ? <span aria-hidden="true">✓</span> : null}Indexed (base 100)
+            Indexed (base 100)
           </button>
         </div>
       </div>
