@@ -14,7 +14,7 @@ test("client-side Compare additions do not turn new series into repeated slate l
   await page.goto("/compare?packages=react,vue&days=30");
   await expect(paths(page)).toHaveCount(2, { timeout: 20_000 });
 
-  for (const [index, name] of ["angular", "typescript", "axios"].entries()) {
+  for (const [index, name] of ["@angular/core", "typescript", "axios"].entries()) {
     const input = page.getByRole("combobox", { name: "Add a package to compare" });
     await input.fill(name);
     await page.getByRole("option", { name: new RegExp("^" + name + "\\b", "i") }).first().click();
