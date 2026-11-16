@@ -49,6 +49,9 @@ export default function Footer({ projectGithubUrl }: { projectGithubUrl: string 
               Resources
             </h3>
             <nav aria-label="Resources" className="flex flex-col gap-1 text-sm">
+              <Link href="/data" className="inline-flex min-h-8 items-center text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
+                Data &amp; exports
+              </Link>
               <Link href="/transparency" className="inline-flex min-h-8 items-center text-[var(--foreground-secondary)] transition-colors hover:text-[var(--accent)]">
                 Transparency
               </Link>
