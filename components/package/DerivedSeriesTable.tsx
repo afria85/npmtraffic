@@ -643,7 +643,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                     </th>
                   ) : null}
                   {showDerived ? (
-                    <th className="px-2 py-2 text-center font-semibold whitespace-nowrap sm:px-3" title="Outlier flag">
+                    <th className="px-2 py-2 text-center font-semibold whitespace-nowrap sm:px-3" title="Global MAD flag (not adjusted for recurring weekly patterns)">
                       Outlier
                     </th>
                   ) : null}
@@ -658,11 +658,21 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
                 {tableRows.map(({ row, delta, ma3, ma7, outlier }) => {
                   const dayEvents = groupedEvents.get(row.date);
                   const isOutlier = Boolean(outlier?.is_outlier);
+                  const weekday = new Date(`${row.date}T00:00:00Z`).getUTCDay();
+                  const weekend = weekday === 6 ? "Sat" : weekday === 0 ? "Sun" : null;
                   return (
                     <tr key={row.date} className="text-[var(--foreground)] border-b border-[var(--border)] last:border-b-0">
                       <td className={`px-2 py-2 text-left text-[11px] font-mono tabular-nums tracking-normal text-[var(--foreground-tertiary)] whitespace-nowrap sm:px-3 sm:text-xs ${showDerived ? "sticky left-0 z-10 bg-[var(--surface)] sm:static sm:z-auto sm:bg-transparent" : ""}`}>
                         <div className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
                           <span className="flex-none">{row.date}</span>
+                          {weekend ? (
+                            <abbr
+                              title={weekend === "Sat" ? "Saturday (UTC), weekend" : "Sunday (UTC), weekend"}
+                              className="flex-none rounded border border-[var(--border)] px-0.5 text-[9px] font-semibold leading-4 text-[var(--foreground-secondary)] no-underline"
+                            >
+                              {weekend}
+                            </abbr>
+                          ) : null}
                           {dayEvents?.length ? (
                             <button
                               type="button"

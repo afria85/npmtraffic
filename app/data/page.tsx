@@ -173,7 +173,7 @@ export default async function DataPage() {
           </p>
           <p>
             JSON exports include the normalized range with a <code>meta</code> block and an <code>export</code> block for traceability.
-            Derived metrics such as trailing MA3/MA7 and MAD-based outlier scores do not alter the raw counts.
+            Derived metrics such as trailing MA3/MA7 and global MAD scores do not alter the raw counts. MAD flags compare each available day with the overall median, without accounting for weekday or weekend patterns; a flagged day does not necessarily indicate an incident.
           </p>
           <p>
             Excel CSV uses semicolon delimiters and a <code>sep=;</code> prelude for spreadsheet imports. Chart SVG/PNG exports are generated client-side from the visible chart.
