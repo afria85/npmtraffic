@@ -21,7 +21,7 @@ import {
 const CHART_BUTTON_CLASSES = "inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold leading-none text-[var(--foreground)] transition-colors hover:bg-[var(--surface-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]";
 const ACTIVE_SCALE_CLASSES = "!border-[var(--accent)] !bg-[var(--accent)] !text-[var(--accent-foreground)] hover:!bg-[var(--accent-hover)]";
 function scaleButtonClasses(active: boolean) {
-  return `${CHART_BUTTON_CLASSES} min-h-11 gap-1.5 disabled:cursor-not-allowed disabled:opacity-50 ${active ? ACTIVE_SCALE_CLASSES : ""}`;
+  return `${CHART_BUTTON_CLASSES} min-h-11 gap-1.5 !transition-none disabled:cursor-not-allowed disabled:opacity-50 ${active ? ACTIVE_SCALE_CLASSES : ""}`;
 }
 
 
