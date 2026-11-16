@@ -118,7 +118,7 @@ test("Compare scale is opt-in and keeps shared absolute totals unchanged", async
     page.waitForEvent("download"),
     page.getByRole("menuitem", { name: "Export SVG" }).click(),
   ]);
-  expect(download.suggestedFilename()).toMatch(/-indexed-\\d{4}-\\d{2}-\\d{2}\\.svg$/);
+  expect(download.suggestedFilename()).toMatch(/-indexed-\d{4}-\d{2}-\d{2}\.svg$/);
   const markup = await readFile(await download.path(), "utf8");
   expect(markup).toContain("Index 100 =");
 
