@@ -6,6 +6,8 @@ for (const theme of ["light", "dark"] as const) {
     // overriding html attributes before ThemeToggle mounts.
     await page.emulateMedia({ colorScheme: theme });
     await page.goto("/");
+    await expect(page).toHaveTitle("npm Download Trends & Comparisons | npmtraffic");
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", "npm Download Trends & Comparisons | npmtraffic");
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     const heading = page.getByRole("heading", { level: 1, name: "Explore npm downloads", exact: true });
     await expect(heading).toBeVisible();
