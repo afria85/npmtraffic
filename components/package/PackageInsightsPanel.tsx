@@ -122,7 +122,7 @@ export default function PackageInsightsPanel({ series, derived, days }: Props) {
           detail={`${insights.activeDays}/${insights.availableDays} available days above zero. ${insights.variability.label === "none" ? "Variability unavailable" : "Traffic variability: " + insights.variability.label}`}
         />
         <InsightCell
-          label="Outliers"
+          label="Global MAD flags"
           value={insights.availableDays ? formatNumber(insights.outlierCount) : "Unavailable"}
           detail={outlierDetail}
         />
