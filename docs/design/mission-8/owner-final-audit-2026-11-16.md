@@ -22,6 +22,7 @@ Reviewed the repository's complete 310-path tree and specifically inspected home
 | P2 | Generic 404 falsely said `Package not found` — `app/not-found.tsx` | Page-or-package neutral 404 text; navigation status and heading smoke |
 | P2 | About described `Fastest mover` although Compare now shows `Largest relative increase` — `app/about/page.tsx` | Truthful Compare overview copy and smoke |
 | P2 | About and Donate had no explicit route-specific canonical/OG identity — their `metadata` | Explicit page canonical, OG title/URL and Twitter metadata; smoke |
+| P2 | Homepage document title was generic while layout applies a title template — `app/page.tsx` | Descriptive npm download trends/comparison title and matching OG/Twitter labels; smoke |
 | P2 | Data/export API reference had no footer resource link — `components/Footer.tsx` | Added `Data & exports` under Resources; smoke |
 | P3 | `public/brand-mark.svg` used legacy purple/red vector despite cyan header/OG | Replaced only the standalone vector with cyan shape/background; unit test `tests/brand-asset.test.ts` |
 
