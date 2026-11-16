@@ -23,8 +23,10 @@ async function expectVisibleScaleSelection(page: Page, selected: Mode, inactive:
   const other = page.getByRole("button", { name: inactive, exact: true });
   await expect(active).toHaveAttribute("aria-pressed", "true");
   await expect(other).toHaveAttribute("aria-pressed", "false");
-  await expect(active.locator('span[aria-hidden="true"]')).toHaveText("✓");
-  await expect(other.locator('span[aria-hidden="true"]')).toHaveCount(0);
+  // The filled active button is sufficient visually; preserve pressed semantics
+  // for assistive technology without adding a redundant icon.
+  await expect(active).not.toContainText("✓");
+  await expect(other).not.toContainText("✓");
 
   const styles = await page.evaluate(([selectedName, inactiveName]) => {
     const group = document.querySelector('[role="group"][aria-label="Compare chart scale"]');
