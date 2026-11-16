@@ -7,7 +7,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import ActionMenu from "@/components/ui/ActionMenu";
 import { IconChevronDown } from "@/components/ui/icons";
 import { computeLeftPad } from "@/components/charts/axis-padding";
-import { buildNiceYAxis, findIndexedBaseline, indexedPoint, formatAxisTick } from "@/components/charts/scale-utils";
+import { buildNiceYAxis, buildIndexedYAxis, findIndexedBaseline, indexedPoint, formatAxisTick } from "@/components/charts/scale-utils";
 import { toObservationPath } from "@/components/charts/observation-path";
 import { serializeChartSvg } from "@/components/charts/serialize-svg";
 import { TimelineAxis } from "@/components/charts/TimelineAxis";
@@ -291,14 +291,14 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     ])) as Record<string, number | null>
   ), [series, packageNames, indexed, baseline]);
 
-  const peak = useMemo(() => {
-    const values = plotValues.flatMap((row) => packageNames.flatMap((pkg) =>
-      typeof row[pkg] === "number" && Number.isFinite(row[pkg]) ? [row[pkg]] : []
-    ));
-    return Math.max(1, ...values);
-  }, [plotValues, packageNames]);
-
-  const axis = useMemo(() => buildNiceYAxis(peak, indexed ? "index" : "downloads"), [peak, indexed]);
+  const observed = useMemo(() => plotValues.flatMap((row) => packageNames.flatMap((pkg) => {
+    const value = row[pkg];
+    return typeof value === "number" && Number.isFinite(value) ? [value] : [];
+  })), [plotValues, packageNames]);
+  const axis = useMemo(() => indexed
+    ? buildIndexedYAxis(observed)
+    : buildNiceYAxis(Math.max(1, ...observed)),
+  [observed, indexed]);
   const { width, height } = useChartViewport(svgRef);
   const axisFontSize = isMobile ? 13 : 12;
   const yLabelOffset = isMobile ? 10 : 8;
@@ -312,17 +312,17 @@ export default function CompareChart({ series, packageNames, days }: Props) {
 
   const pointsByPkg = useMemo(() => {
     const xFor = (i: number) => pad.l + innerW * (series.length <= 1 ? 0 : i / (series.length - 1));
-    const yFor = (v: number) => pad.t + innerH * (1 - v / axis.maxValue);
+    const yFor = (v: number) => pad.t + innerH * (1 - (v - axis.minValue) / (axis.maxValue - axis.minValue));
 
     const points = new Map<string, Point[]>();
     for (const pkg of packageNames) {
-      points.set(pkg, plotValues.map((row, i) => ({
-        x: xFor(i),
-        y: row[pkg] == null ? null : yFor(row[pkg]),
-      })));
+      points.set(pkg, plotValues.map((row, i) => {
+        const value = row[pkg];
+        return { x: xFor(i), y: value == null ? null : yFor(value) };
+      }));
     }
     return points;
-  }, [innerH, innerW, axis.maxValue, packageNames, pad.l, pad.t, plotValues, series.length]);
+  }, [innerH, innerW, axis.maxValue, axis.minValue, packageNames, pad.l, pad.t, plotValues, series.length]);
 
   const yTicks = useMemo(() => axis.ticks.map((tick) => ({
     y: pad.t + innerH * tick.ratio,
@@ -466,7 +466,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
       </div>
       <p className="mt-2 text-xs text-[var(--foreground-secondary)]" aria-live="polite">
         {indexed && baseline
-          ? `Each package equals 100 on ${baseline.date} UTC; lines show relative change, not download volume.`
+          ? `Each package equals 100 on ${baseline.date} UTC; y-axis zooms to relative variation, not download volume.`
           : "Absolute downloads per day. Shared-day totals and downloads exports always use raw counts."}
       </p>
 
