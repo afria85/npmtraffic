@@ -51,8 +51,9 @@ test.describe("touch range selection", () => {
   test("preserves the comparison query and loads the selected range", async ({ page }) => {
     test.setTimeout(60_000);
     await page.goto("/compare?packages=react,vue&days=7");
-    // Wait for the URL to populate the client-side tray before tapping the floating menu.
-    await expect(page.getByTestId("compare-tray-container")).toBeVisible({ timeout: 15_000 });
+    // Compare owns the inline picker; the global tray is intentionally hidden here.
+    await expect(page.getByRole("combobox", { name: "Add a package to compare" })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("compare-tray-container")).toHaveCount(0);
     await page.getByRole("group", { name: /range selector/i }).getByRole("button", { name: "More" }).tap();
     await page.getByRole("menuitem", { name: "90d" }).tap();
     await expect(page).toHaveURL(/packages=react,vue&days=90$/, { timeout: 20_000 });

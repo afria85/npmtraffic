@@ -23,7 +23,7 @@ export default function RangeSelector({ currentDays, getHref, label = "Range" }:
       aria-label={`${label} selector`}
     >
       <span className="text-xs font-semibold text-[var(--foreground-tertiary)]">{label}</span>
-      <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto sm:overflow-visible">
+      <div className="flex min-w-0 max-w-full flex-nowrap items-center gap-2 overflow-x-auto sm:overflow-visible">
         {primaryFastRanges.map((range) => (
           <Link
             key={range}

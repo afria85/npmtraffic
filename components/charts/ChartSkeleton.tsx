@@ -1,6 +1,6 @@
 export default function ChartSkeleton() {
   return (
-    <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+    <section className="observatory-chart" aria-hidden="true">
       <div className="flex items-center justify-between gap-3">
         <div className="space-y-2">
           <div className="h-3 w-20 rounded-full bg-[var(--surface-hover)]" />

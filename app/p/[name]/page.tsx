@@ -235,7 +235,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
       />
 
       {/* Command bar: range left, export/share right */}
-      <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+      <div className="observatory-toolbar">
         <div className="min-w-0 sm:min-w-[230px]">{rangeSelector}</div>
         <div className="flex flex-shrink-0 items-center justify-start gap-2 sm:justify-end">
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
@@ -251,7 +251,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
   if (errorText || !data) {
     return (
-      <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 px-4 py-6">
+      <main className="observatory-page">
         {header}
         <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
           <p className="text-sm text-[var(--foreground)]">{errorText ?? "We couldn't load this package right now."}</p>
@@ -266,32 +266,34 @@ export default async function PackagePage({ params, searchParams }: Props) {
   const traffic = data;
 
   return (
-    <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 px-4 py-6">
+    <main className="observatory-page">
       {header}
       <DataQuality endDate={traffic.range.endDate} isStale={traffic.meta.isStale} coverage={traffic.coverage} />
       {traffic.meta.isStale ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
           <span>{traffic.warning ?? "Showing cached data (upstream error)."}</span>
           <RetryButton className="h-8 px-3 text-xs" label="Retry" />
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <div className="min-w-0 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
-          <p className="whitespace-nowrap text-xs font-medium text-[var(--foreground-secondary)]">
-            Total downloads ({traffic.coverage.includedDays}/{days} days)
-          </p>
-          <p className="mt-1 text-lg font-semibold tabular-nums text-[color:var(--foreground)] sm:text-xl">
-            {formatNumber(traffic.totals.sum)}
-          </p>
+      <dl className="observatory-totals" aria-label="Included-day download totals">
+        <div>
+          <dt>Total downloads ({traffic.coverage.includedDays}/{days} days)</dt>
+          <dd>{formatNumber(traffic.totals.sum)}</dd>
         </div>
-        <div className="min-w-0 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
-          <p className="whitespace-nowrap text-xs font-medium text-[var(--foreground-secondary)]">Avg per available day</p>
-          <p className="mt-1 text-lg font-semibold tabular-nums text-[color:var(--foreground)] sm:text-xl">
-            {formatNumber(traffic.totals.avgPerDay)}
-          </p>
+        <div>
+          <dt>Average per available day</dt>
+          <dd>{formatNumber(traffic.totals.avgPerDay)}</dd>
         </div>
-      </div>
+      </dl>
+
+      <TrafficChart
+        series={traffic.series}
+        derived={traffic.derived}
+        pkgName={name}
+        days={days}
+        versionMarkers={versionTimeline?.markers}
+      />
 
       <PackageInsightsPanel series={traffic.series} derived={traffic.derived} days={days} />
 
@@ -311,19 +313,11 @@ export default async function PackagePage({ params, searchParams }: Props) {
         />
       ) : null}
 
-      <TrafficChart
-        series={traffic.series}
-        derived={traffic.derived}
-        pkgName={name}
-        days={days}
-        versionMarkers={versionTimeline?.markers}
-      />
-
       <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
 
       <EventsPanel key={`${name}:${sp.events ?? ""}`} pkgName={name} encoded={sp.events} releaseImports={versionTimeline?.releaseImports} />
 
-      <p className="text-xs text-[var(--foreground-tertiary)]">Data from api.npmjs.org.</p>
+      <p className="observatory-source">Source <a href="https://api.npmjs.org/">api.npmjs.org</a></p>
     </main>
   );
 }

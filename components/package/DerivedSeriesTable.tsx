@@ -589,6 +589,7 @@ export default function DerivedSeriesTable({ series, derived, pkgName, days }: P
           <table
             className={`w-full text-sm ${showDerived ? "min-w-[700px] md:min-w-0 table-auto md:table-fixed" : "table-fixed"}`}
           >
+            <caption className="sr-only">Daily observations</caption>
             <colgroup>
               {/* Date */}
               <col className={showDerived ? "w-[var(--nt-date-col-w)]" : "w-[34%] sm:w-[140px]"} />
