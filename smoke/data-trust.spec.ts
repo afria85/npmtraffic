@@ -31,3 +31,22 @@ test("Data documentation distinguishes global MAD flags from seasonal incidents"
   await page.goto("/data");
   await expect(page.getByText(/MAD flags compare each available day with the overall median/)).toBeVisible();
 });
+
+test("Compare dates show the same UTC weekend context while table focus and shared values remain intact", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await page.goto("/compare?packages=react,vue&days=7");
+  const table = page.getByRole("table", { name: "Daily observations" });
+  const weekendBadges = table.locator("tbody abbr[title$='weekend']");
+  await expect(weekendBadges).toHaveCount(2);
+  await expect(weekendBadges.filter({ hasText: "Sat" })).toHaveCount(1);
+  await expect(weekendBadges.filter({ hasText: "Sun" })).toHaveCount(1);
+  await expect(table.locator("tbody tr")).toHaveCount(7);
+  const originalUrl = page.url();
+  const select = page.getByRole("combobox", { name: "Table packages" });
+  await select.selectOption("react");
+  await expect(weekendBadges).toHaveCount(2);
+  await expect(table.getByRole("columnheader", { name: "vue" })).toHaveCount(0);
+  expect(page.url()).toBe(originalUrl);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth))
+    .toBeLessThanOrEqual(320);
+});
