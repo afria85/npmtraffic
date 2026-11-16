@@ -19,15 +19,11 @@ function GitHubIcon({ className = "h-4 w-4" }: { className?: string }) {
 
 type PackageHeaderProps = {
   name: string;
-  updatedLabel: string | null;
-  updatedLabelCompact: string | null;
   repoUrl?: string | null;
 };
 
 export default function PackageHeader({
   name,
-  updatedLabel,
-  updatedLabelCompact,
   repoUrl,
 }: PackageHeaderProps) {
   return (
@@ -41,13 +37,6 @@ export default function PackageHeader({
             >
               {name}
             </h1>
-            <span
-              className="text-xs text-[var(--foreground-tertiary)]"
-              title={updatedLabel ?? "Updated recently"}
-            >
-              <span className="sm:hidden">{updatedLabelCompact ?? "Updated recently"}</span>
-              <span className="hidden sm:inline">{updatedLabel ?? "Updated recently"}</span>
-            </span>
           </div>
         </div>
         <div className="flex flex-col items-stretch gap-2 sm:items-end">

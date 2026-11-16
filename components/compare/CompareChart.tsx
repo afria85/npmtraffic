@@ -450,6 +450,22 @@ export default function CompareChart({ series, packageNames, days }: Props) {
       </p>
 
       <div ref={chartContainerRef} className="relative mt-4">
+        <div aria-label="Chart series" role="list" className="mb-2 flex flex-wrap gap-2 text-xs text-[var(--foreground-secondary)]">
+          {packageNames.map((pkg) => {
+            const style = settings.lineStyles[pkg] ?? "solid";
+            return (
+              <span key={pkg} role="listitem" className="observatory-series">
+                <span
+                  aria-hidden="true"
+                  className="observatory-series-line"
+                  style={{ borderColor: paletteValue(settings.colors[pkg] ?? defaultColors[pkg]), borderTopStyle: style }}
+                />
+                <span className="min-w-0 [overflow-wrap:anywhere]">{pkg}</span>
+                <span className="sr-only">{style} line</span>
+              </span>
+            );
+          })}
+        </div>
         <svg
           ref={svgRef}
           viewBox={`0 0 ${width} ${height}`}
@@ -516,25 +532,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           ) : null}
         </svg>
 
-        {/* Footer: legend on the left, actions on the right. Wraps safely on small screens. */}
-        <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
-          <div className="flex flex-wrap gap-2 text-xs text-[var(--foreground-secondary)]">
-            {packageNames.map((pkg) => {
-              const style = settings.lineStyles[pkg] ?? "solid";
-              return (
-                <span key={pkg} className="observatory-series">
-                  <span
-                    aria-hidden="true"
-                    className="observatory-series-line"
-                    style={{ borderColor: paletteValue(settings.colors[pkg] ?? defaultColors[pkg]), borderTopStyle: style }}
-                  />
-                  <span className="min-w-0 [overflow-wrap:anywhere]">{pkg}</span>
-                  <span className="sr-only">{style} line</span>
-                </span>
-              );
-            })}
-          </div>
-
+        <div className="mt-3 flex justify-end">
           <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
             <button
               type="button"

@@ -21,6 +21,7 @@ type MenuPosition = {
   top: number;
   left: number;
   minWidth: number;
+  maxHeight: number;
 };
 
 export default function RangeDropdown({ currentDays, items }: RangeDropdownProps) {
@@ -45,7 +46,7 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
       const desiredTop = rect.bottom + 8;
       const maxTop = Math.max(window.innerHeight - 80, 8);
       const top = Math.min(desiredTop, maxTop);
-      setMenuPosition({ top, left, minWidth });
+      setMenuPosition({ top, left, minWidth, maxHeight: window.innerHeight - top - 8 });
     },
     [setMenuPosition]
   );
@@ -108,7 +109,7 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
 
   useLayoutEffect(() => {
     if (!menuPosition || !keyboardStart.current) return;
-    menuItems().at(keyboardStart.current === "last" ? -1 : 0)?.focus({ preventScroll: true });
+    menuItems().at(keyboardStart.current === "last" ? -1 : 0)?.focus();
     keyboardStart.current = null;
   }, [menuPosition]);
 
@@ -154,13 +155,26 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
         type="button"
         ref={buttonRef}
         id={buttonId}
-        className={MORE_SUMMARY_CLASSES}
+        className={`${MORE_SUMMARY_CLASSES} ${currentDays > 30
+          ? "!border-[var(--accent)]"
+          : currentDays === 30 ? "max-md:!border-[var(--accent)]" : ""}`}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open && menuPosition ? menuId : undefined}
         onClick={() => open ? close() : setOpen(true)}
       >
-        More
+        {currentDays > 30 ? (
+          <>
+            <span aria-hidden="true">{currentDays}d</span>
+            <span className="sr-only">{currentDays}d, current range</span>
+          </>
+        ) : currentDays === 30 ? (
+          <>
+            <span className="md:hidden" aria-hidden="true">30d</span>
+            <span className="sr-only md:hidden">30d, current range</span>
+            <span className="hidden md:inline">More</span>
+          </>
+        ) : "More"}
         <span aria-hidden className="ml-1 inline-flex h-4 w-4 items-center justify-center opacity-80">
           <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
             <path d="M5.25 7.75a.75.75 0 0 1 1.06 0L10 11.44l3.69-3.69a.75.75 0 1 1 1.06 1.06l-4.22 4.22a.75.75 0 0 1-1.06 0L5.25 8.81a.75.75 0 0 1 0-1.06z" />
@@ -183,7 +197,7 @@ export default function RangeDropdown({ currentDays, items }: RangeDropdownProps
               top: menuPosition.top,
               left: menuPosition.left,
               minWidth: menuPosition.minWidth,
-              maxHeight: "calc(100vh - 32px)",
+              maxHeight: menuPosition.maxHeight,
               overflowY: "auto",
             }}
           >

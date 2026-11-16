@@ -47,7 +47,7 @@ export default function VersionMetadataPanel({
   const rangeLabel = `${range.startDate} → ${range.endDate}`;
   const publishedLabel = formatIsoDay(latestPublishedDateUtc);
 
-  const badgeText = cacheStatus === "HIT" ? "Cached" : cacheStatus === "STALE" ? "Stale" : "Fresh";
+  const badgeText = cacheStatus === "HIT" ? "Cached metadata" : cacheStatus === "STALE" ? "Stale metadata" : "Registry metadata";
 
   return (
     <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">

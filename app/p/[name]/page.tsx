@@ -32,32 +32,6 @@ function formatNumber(value: number | null) {
   return numberFormatter.format(value);
 }
 
-function formatUpdatedAt(iso: string) {
-  const ts = Date.parse(iso);
-  if (!Number.isFinite(ts)) return "Updated recently";
-  const diffMs = Date.now() - ts;
-  const minutes = Math.max(0, Math.round(diffMs / 60000));
-  if (minutes < 1) return "Updated just now";
-  if (minutes < 60) return `Updated ${minutes} min ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `Updated ${hours} hr ago`;
-  const days = Math.round(hours / 24);
-  return `Updated ${days} d ago`;
-}
-
-function formatUpdatedAtCompact(iso: string) {
-  const ts = Date.parse(iso);
-  if (!Number.isFinite(ts)) return "Updated recently";
-  const diffMs = Date.now() - ts;
-  const minutes = Math.max(0, Math.round(diffMs / 60000));
-  if (minutes < 1) return "Updated now";
-  if (minutes < 60) return `Updated ${minutes}m`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `Updated ${hours}h`;
-  const days = Math.round(hours / 24);
-  return `Updated ${days}d`;
-}
-
 export async function generateMetadata({
   params,
   searchParams,
@@ -190,11 +164,9 @@ export default async function PackagePage({ params, searchParams }: Props) {
     }
   }
 
-  const updatedLabel = data ? formatUpdatedAt(data.meta.fetchedAt) : null;
   const [repoUrl, versionTimeline] = data
     ? await Promise.all([getPackageGithubRepo(name), getPackageVersionTimeline(name, data.range)])
     : [null, null];
-  const updatedLabelCompact = data ? formatUpdatedAtCompact(data.meta.fetchedAt) : null;
   const rangeSelector = (
     <RangeSelector
       currentDays={days}
@@ -229,8 +201,6 @@ export default async function PackagePage({ params, searchParams }: Props) {
     <div className="flex w-full flex-col gap-4">
       <PackageHeader
         name={name}
-        updatedLabel={updatedLabel}
-        updatedLabelCompact={updatedLabelCompact}
         repoUrl={repoUrl}
       />
 
@@ -268,7 +238,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
   return (
     <main className="observatory-page">
       {header}
-      <DataQuality endDate={traffic.range.endDate} isStale={traffic.meta.isStale} coverage={traffic.coverage} />
+      <DataQuality range={traffic.range} fetchedAt={traffic.meta.fetchedAt} isStale={traffic.meta.isStale} coverage={traffic.coverage} />
       {traffic.meta.isStale ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
           <span>{traffic.warning ?? "Showing cached data (upstream error)."}</span>
@@ -295,6 +265,8 @@ export default async function PackagePage({ params, searchParams }: Props) {
         versionMarkers={versionTimeline?.markers}
       />
 
+      <a href="#package-events" className="w-fit text-sm underline underline-offset-2">Events and releases</a>
+
       <PackageInsightsPanel series={traffic.series} derived={traffic.derived} days={days} />
 
       {versionTimeline ? (
@@ -315,9 +287,10 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
       <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
 
-      <EventsPanel key={`${name}:${sp.events ?? ""}`} pkgName={name} encoded={sp.events} releaseImports={versionTimeline?.releaseImports} />
+      <div id="package-events" className="scroll-mt-24">
+        <EventsPanel key={`${name}:${sp.events ?? ""}`} pkgName={name} encoded={sp.events} releaseImports={versionTimeline?.releaseImports} />
+      </div>
 
-      <p className="observatory-source">Source <a href="https://api.npmjs.org/">api.npmjs.org</a></p>
     </main>
   );
 }

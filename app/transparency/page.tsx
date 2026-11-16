@@ -53,7 +53,7 @@ export default function TransparencyPage() {
         <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
           <h2 className="mb-3 text-lg font-semibold text-[var(--foreground)]">Data sources</h2>
           <p className="text-sm leading-6 text-[var(--foreground-secondary)]">
-            Download counts come from <code>api.npmjs.org</code>. Search, repository metadata, dist-tags, and publish/release markers come from <code>registry.npmjs.org</code>. npmtraffic normalizes date ranges to yesterday UTC because npm download counters lag the current day.
+            Download counts come from <code>api.npmjs.org</code>. Search, repository metadata, dist-tags, and publish/release markers come from <code>registry.npmjs.org</code>. npmtraffic normalizes date ranges to yesterday UTC because npm download counters lag the current day. Download counts measure package transfers, including CI and automated activity. They cannot identify unique users or confirm installations. Publish markers show when releases happened. Changes after a marker can have multiple causes. Compare totals use only dates with eligible observations for every included package.
           </p>
         </section>
 

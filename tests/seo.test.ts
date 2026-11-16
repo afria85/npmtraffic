@@ -5,6 +5,9 @@ import robots from '../app/robots';
 import { buildPackageCanonical } from '../lib/canonical';
 test('sitemap excludes redirects and fabricated modification dates', () => {
  const entries=sitemap();
+ const packages = entries.map(entry => new URL(entry.url)).filter(url => url.pathname.startsWith('/p/'));
+ assert.ok(packages.some(url => url.pathname === '/p/%40angular%2Fcore'));
+ assert.ok(packages.every(url => !url.search && url.pathname !== '/p/angular'));
  assert.ok(entries.length > 8);
  assert.ok(entries.every(entry => !entry.url.endsWith('/support') && !entry.lastModified));
  assert.equal(new Set(entries.map(entry=>entry.url)).size,entries.length);
