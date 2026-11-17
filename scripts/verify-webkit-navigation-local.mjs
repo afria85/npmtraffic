@@ -40,7 +40,10 @@ try {
     if (!ready) await delay(250);
   }
   if (!ready) throw new Error("Build and stop any conflicting fixture server before running this probe");
-  const child = spawn(process.execPath, ["scripts/verify-webkit-navigation.mjs", local, proxyOrigin, output], { stdio: "inherit" });
+  const probeScript = process.env.NPMTRAFFIC_NAVIGATION_PROBE === "click"
+    ? "scripts/diagnose-webkit-react-click.mjs"
+    : "scripts/verify-webkit-navigation.mjs";
+  const child = spawn(process.execPath, [probeScript, local, proxyOrigin, output], { stdio: "inherit" });
   const [code] = await once(child, "exit");
   process.exitCode = code ?? 1;
 } finally {
