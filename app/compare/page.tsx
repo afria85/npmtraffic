@@ -22,6 +22,7 @@ import RetryButton from "@/components/ui/RetryButton";
 import {
   COMPARE_ACTION_CONTAINER_CLASSES,
 } from "@/components/compare/compare-classes";
+import CompareFocusVisibility from "@/components/compare/CompareFocusVisibility";
 import CompareUrlSync from "@/components/compare/CompareUrlSync";
 import { encodePkg } from "@/lib/og-encode";
 
@@ -266,6 +267,7 @@ export default async function ComparePage({ searchParams }: Props) {
 
   return (
     <main className="observatory-page">
+      <CompareFocusVisibility />
       <CompareUrlSync packages={pkgs} />
       {renderBuilder(header)}
       <DataQuality range={data.range} fetchedAt={data.meta.fetchedAt} isStale={data.meta.isStale} coverage={data.coverage} shared />

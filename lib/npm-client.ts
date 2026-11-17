@@ -1,4 +1,8 @@
+import { readBoundedBytes } from "./bounded-bytes";
 import { USER_AGENT } from "./version";
+
+// The supported range is at most 365 daily rows with ample room for formatting and metadata.
+const MAX_RANGE_BYTES = 64 * 1024;
 
 export type NpmRangeRow = { day: string; downloads: number };
 export type NpmRangeResponse = {
@@ -51,7 +55,11 @@ export async function fetchDailyDownloadsRange(
   }
   let data: unknown;
   try {
-    data = await res.json();
+    if (!res.body) throw new Error("Empty npm response body");
+    // Fetch decodes content encodings before exposing the stream. Wire length is not the decoded size.
+    const bytes = await readBoundedBytes(res.body, MAX_RANGE_BYTES);
+    signal.throwIfAborted();
+    data = JSON.parse(new TextDecoder().decode(bytes));
   } catch {
     signal.throwIfAborted();
     throw new Error("Invalid npm JSON response");

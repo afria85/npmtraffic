@@ -1,0 +1,48 @@
+{
+  "applicationSha": "9c6dea096dd67bcce622f9ea4c099fb42a48327c",
+  "os": "win32",
+  "engine": "Chromium 158.0.8127.18",
+  "observations": [
+    {
+      "width": 320,
+      "navigation": "Shift+Tab",
+      "element": "INPUT",
+      "control": "Compare package picker",
+      "top": 0,
+      "obscuredBy": "site header"
+    },
+    {
+      "width": 320,
+      "navigation": "Shift+Tab",
+      "element": "BUTTON",
+      "control": "Indexed (base 100)",
+      "top": 0,
+      "obscuredBy": "site header"
+    },
+    {
+      "width": 320,
+      "navigation": "Shift+Tab",
+      "element": "BUTTON",
+      "control": "Absolute",
+      "top": 0,
+      "obscuredBy": "site header"
+    },
+    {
+      "width": 390,
+      "navigation": "Shift+Tab",
+      "element": "BUTTON",
+      "control": "Export",
+      "top": 11,
+      "obscuredBy": "site header"
+    },
+    {
+      "width": 390,
+      "navigation": "Shift+Tab",
+      "element": "BUTTON",
+      "control": "Style",
+      "top": 11,
+      "obscuredBy": "site header"
+    }
+  ],
+  "reproduction": "Native reverse tab traversal on the Compare page with five packages. Each target was hit-tested at three vertical points within its center column. The header owned all points for each control shown."
+}
