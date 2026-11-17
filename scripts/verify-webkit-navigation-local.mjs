@@ -22,7 +22,10 @@ const proxy = createServer((req, res) => {
       reply.pipe(res);
     },
   );
-  upstream.on("error", () => res.writeHead(502).end());
+  upstream.on("error", error => {
+    if (res.headersSent) res.destroy(error);
+    else res.writeHead(502).end();
+  });
   req.pipe(upstream);
 });
 proxy.listen(3531, "127.0.0.1");
@@ -41,6 +44,7 @@ try {
   const [code] = await once(child, "exit");
   process.exitCode = code ?? 1;
 } finally {
-  server.kill();
   proxy.close();
+  proxy.closeAllConnections();
+  server.kill();
 }
