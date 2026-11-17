@@ -8,7 +8,7 @@ const NAV_ACTION_CLASSES =
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--surface)]">
+    <header id="site-header" className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--surface)]">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-2 py-2.5 sm:gap-4 sm:px-6 lg:px-8">
         <Logo size="sm" showText={true} />
 
