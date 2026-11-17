@@ -97,10 +97,23 @@ async function runOne(browser, engine, origin, width, height, attempt) {
     await move("/about");
     await move("/data");
     phase = "back-forward";
-    await page.goBack({ waitUntil: "domcontentloaded" });
-    report.stages.push({ phase, path: new URL(page.url()).pathname });
-    await page.goForward({ waitUntil: "domcontentloaded" });
-    report.stages.push({ phase, path: new URL(page.url()).pathname });
+    // Explicitly verify each history destination. WebKit sometimes returns
+    // from goBack/goForward before page.url() reflects the intended route.
+    // A successful later Home -> React click must never mask a history miss.
+    const verifyHistory = async (navigate, expected) => {
+      try {
+        await navigate();
+        await page.waitForURL(url => url.origin === origin && url.pathname === expected, { timeout: 12000 });
+        await page.getByRole("main").getByRole("heading", { level: 1 }).first().waitFor();
+        report.stages.push({ phase, expected, path: new URL(page.url()).pathname, matched: true });
+      } catch {
+        const actual = new URL(page.url()).pathname;
+        report.stages.push({ phase, expected, path: actual, matched: false });
+        throw new Error("History navigation expected " + expected + ", actual " + actual);
+      }
+    };
+    await verifyHistory(() => page.goBack({ waitUntil: "domcontentloaded" }), "/about");
+    await verifyHistory(() => page.goForward({ waitUntil: "domcontentloaded" }), "/data");
 
     phase = "client-home";
     await page.getByRole("banner").getByRole("link", { name: "npmtraffic home" }).click();
