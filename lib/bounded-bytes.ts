@@ -14,7 +14,8 @@ export async function readBoundedBytes(stream: ReadableStream<Uint8Array>, limit
       if (done) break;
       size += value.byteLength;
       if (size > limit) {
-        await reader.cancel().catch(() => {});
+        // A slow underlying cancel must not delay rejection of an oversized body.
+        void reader.cancel().catch(() => {});
         throw new ByteLimitError();
       }
       chunks.push(value);
