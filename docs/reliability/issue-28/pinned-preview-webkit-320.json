@@ -1,0 +1,72 @@
+{
+  "target": "preview",
+  "origin": "https://npmtraffic-7wstzew8n-hendraafria85-5684s-projects.vercel.app",
+  "engine": "webkit",
+  "version": "27.2",
+  "os": "win32",
+  "width": 320,
+  "checks": [],
+  "requests": [
+    {
+      "id": 1,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/",
+      "rsc": null,
+      "method": "GET",
+      "document": true,
+      "prefetch": null,
+      "segment": false,
+      "response": {
+        "status": 302,
+        "redirect": {
+          "origin": "https://vercel.com",
+          "path": "/sso-api",
+          "rsc": null
+        }
+      }
+    },
+    {
+      "id": 2,
+      "phase": "hard",
+      "origin": "https://vercel.com",
+      "path": "/sso-api",
+      "rsc": null,
+      "method": "GET",
+      "document": true,
+      "prefetch": null,
+      "segment": false,
+      "redirectedFrom": 1,
+      "response": {
+        "status": 307,
+        "redirect": {
+          "origin": "https://vercel.com",
+          "path": "/login",
+          "rsc": null
+        }
+      }
+    },
+    {
+      "id": 3,
+      "phase": "hard",
+      "origin": "https://vercel.com",
+      "path": "/login",
+      "rsc": null,
+      "method": "GET",
+      "document": true,
+      "prefetch": null,
+      "segment": false,
+      "redirectedFrom": 2,
+      "response": {
+        "status": 200,
+        "type": "text/html; charset=utf-8",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    }
+  ],
+  "errors": [],
+  "blocked": "Preview sign-in required",
+  "initialStatus": 200
+}
