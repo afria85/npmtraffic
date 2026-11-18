@@ -57,6 +57,18 @@ The `scripts/summarize-cloud-qa.mjs` reporting step reads Playwright `report.jso
 
 Follow-up interpretation after the paired run must distinguish history-navigation cancellation from RSC streams, HTTPS adapter effects, and potential application/engine bugs. Do not change CSP, auth, Next.js prefetch, Redis, API semantics, deployed runtime, or the HTTPS proxy based on counts alone. Physical Safari, screen readers and field CWV remain NOT TESTED. Keep Issue #28 OPEN, Issue #29 separately tracked and production HOLD.
 
+## 18 November 2026 — One-factor RSC transport probe (Draft child of PR #37)
+
+**Purpose:** The last experiment had 6/6 macOS WebKit navigation PASS while recording 87 `pageerror/access-control` exceptions during history (33 under `domcontentloaded`; 54 under `load`) and 70 canceled requests classified as RSC. Wait condition alone did not consistently reduce exceptions. See [PR #37 Cloud QA](https://github.com/afria85/npmtraffic/actions/runs/44263271118), exact HEAD `88b29bce0a0b261df751ff6fa3a7e5ca6f1f7a34`.
+
+**Controlled comparison in this child Draft:** Three widths (320, 390, 1280 CSS px), each in three modes: `domcontentloaded + streamed RSC` (control), `load + streamed RSC` (retained timing experiment), and `domcontentloaded + finite-buffered RSC` (one proxy transport change). This gives **9 isolated macOS test cases**, one worker, no retries. In the buffered case the local loopback HTTPS adapter withholds only `_rsc` / RSC HTTP replies until upstream completion, with a **2 MiB per-response cap**; all other responses retain streaming, unchanged TLS/CSP/URL, and unchanged Next.js runtime. Both baseline and treatment send the same diagnostic-only header with values 0/1; the fixture strips this header before forwarding to Next.js. Data, external APIs, auth, deployed infrastructure, and application code are not modified. This fixture-only buffering is a diagnostic tool, **not a proposed production solution**.
+
+**Interpretation boundaries:** A lower count of `pageerror/access-control` under buffered RSC would be evidence that response delivery timing/streaming affects this repro, but cannot isolate proxy implementation from browser RSC handling or prove a shipped application defect. Unchanged/higher counts likewise cannot exonerate those layers. Since response buffering changes when RSC bytes reach the client, all route, heading, chart, history, and trusted-click functional assertions must still PASS; any 502, timeout, or aborted transfer must be reported as a failed/blocked comparison. The hard byte cap and no-retries policy are deliberate. A small number of cases cannot establish absence or prevalence of intermittent errors.
+
+The GitHub Actions summary now includes `RSC proxy transfer` alongside viewport, history wait, functional status, pageerror counts, canceled RSC requests and console error counts, as well as the exact artifact/commit evidence. Preserve sanitized attachments; do not echo raw error messages, query strings, cookies, secrets, or RSC payloads. Physical Safari, real OS screen readers, field CWV, and authenticated WebKit Preview remain **NOT TESTED**.
+
+**Decision remains:** #28 OPEN, #29 tracked independently, production HOLD; no merge, CSP/auth/Redis, prefetch, runtime, API, data semantics or paid service changes authorized.
+
 ## Independent risk review
 
 | Risk | Classification and next evidence |
