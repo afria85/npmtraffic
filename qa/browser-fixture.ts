@@ -93,14 +93,14 @@ export async function assertRoute(page: Page, path: string) {
   }
 }
 
-export async function historyToHome(page: Page) {
+export async function historyToHome(page: Page, waitUntil: "domcontentloaded" | "load" = "domcontentloaded") {
   for (const path of ["/", "/p/react?days=30", comparePath, "/about", "/data"]) {
-    const response = await page.goto(path, { waitUntil: "domcontentloaded" });
+    const response = await page.goto(path, { waitUntil });
     expect(response?.status()).toBe(200);
   }
-  await page.goBack({ waitUntil: "domcontentloaded" });
+  await page.goBack({ waitUntil });
   await assertRoute(page, "/about");
-  await page.goForward({ waitUntil: "domcontentloaded" });
+  await page.goForward({ waitUntil });
   await assertRoute(page, "/data");
   await page.getByRole("banner").getByRole("link", { name: "npmtraffic home" }).click();
   await assertRoute(page, "/");
