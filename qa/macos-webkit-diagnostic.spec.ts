@@ -1,14 +1,27 @@
 import { test, expect, historyToHome, assertRoute, assertNoCriticalRuntimeErrors } from "./browser-fixture";
 
-// Paired comparison: same macOS fixture and click checks; only navigation waitUntil differs.
+// Isolate one transport dimension at a time: compare streamed RSC with finite
+// buffered RSC at identical domcontentloaded waits; retain PR #37's load control.
+// Every case uses the same loopback HTTPS origin and a fresh browser context.
+const variants = [
+  { waitUntil: "domcontentloaded", rscProxyTransfer: "streamed" },
+  { waitUntil: "load", rscProxyTransfer: "streamed" },
+  { waitUntil: "domcontentloaded", rscProxyTransfer: "buffered" },
+] as const;
+
 for (const [width, height] of [[320, 720], [390, 844], [1280, 900]]) {
-  for (const waitUntil of ["domcontentloaded", "load"] as const) {
-  test("WebKit history and trusted React click at " + width + "px (" + waitUntil + ")", async ({ page, evidence }, testInfo) => {
+  for (const variant of variants) {
+  test("WebKit history and trusted React click at " + width + "px (" + variant.waitUntil + ", RSC " + variant.rscProxyTransfer + ")", async ({ page, evidence }, testInfo) => {
     test.skip(process.platform !== "darwin", "This project is evidence for actual macOS runners only");
     await page.setViewportSize({ width, height });
+    // Same diagnostic header exists in BOTH variants, minimizing request metadata
+    // differences. The HTTPS adapter strips it before forwarding to Next.js.
+    await page.setExtraHTTPHeaders({
+      "x-npmtraffic-qa-rsc-buffer": variant.rscProxyTransfer === "buffered" ? "1" : "0",
+    });
     evidence.phase = "history";
-    evidence.checks.push({ historyWaitUntil: waitUntil });
-    await historyToHome(page, waitUntil);
+    evidence.checks.push({ historyWaitUntil: variant.waitUntil, rscProxyTransfer: variant.rscProxyTransfer });
+    await historyToHome(page, variant.waitUntil);
     evidence.phase = "react-click";
     await page.evaluate(() => {
       type ClickEvidence = { trusted: boolean; prevented: boolean; path: string };

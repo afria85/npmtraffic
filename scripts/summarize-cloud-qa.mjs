@@ -28,7 +28,7 @@ function visit(suites) {
         const attachment = last?.attachments?.find(a => a.name === "sanitized-browser-evidence");
         if (!attachment?.body) {
           anomalies.push("Missing sanitized evidence attachment for a test: " + t.projectName);
-          rows.push({ project: t.projectName, width: "—", mode: "—", result: t.status ?? "unknown",
+          rows.push({ project: t.projectName, width: "—", mode: "—", rscTransfer: "—", result: t.status ?? "unknown",
             access: "—", canceled: "—", other: "—", console: "—", capped: "—" });
           continue;
         }
@@ -45,8 +45,9 @@ function visit(suites) {
           const consoleErrors = errors.filter(e => e.event === "console").length;
           const canceled = requests.filter(r => r.failed === "canceled").length;
           const mode = ev.checks?.find(c => c.historyWaitUntil)?.historyWaitUntil ?? "baseline";
+          const rscTransfer = ev.checks?.find(c => c.rscProxyTransfer)?.rscProxyTransfer ?? "streamed-default";
           rows.push({
-            project: ev.project ?? t.projectName, width: ev.viewport?.width ?? "—", mode,
+            project: ev.project ?? t.projectName, width: ev.viewport?.width ?? "—", mode, rscTransfer,
             result: t.status ?? "unknown", access, canceled, other,
             console: consoleErrors, capped: errors.length >= 100 || requests.length >= 250 ? "YES" : "no",
           });
@@ -73,9 +74,9 @@ const markdown = [
   "**Important:** a green navigation assertion does not imply zero RSC/access-control exceptions.",
   "These counts describe sanitized local-fixture evidence, not physical Safari or the authenticated Preview.",
   "",
-  "| Project | Width | History wait | Result | access-control pageerrors | Canceled requests | Other pageerrors | Console errors | Capture capped |",
-  "| --- | ---: | --- | --- | ---: | ---: | ---: | ---: | --- |",
-  ...rows.map(r => "| " + [r.project, r.width, r.mode, r.result, r.access, r.canceled, r.other, r.console, r.capped].map(safe).join(" | ") + " |"),
+  "| Project | Width | History wait | RSC proxy transfer | Result | access-control pageerrors | Canceled requests | Other pageerrors | Console errors | Capture capped |",
+  "| --- | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | --- |",
+  ...rows.map(r => "| " + [r.project, r.width, r.mode, r.rscTransfer, r.result, r.access, r.canceled, r.other, r.console, r.capped].map(safe).join(" | ") + " |"),
   "",
   "**Totals captured:** access-control pageerrors **" + sum("access") + "**; canceled requests **" +
     sum("canceled") + "**; other pageerrors **" + sum("other") + "**; console errors **" + sum("console") + "**.",
