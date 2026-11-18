@@ -1,0 +1,67 @@
+name: Cloud Browser QA
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/cloud-browser-qa.yml"
+      - "playwright.cloud-qa.config.ts"
+      - "qa/**"
+      - "docs/reliability/cloud-qa-2026-11.md"
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "smoke/upstream-fixture.mjs"
+      - "package*.json"
+      - "next.config.*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloud-browser-qa-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cloud-qa:
+    # Standard hosted runners are free for this public repository. No larger runners.
+    if: github.event.repository.private == false
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            label: Linux simulated iPhone WebKit and Android Chromium
+            projects: --project=webkit-iphone-emulated --project=chromium-android-emulated
+            browsers: chromium webkit
+          - os: macos-15
+            label: macOS Playwright WebKit (not Apple Safari)
+            projects: --project=macos-webkit-diagnostic
+            browsers: webkit
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps ${{ matrix.browsers }}
+      - name: Test isolated local production build
+        run: npx playwright test --config=playwright.cloud-qa.config.ts ${{ matrix.projects }}
+        env:
+          NPMTRAFFIC_QA_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Upload bounded local-fixture evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-qa-${{ matrix.os }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: test-results/cloud-qa/
+          if-no-files-found: warn
+          retention-days: 14
