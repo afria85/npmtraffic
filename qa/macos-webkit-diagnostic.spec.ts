@@ -14,9 +14,11 @@ for (const [width, height] of [[320, 720], [390, 844], [1280, 900]]) {
   test("WebKit history and trusted React click at " + width + "px (" + variant.waitUntil + ", RSC " + variant.rscProxyTransfer + ")", async ({ page, evidence }, testInfo) => {
     test.skip(process.platform !== "darwin", "This project is evidence for actual macOS runners only");
     await page.setViewportSize({ width, height });
-    if (variant.rscProxyTransfer === "buffered") {
-      await page.setExtraHTTPHeaders({ "x-npmtraffic-qa-rsc-buffer": "1" });
-    }
+    // Same diagnostic header exists in BOTH variants, minimizing request metadata
+    // differences. The HTTPS adapter strips it before forwarding to Next.js.
+    await page.setExtraHTTPHeaders({
+      "x-npmtraffic-qa-rsc-buffer": variant.rscProxyTransfer === "buffered" ? "1" : "0",
+    });
     evidence.phase = "history";
     evidence.checks.push({ historyWaitUntil: variant.waitUntil, rscProxyTransfer: variant.rscProxyTransfer });
     await historyToHome(page, variant.waitUntil);
