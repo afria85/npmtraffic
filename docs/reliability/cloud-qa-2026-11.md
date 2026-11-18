@@ -47,6 +47,16 @@ The public repository uses standard `ubuntu-latest` and `macos-15` runners. Thes
 
 JSON results, sanitized diagnostic attachments, representative success screenshots and retained failure traces/video are uploaded from `test-results/cloud-qa/`. They contain local deterministic fixture data. Generated TLS keys stay in the OS temporary directory and are excluded from artifacts and Git. CI artifacts expire after 14 days, so preserve important results before that deadline. The final PR report links exact run, job and artifact IDs and distinguishes executed results from the earlier Cloud report.
 
+## 18 November 2026 — Bounded history-wait experiment and visible diagnostic gate
+
+Follow-up Draft based on the exact #36 HEAD `5c6b8390f96a1768ef66d21b483cec5a1e673deb`. This patch changes only test tooling and documentation. The prior macOS artifact from [run 44260743763](https://github.com/afria85/npmtraffic/actions/runs/44260743763/artifacts/14406764806) recorded **24 WebKit `pageerror/access-control`** events in the history phase: 19 at 320px, 3 at 390px and 2 at 1280px, while all three trusted React click/route/chart assertions passed. Those counts are historical baseline evidence, not causal attribution.
+
+**One changed dimension:** the macOS diagnostic now executes a paired comparison for each width. The existing `domcontentloaded` navigation wait is the control; an otherwise-identical `load` wait is the treatment. The fixture origin, actual WebKit build, screenshot, historical route sequence, click instrumentation and chart assertions are unchanged. Fresh browser contexts are used for every run. The sample is deliberately small (**six macOS cases**) and is not suitable for proving absence of an intermittent bug, establishing statistical significance, or deciding that a proxy/browser/app is the cause. A reduced exception count could indicate timing or test-order sensitivity; a non-reduction does not exonerate any layer.
+
+The `scripts/summarize-cloud-qa.mjs` reporting step reads Playwright `report.json`, checks per-test sanitized evidence and exact SHA, and writes a grouped Markdown table directly into the GitHub Actions **job summary** even when the browser test step fails. The table separates functional status, `pageerror/access-control`, other pageerrors, console errors, canceled requests, and capped evidence. It also copies the summary into the artifact ZIP. Diagnostic counts are **observations**, not a browser reliability PASS gate; if an attachment or expected SHA is missing, evidence-quality checks fail rather than presenting false clean counts. No raw error messages, query strings or secrets are included in the summary.
+
+Follow-up interpretation after the paired run must distinguish history-navigation cancellation from RSC streams, HTTPS adapter effects, and potential application/engine bugs. Do not change CSP, auth, Next.js prefetch, Redis, API semantics, deployed runtime, or the HTTPS proxy based on counts alone. Physical Safari, screen readers and field CWV remain NOT TESTED. Keep Issue #28 OPEN, Issue #29 separately tracked and production HOLD.
+
 ## Independent risk review
 
 | Risk | Classification and next evidence |
