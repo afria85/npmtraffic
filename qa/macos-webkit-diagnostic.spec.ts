@@ -1,11 +1,14 @@
 import { test, expect, historyToHome, assertRoute, assertNoCriticalRuntimeErrors } from "./browser-fixture";
 
+// Paired comparison: same macOS fixture and click checks; only navigation waitUntil differs.
 for (const [width, height] of [[320, 720], [390, 844], [1280, 900]]) {
-  test("WebKit history and trusted React click at " + width + "px", async ({ page, evidence }, testInfo) => {
+  for (const waitUntil of ["domcontentloaded", "load"] as const) {
+  test("WebKit history and trusted React click at " + width + "px (" + waitUntil + ")", async ({ page, evidence }, testInfo) => {
     test.skip(process.platform !== "darwin", "This project is evidence for actual macOS runners only");
     await page.setViewportSize({ width, height });
     evidence.phase = "history";
-    await historyToHome(page);
+    evidence.checks.push({ historyWaitUntil: waitUntil });
+    await historyToHome(page, waitUntil);
     evidence.phase = "react-click";
     await page.evaluate(() => {
       type ClickEvidence = { trusted: boolean; prevented: boolean; path: string };
@@ -36,4 +39,5 @@ for (const [width, height] of [[320, 720], [390, 844], [1280, 900]]) {
     await page.screenshot({ path: testInfo.outputPath("react-after-history.png") });
     assertNoCriticalRuntimeErrors(evidence);
   });
+  }
 }
