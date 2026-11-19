@@ -13,6 +13,18 @@ test("deduplicates concurrent failed npm range requests and permits a later retr
   const prefix = `https://api.npmjs.org/downloads/range/${range.startDate}:${range.endDate}/react`;
   const pending: Array<(response: Response) => void> = [];
   let rangeCalls = 0;
+  let notifyStarted: (() => void) | undefined;
+  const waitForUpstream = () => new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      notifyStarted = undefined;
+      reject(new Error("Timed out waiting for mocked npm range request"));
+    }, 5000);
+    notifyStarted = () => {
+      clearTimeout(timeout);
+      notifyStarted = undefined;
+      resolve();
+    };
+  });
 
   cacheClear();
   globalThis.fetch = async (input) => {
@@ -21,7 +33,9 @@ test("deduplicates concurrent failed npm range requests and permits a later retr
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url.startsWith(prefix)) {
       rangeCalls += 1;
-      return new Promise<Response>((resolve) => pending.push(resolve));
+      const response = new Promise<Response>((resolve) => pending.push(resolve));
+      notifyStarted?.();
+      return response;
     }
     return new Response("not found", { status: 404 });
   };
@@ -31,9 +45,10 @@ test("deduplicates concurrent failed npm range requests and permits a later retr
     cacheClear();
   });
 
+  const firstUpstream = waitForUpstream();
   const first = fetchTraffic("react", 7);
   const second = fetchTraffic("react", 7);
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await firstUpstream;
   const callsWhilePending = rangeCalls;
   for (const resolve of pending.splice(0)) resolve(new Response("unavailable", { status: 503 }));
   const results = await Promise.allSettled([first, second]);
@@ -48,8 +63,9 @@ test("deduplicates concurrent failed npm range requests and permits a later retr
     }
   }
 
+  const retryUpstream = waitForUpstream();
   const retry = fetchTraffic("react", 7);
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await retryUpstream;
   const callsAfterRetry = rangeCalls;
   for (const resolve of pending.splice(0)) resolve(new Response("unavailable", { status: 503 }));
   await assert.rejects(retry, (error: unknown) => error instanceof TrafficError && error.code === "UPSTREAM_UNAVAILABLE");
