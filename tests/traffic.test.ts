@@ -176,6 +176,10 @@ test("deduplicates concurrent traffic requests", async (t) => {
   const expectedRange = rangeForDays(7);
   let fetchCount = 0;
   const resolvers: Array<(response: Response) => void> = [];
+  let signalUpstreamStarted!: () => void;
+  const upstreamStarted = new Promise<void>((resolve) => {
+    signalUpstreamStarted = resolve;
+  });
 
   const buildResponse = () =>
     new Response(
@@ -207,36 +211,37 @@ test("deduplicates concurrent traffic requests", async (t) => {
       fetchCount += 1;
       return new Promise<Response>((resolve) => {
         resolvers.push(resolve);
+        signalUpstreamStarted();
       });
     }
     return new Response("not found", { status: 404 });
   };
 
-  t.after(() => {
+  const pending = Promise.all([fetchTraffic("react", 7), fetchTraffic("react", 7)]);
+
+  t.after(async () => {
+    // Release pending mocks even if the readiness wait or an assertion fails.
+    for (const resolve of resolvers) resolve(buildResponse());
+    await Promise.allSettled([pending]);
     globalThis.fetch = originalFetch;
     cacheClear();
   });
 
-  const pending = Promise.all([fetchTraffic("react", 7), fetchTraffic("react", 7)]);
-
-  await new Promise((resolve) => setTimeout(resolve, 0));
-
-  let assertionError: unknown;
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    assert.equal(fetchCount, 1);
-  } catch (error) {
-    assertionError = error;
+    await Promise.race([
+      upstreamStarted,
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(() => reject(new Error("npm range mock was not reached within 5 seconds")), 5000);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
 
-  for (const resolve of resolvers) {
-    resolve(buildResponse());
-  }
-
-  await pending;
-
-  if (assertionError) {
-    throw assertionError;
-  }
-
+  assert.equal(fetchCount, 1);
+  for (const resolve of resolvers) resolve(buildResponse());
+  const responses = await pending;
+  assert.equal(responses.length, 2);
   assert.equal(fetchCount, 1);
 });
