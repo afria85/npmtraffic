@@ -15,7 +15,11 @@ test("receipt distinguishes requested range, confirmed coverage and source", asy
   const summary = receipt.locator("summary");
   await expect(summary).toContainText("5 of 7 days included.");
   await expect(summary).toContainText("1 missing. 1 unverified.");
-  await summary.press("Enter");
+  // Establish and verify keyboard focus before exercising native <summary> activation.
+  // This preserves the Enter accessibility contract instead of substituting a mouse click.
+  await summary.focus();
+  await expect(summary).toBeFocused();
+  await page.keyboard.press("Enter");
   await expect(receipt).toHaveAttribute("open", "");
   const requested = receipt.getByText("Requested (UTC)", { exact: true }).locator("..");
   await expect(requested.locator("time")).toHaveCount(2);
