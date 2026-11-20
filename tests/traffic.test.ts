@@ -1,7 +1,7 @@
 import { registryFixture } from "./support/npm-observations";
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { cacheClear, cacheSetWithStale } from "../lib/cache";
+import { cacheClear, cacheGet, cacheSetWithStale } from "../lib/cache";
 import { fetchTraffic, trafficCacheKey, TrafficError } from "../lib/traffic";
 import { rangeForDays } from "../lib/query";
 
@@ -171,11 +171,82 @@ test("fetchTraffic only calls npm downloads endpoint and returns totals", async 
   }
 });
 
+
+type ConcurrentTrafficCleanup = {
+  pending: Promise<unknown>;
+  resolvers: Array<(response: Response) => void>;
+  buildResponse: () => Response;
+  originalFetch: typeof globalThis.fetch;
+  deadlineMs?: number;
+};
+
+// Keep teardown identical on the successful and deliberately failed test paths.
+async function cleanupConcurrentTraffic({
+  pending,
+  resolvers,
+  buildResponse,
+  originalFetch,
+  deadlineMs = 5000,
+}: ConcurrentTrafficCleanup) {
+  try {
+    for (const resolve of resolvers) resolve(buildResponse());
+    let cleanupTimeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        Promise.allSettled([pending]),
+        new Promise<never>((_, reject) => {
+          cleanupTimeout = setTimeout(
+            () => reject(new Error(`concurrent traffic cleanup exceeded ${deadlineMs}ms`)),
+            deadlineMs
+          );
+        }),
+      ]);
+    } finally {
+      if (cleanupTimeout) clearTimeout(cleanupTimeout);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+    cacheClear();
+  }
+}
+
+test("concurrent traffic teardown restores fetch and cache when pending never settles", async () => {
+  const originalFetch = globalThis.fetch;
+  const key = "test:traffic-cleanup-timeout";
+  try {
+    globalThis.fetch = async () => new Response("isolated mock");
+    cacheSetWithStale(key, { test: true }, 60, 60);
+    assert.equal(cacheGet(key).hit, true);
+    // No five-second sleep: this isolated unresolved promise exercises the real
+    // cleanup timeout path with a short, injected deadline.
+    const neverSettles = new Promise<void>(() => {});
+    await assert.rejects(
+      cleanupConcurrentTraffic({
+        pending: neverSettles,
+        resolvers: [],
+        buildResponse: () => new Response("unneeded"),
+        originalFetch,
+        deadlineMs: 1,
+      }),
+      /concurrent traffic cleanup exceeded 1ms/
+    );
+    assert.equal(globalThis.fetch, originalFetch);
+    assert.equal(cacheGet(key).hit, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+    cacheClear();
+  }
+});
+
 test("deduplicates concurrent traffic requests", async (t) => {
   const originalFetch = globalThis.fetch;
   const expectedRange = rangeForDays(7);
   let fetchCount = 0;
   const resolvers: Array<(response: Response) => void> = [];
+  let signalUpstreamStarted!: () => void;
+  const upstreamStarted = new Promise<void>((resolve) => {
+    signalUpstreamStarted = resolve;
+  });
 
   const buildResponse = () =>
     new Response(
@@ -207,36 +278,33 @@ test("deduplicates concurrent traffic requests", async (t) => {
       fetchCount += 1;
       return new Promise<Response>((resolve) => {
         resolvers.push(resolve);
+        signalUpstreamStarted();
       });
     }
     return new Response("not found", { status: 404 });
   };
 
-  t.after(() => {
-    globalThis.fetch = originalFetch;
-    cacheClear();
-  });
-
   const pending = Promise.all([fetchTraffic("react", 7), fetchTraffic("react", 7)]);
 
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  t.after(() =>
+    cleanupConcurrentTraffic({ pending, resolvers, buildResponse, originalFetch })
+  );
 
-  let assertionError: unknown;
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    assert.equal(fetchCount, 1);
-  } catch (error) {
-    assertionError = error;
+    await Promise.race([
+      upstreamStarted,
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(() => reject(new Error("npm range mock was not reached within 5 seconds")), 5000);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
 
-  for (const resolve of resolvers) {
-    resolve(buildResponse());
-  }
-
-  await pending;
-
-  if (assertionError) {
-    throw assertionError;
-  }
-
+  assert.equal(fetchCount, 1);
+  for (const resolve of resolvers) resolve(buildResponse());
+  const responses = await pending;
+  assert.equal(responses.length, 2);
   assert.equal(fetchCount, 1);
 });
