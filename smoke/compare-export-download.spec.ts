@@ -24,7 +24,8 @@ for (const width of [320, 390, 768]) {
     });
     await page.goto(`/compare?packages=${six}&days=7`);
     const trigger = page.getByRole("button", { name: "Export comparison data", exact: true });
-    expect(await trigger.count()).toBe(1);
+    // Next.js streams the Compare toolbar after the loading skeleton; wait for its accessible button.
+    await expect(trigger).toHaveCount(1);
     const notice = page.getByText("This export includes 5 of 6 distinct requested packages. Five-package limit: 1 omitted.");
     await expect(notice).toBeVisible();
     await expect(trigger).toHaveAccessibleDescription(await notice.textContent() ?? "");
