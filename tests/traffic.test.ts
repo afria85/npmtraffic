@@ -220,11 +220,27 @@ test("deduplicates concurrent traffic requests", async (t) => {
   const pending = Promise.all([fetchTraffic("react", 7), fetchTraffic("react", 7)]);
 
   t.after(async () => {
-    // Release pending mocks even if the readiness wait or an assertion fails.
-    for (const resolve of resolvers) resolve(buildResponse());
-    await Promise.allSettled([pending]);
-    globalThis.fetch = originalFetch;
-    cacheClear();
+    // Always restore shared test state, even when an upstream mock never arrives.
+    try {
+      for (const resolve of resolvers) resolve(buildResponse());
+      let cleanupTimeout: ReturnType<typeof setTimeout> | undefined;
+      try {
+        await Promise.race([
+          Promise.allSettled([pending]),
+          new Promise<never>((_, reject) => {
+            cleanupTimeout = setTimeout(
+              () => reject(new Error("concurrent traffic cleanup exceeded 5 seconds")),
+              5000
+            );
+          }),
+        ]);
+      } finally {
+        if (cleanupTimeout) clearTimeout(cleanupTimeout);
+      }
+    } finally {
+      globalThis.fetch = originalFetch;
+      cacheClear();
+    }
   });
 
   let timeout: ReturnType<typeof setTimeout> | undefined;
