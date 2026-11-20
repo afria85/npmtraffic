@@ -14,7 +14,10 @@ for (const [label, path, attachment] of [
     const more = page.getByRole("group", { name: /range selector/i }).getByRole("button", { name: /^(More|\d+d, current range)$/ });
 
     for (const [key, neighbor] of [["Tab", share], ["Shift+Tab", more]] as const) {
+      await expect(trigger).toBeVisible();
+      await expect(neighbor).toBeVisible();
       await trigger.focus();
+      await expect(trigger).toBeFocused();
       await page.keyboard.press(key);
       await expect(neighbor).toBeFocused();
       await trigger.press("Enter");
