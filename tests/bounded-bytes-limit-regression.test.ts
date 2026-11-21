@@ -46,3 +46,19 @@ test("oversized body rejects promptly even when upstream cancellation stalls", {
   await assert.rejects(readBoundedBytes(stream, 2), ByteLimitError);
   assert.equal(cancelCalled, true, "oversized response must initiate upstream cancellation");
 });
+
+test("oversized body retains ByteLimitError when upstream cancellation rejects", async () => {
+  let cancelCalled = false;
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(Uint8Array.from([1, 2, 3]));
+    },
+    cancel() {
+      cancelCalled = true;
+      return Promise.reject(new Error("upstream cancellation failed"));
+    },
+  });
+
+  await assert.rejects(readBoundedBytes(stream, 2), ByteLimitError);
+  assert.equal(cancelCalled, true, "oversized response must attempt cancellation");
+});
