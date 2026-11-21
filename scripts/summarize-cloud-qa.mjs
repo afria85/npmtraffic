@@ -10,7 +10,7 @@ const exactCommit = process.env.NPMTRAFFIC_QA_COMMIT ?? null;
 let report;
 try {
   report = JSON.parse(readFileSync(reportPath, "utf8"));
-} catch (error) {
+} catch {
   const message = "Cloud QA evidence unavailable or invalid: report.json could not be parsed.";
   const note = "## Cloud Browser QA diagnostics\n\n**BLOCKED:** " + message + "\n";
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, note);
