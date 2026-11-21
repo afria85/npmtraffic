@@ -30,3 +30,19 @@ test("bounded upstream body rejects a single oversized chunk", async () => {
     ByteLimitError,
   );
 });
+
+test("oversized body rejects promptly even when upstream cancellation stalls", { timeout: 2000 }, async () => {
+  let cancelCalled = false;
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(Uint8Array.from([1, 2, 3]));
+    },
+    cancel() {
+      cancelCalled = true;
+      return new Promise<void>(() => {});
+    },
+  });
+
+  await assert.rejects(readBoundedBytes(stream, 2), ByteLimitError);
+  assert.equal(cancelCalled, true, "oversized response must initiate upstream cancellation");
+});
