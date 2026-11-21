@@ -82,8 +82,8 @@ export default function CompareInsightsPanel({ packages, series, days }: Props) 
       : `${formatCompact(insights.leader.total)} total`
     : "No leader available";
   const growthDetail = insights.growthLeader
-    ? `Latest ${insights.growthLeader.trend.windowSize}d: ${formatCompact(insights.growthLeader.trend.recentTotal)} vs ${formatCompact(insights.growthLeader.trend.previousTotal)} prior`
-    : "No growth leader with complete, comparable windows";
+    ? `Latest ${insights.growthLeader.trend.windowSize} days: ${formatCompact(insights.growthLeader.trend.recentTotal)} downloads vs ${formatCompact(insights.growthLeader.trend.previousTotal)} in the preceding window`
+    : "No measurable increase across comparable windows";
   const latestDate = series.at(-1)?.date ?? "latest day";
   const latestDetail = insights.latestLeader
     ? `${formatNumber(insights.latestLeader.latestDownloads)} downloads on ${latestDate}`
@@ -103,7 +103,7 @@ export default function CompareInsightsPanel({ packages, series, days }: Props) 
       <div className="grid divide-y divide-[color:var(--border)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
         <InsightCell label="Leader" value={packageTitle(insights.leader)} detail={leaderDetail} />
         <InsightCell
-          label="Fastest mover"
+          label="Largest relative increase"
           value={insights.growthLeader ? formatTrendValue(insights.growthLeader.trend) : "-"}
           detail={insights.growthLeader ? `${insights.growthLeader.name}: ${growthDetail}` : growthDetail}
           valueClassName={insights.growthLeader ? trendClass(insights.growthLeader.trend) : undefined}

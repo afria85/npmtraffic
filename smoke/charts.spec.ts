@@ -130,10 +130,14 @@ for (const { width, theme } of widths.flatMap((width) => themes.map((theme) => (
           const section = chart.locator("xpath=ancestor::section[1]");
           await expect(chart).toBeVisible();
 
-          const quality = await page.getByText(/observations through \d{4}-\d{2}-\d{2} UTC/).textContent();
-          const endDate = quality!.match(/\d{4}-\d{2}-\d{2}/)![0];
+          const requestedDates = page.locator("details.observatory-coverage")
+            .getByText("Requested (UTC)", { exact: true }).locator("..").locator("time");
+          const endDate = await requestedDates.last().getAttribute("datetime") ?? "";
+          const startDate = await requestedDates.first().getAttribute("datetime") ?? "";
+          expect(endDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
           const end = new Date(endDate);
-          const start = new Date(end.getTime() - (days - 1) * 86_400_000);
+          const start = new Date(startDate);
+          expect(end.getTime() - start.getTime()).toBe((days - 1) * 86_400_000);
           const labels = await assertAxis(chart, start, end, days);
           const dates = [start.toISOString().slice(0, 10), endDate];
           await assertTooltips(page, chart, section, dates);

@@ -5,7 +5,7 @@ test("mobile More restores focus across selection, chart updates and history", a
   await page.goto("/p/react?days=7");
   await expect(page.getByRole("img", { name: /line chart \(7 days\)/i })).toBeVisible({ timeout: 15_000 });
   const group = page.getByRole("group", { name: /range selector/i });
-  const more = group.getByRole("button", { name: "More" });
+  const more = group.getByRole("button", { name: /^(More|\d+d, current range)$/ });
   await more.press("Enter");
   const menu = group.getByRole("menu");
   await expect(menu).toBeVisible();
@@ -34,7 +34,7 @@ test("desktop range menu supports arrows and dismisses without trapping Tab", as
   await page.setViewportSize({ width: 1024, height: 844 });
   await page.goto("/compare?packages=react,vue&days=365");
   await expect(page.getByRole("img", { name: /line chart \(365 days\)/i })).toBeVisible({ timeout: 15_000 });
-  const more = page.getByRole("group", { name: /range selector/i }).getByRole("button", { name: "More" });
+  const more = page.getByRole("group", { name: /range selector/i }).getByRole("button", { name: /^(More|\d+d, current range)$/ });
   await more.press("ArrowUp");
   const menu = page.getByRole("menu");
   await expect(menu.getByRole("menuitem").last()).toBeFocused();
@@ -51,9 +51,10 @@ test.describe("touch range selection", () => {
   test("preserves the comparison query and loads the selected range", async ({ page }) => {
     test.setTimeout(60_000);
     await page.goto("/compare?packages=react,vue&days=7");
-    // Wait for the URL to populate the client-side tray before tapping the floating menu.
-    await expect(page.getByTestId("compare-tray-container")).toBeVisible({ timeout: 15_000 });
-    await page.getByRole("group", { name: /range selector/i }).getByRole("button", { name: "More" }).tap();
+    // Compare owns the inline picker; the global tray is intentionally hidden here.
+    await expect(page.getByRole("combobox", { name: "Add a package to compare" })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("compare-tray-container")).toHaveCount(0);
+    await page.getByRole("group", { name: /range selector/i }).getByRole("button", { name: /^(More|\d+d, current range)$/ }).tap();
     await page.getByRole("menuitem", { name: "90d" }).tap();
     await expect(page).toHaveURL(/packages=react,vue&days=90$/, { timeout: 20_000 });
     await expect(page.getByRole("img", { name: /line chart \(90 days\)/i })).toBeVisible({ timeout: 15_000 });
@@ -68,7 +69,7 @@ for (const width of [320, 390]) {
     const group = page.getByRole("group", { name: /range selector/i });
     await group.getByRole("link", { name: "14d", exact: true }).focus();
     await page.keyboard.press("Tab");
-    const more = group.getByRole("button", { name: "More", exact: true });
+    const more = group.getByRole("button", { name: /^(More|\d+d, current range)$/ });
     await expect(more).toBeFocused();
     await expect(more).toHaveCSS("outline-offset", "-2px");
     await expect(more).toHaveCSS("outline-width", "2px");

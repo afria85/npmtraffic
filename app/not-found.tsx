@@ -7,10 +7,10 @@ export default function NotFound() {
       <div className="mx-auto max-w-xl text-center">
         <p className="text-xs uppercase tracking-[0.3em] text-[var(--foreground-tertiary)]">404</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-[var(--foreground)]">
-          Package not found
+          Page not found
         </h1>
         <p className="mt-3 text-sm text-[var(--foreground-tertiary)]">
-          We could not find that package on npm.
+          The requested page or npm package could not be found.
         </p>
         <Link
           href="/"

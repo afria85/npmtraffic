@@ -21,9 +21,8 @@ import CompareInsightsPanel from "@/components/compare/CompareInsightsPanel";
 import RetryButton from "@/components/ui/RetryButton";
 import {
   COMPARE_ACTION_CONTAINER_CLASSES,
-  COMPARE_TABLE_WRAPPER_CLASSES,
 } from "@/components/compare/compare-classes";
-import ScrollHintContainer from "@/components/ScrollHintContainer";
+import CompareFocusVisibility from "@/components/compare/CompareFocusVisibility";
 import CompareUrlSync from "@/components/compare/CompareUrlSync";
 import { encodePkg } from "@/lib/og-encode";
 
@@ -147,7 +146,7 @@ export default async function ComparePage({ searchParams }: Props) {
   );
   if (incomplete) {
     return (
-      <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-12">
+      <main className="observatory-page py-12">
         {renderBuilder(
           <div className="space-y-3">
             <BrandText />
@@ -227,37 +226,15 @@ export default async function ComparePage({ searchParams }: Props) {
 
   const header = (
     <div className="flex w-full flex-col gap-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Compare packages</h1>
-          <p className="mt-1 truncate text-sm text-[var(--foreground-tertiary)]">
-            {pkgs.join(", ")} · {days} days
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[var(--foreground-tertiary)]">
-            <span className="text-[11px] uppercase tracking-widest">Open package:</span>
-            {pkgs.map((name, i) => (
-              <span key={name} className="flex min-w-0 max-w-full items-center gap-2">
-                <Link
-                  href={`/p/${encodeURIComponent(name)}`}
-                  className="inline-flex min-h-8 min-w-10 max-w-full items-center justify-center break-all px-1 text-sm font-medium text-[color:var(--link)] hover:underline"
-                >
-                  {name}
-                </Link>
-                {i < pkgs.length - 1 ? <span aria-hidden="true">,</span> : null}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
+      <h1 className="observatory-title">Compare packages</h1>
       {messages.length > 0 && (
         <p id={noticeId} className="text-sm text-[var(--foreground-secondary)]">
           {messages.join(" ")}
         </p>
       )}
-      <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+      <div className="observatory-toolbar">
         <div className="min-w-0">{rangeSelector}</div>
-        <div className={`${COMPARE_ACTION_CONTAINER_CLASSES} flex-shrink-0 self-start sm:self-end`}>
+        <div className={`${COMPARE_ACTION_CONTAINER_CLASSES} flex-shrink-0 self-end`}>
           {exportItems.length ? (
             <ExportDropdown
               items={exportItems}
@@ -274,7 +251,7 @@ export default async function ComparePage({ searchParams }: Props) {
 
   if (errorText || !data) {
     return (
-      <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-6">
+      <main className="observatory-page">
         {renderBuilder(header)}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
           <p className="text-sm text-[var(--foreground)]">{errorText ?? "We couldn't load the comparison right now."}</p>
@@ -289,10 +266,11 @@ export default async function ComparePage({ searchParams }: Props) {
   const tablePackageNames = data.packages.map((pkg) => pkg.name);
 
   return (
-    <main className="mx-auto flex min-h-full max-w-5xl flex-col gap-6 px-4 py-6">
+    <main className="observatory-page">
+      <CompareFocusVisibility />
       <CompareUrlSync packages={pkgs} />
       {renderBuilder(header)}
-      <DataQuality endDate={data.range.endDate} isStale={data.meta.isStale} coverage={data.coverage} shared />
+      <DataQuality range={data.range} fetchedAt={data.meta.fetchedAt} isStale={data.meta.isStale} coverage={data.coverage} shared />
       {data.meta.isStale ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
           <span>Showing cached data (upstream error).</span>
@@ -304,61 +282,45 @@ export default async function ComparePage({ searchParams }: Props) {
           {data.warnings.join(" ")}
         </div>
       ) : null}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {data.packages.map((pkg) => (
-          <div key={pkg.name} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p
-                  className="text-xs uppercase tracking-widest text-[var(--foreground-tertiary)] truncate"
-                  title={pkg.name}
-                >
-                  {pkg.name}
-                </p>
-                <p className="mt-2 text-xl font-semibold text-[var(--foreground)]">
-                  {formatNumber(pkg.total)}
-                </p>
-                <p className="mt-1 text-xs text-[var(--foreground-tertiary)]">Total downloads ({data.coverage.includedDays}/{days} shared days)</p>
-                <p
-                  className="text-xs text-[var(--foreground-tertiary)]"
-                  title="Share of total downloads among the compared packages for the selected range"
-                >
-                  {pkg.share === null ? "Share unavailable" : pkg.share.toFixed(2) + "% of shared total"}
-                </p>
-              </div>
-              <Link
-                href={`/p/${encodeURIComponent(pkg.name)}`}
-                className="inline-flex h-8 shrink-0 items-center px-2 text-xs font-medium text-[color:var(--link)] hover:underline"
-              >
-                View
-              </Link>
-            </div>
-          </div>
-        ))}
-      </div>
+      <CompareChart series={data.series} packageNames={tablePackageNames} days={days} />
+
+      <section aria-labelledby="shared-download-totals">
+        <h2 id="shared-download-totals" className="observatory-section-title">
+          Downloads on shared days
+        </h2>
+        <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
+          Totals and shares use the same {data.coverage.includedDays} of {days} days for every package.
+        </p>
+        <table className="observatory-ledger" aria-labelledby="shared-download-totals">
+          <thead>
+            <tr><th scope="col">Package</th><th scope="col">Downloads</th><th scope="col">Share</th></tr>
+          </thead>
+          <tbody>
+            {data.packages.map((pkg) => (
+              <tr key={pkg.name}>
+                <th scope="row"><Link href={`/p/${encodeURIComponent(pkg.name)}`}>{pkg.name}</Link></th>
+                <td>{formatNumber(pkg.total)}</td>
+                <td>{pkg.share === null ? "Unavailable" : pkg.share.toFixed(2) + "%"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
 
       <CompareInsightsPanel packages={data.packages} series={data.series} days={days} />
-
-      <CompareChart series={data.series} packageNames={tablePackageNames} days={days} />
 
       <SavedComparisons packages={pkgs} days={days} />
 
       <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
         <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3 text-sm text-[var(--foreground)]">
-          <span className="text-sm font-semibold">Daily downloads ({days}d)</span>
+          <h2 className="text-sm font-semibold">Daily downloads ({days}d)</h2>
         </div>
-        <ScrollHintContainer
-          className={COMPARE_TABLE_WRAPPER_CLASSES}
-          leftHintOffset="var(--nt-date-col-w)"
-        >
-          <CompareSeriesTable series={data.series} packageNames={tablePackageNames} />
-        </ScrollHintContainer>
+        <CompareSeriesTable series={data.series} packageNames={tablePackageNames} />
         <p className="px-3 py-2 text-xs text-[var(--foreground-tertiary)]">
           &Delta; vs previous day = downloads today - downloads yesterday
         </p>
       </div>
 
-      <p className="text-xs text-[var(--foreground-tertiary)]">Data from api.npmjs.org.</p>
     </main>
   );
 }

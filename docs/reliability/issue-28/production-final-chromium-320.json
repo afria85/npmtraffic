@@ -1,0 +1,1273 @@
+{
+  "target": "production",
+  "origin": "https://npmtraffic.com",
+  "engine": "chromium",
+  "version": "158.0.8127.18",
+  "os": "win32",
+  "width": 320,
+  "checks": [
+    {
+      "phase": "hard",
+      "path": "/",
+      "chart": false
+    },
+    {
+      "phase": "hard",
+      "path": "/p/react",
+      "status": 200
+    },
+    {
+      "phase": "hard",
+      "path": "/compare",
+      "status": 200
+    },
+    {
+      "phase": "hard",
+      "path": "/about",
+      "status": 200
+    },
+    {
+      "phase": "hard",
+      "path": "/data",
+      "status": 200
+    },
+    {
+      "phase": "hard",
+      "path": "/data",
+      "chart": false
+    },
+    {
+      "phase": "back-forward",
+      "path": "/about",
+      "chart": false
+    },
+    {
+      "phase": "back-forward",
+      "path": "/data",
+      "chart": false
+    },
+    {
+      "phase": "client",
+      "path": "/",
+      "chart": false
+    },
+    {
+      "phase": "client",
+      "path": "/p/react",
+      "chart": true
+    },
+    {
+      "phase": "client",
+      "focus": true,
+      "csv": "npmtraffic__react__30d__2026-10-18-2026-11-16__utc.csv"
+    },
+    {
+      "phase": "client",
+      "path": "/compare",
+      "chart": true
+    },
+    {
+      "phase": "client",
+      "path": "/about",
+      "chart": false
+    },
+    {
+      "phase": "client",
+      "path": "/",
+      "chart": false
+    },
+    {
+      "phase": "client",
+      "path": "/data",
+      "chart": false
+    }
+  ],
+  "requests": [
+    {
+      "id": 1,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/",
+      "rsc": null,
+      "method": "GET",
+      "document": true,
+      "prefetch": null,
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/html; charset=utf-8",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 2,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "f2480ef9fa16",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 3,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "f2480ef9fa16",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    },
+    {
+      "id": 4,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/p/react",
+      "rsc": null,
+      "method": "GET",
+      "document": true,
+      "prefetch": null,
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/html; charset=utf-8",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 5,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "f2480ef9fa16",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 6,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "3f456f47449c",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    },
+    {
+      "id": 7,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "7297e0632466",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    },
+    {
+      "id": 8,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "1c76afdd0e9a",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "failed": "canceled"
+    },
+    {
+      "id": 9,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "298a7f3bd7bd",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "failed": "canceled"
+    },
+    {
+      "id": 10,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": null,
+      "method": "GET",
+      "document": true,
+      "prefetch": null,
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/html; charset=utf-8",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 11,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/",
+      "rsc": "1974540413cb",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "failed": "canceled"
+    },
+    {
+      "id": 12,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "1974540413cb",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "failed": "canceled"
+    },
+    {
+      "id": 13,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "1974540413cb",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "failed": "canceled"
+    },
+    {
+      "id": 14,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/p/react",
+      "rsc": "34ff51fbd46f",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "failed": "canceled"
+    },
+    {
+      "id": 15,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/about",
+      "rsc": null,
+      "method": "GET",
+      "document": true,
+      "prefetch": null,
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/html; charset=utf-8",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    },
+    {
+      "id": 16,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/data",
+      "rsc": null,
+      "method": "GET",
+      "document": true,
+      "prefetch": null,
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/html; charset=utf-8",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 17,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/",
+      "rsc": "17e4f52a5ba2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "failed": "canceled"
+    },
+    {
+      "id": 18,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "17e4f52a5ba2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "failed": "canceled"
+    },
+    {
+      "id": 19,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "17e4f52a5ba2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    },
+    {
+      "id": 20,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "17e4f52a5ba2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "failed": "canceled"
+    },
+    {
+      "id": 21,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "4dc5ab55a53e",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    },
+    {
+      "id": 22,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "1ea4acc72559",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    },
+    {
+      "id": 23,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/",
+      "rsc": "df2fd031fee2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "failed": "canceled"
+    },
+    {
+      "id": 24,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "df2fd031fee2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "failed": "canceled"
+    },
+    {
+      "id": 25,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "df2fd031fee2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    },
+    {
+      "id": 26,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "df2fd031fee2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "failed": "canceled"
+    },
+    {
+      "id": 27,
+      "phase": "hard",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "bdfaa1309f2c",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "failed": "canceled"
+    },
+    {
+      "id": 28,
+      "phase": "back-forward",
+      "origin": "same",
+      "path": "/about",
+      "rsc": null,
+      "method": "GET",
+      "document": true,
+      "prefetch": null,
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/html; charset=utf-8",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    },
+    {
+      "id": 29,
+      "phase": "back-forward",
+      "origin": "same",
+      "path": "/",
+      "rsc": "17e4f52a5ba2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 30,
+      "phase": "back-forward",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "17e4f52a5ba2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 31,
+      "phase": "back-forward",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "17e4f52a5ba2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    },
+    {
+      "id": 32,
+      "phase": "back-forward",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "17e4f52a5ba2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 33,
+      "phase": "back-forward",
+      "origin": "same",
+      "path": "/data",
+      "rsc": null,
+      "method": "GET",
+      "document": true,
+      "prefetch": null,
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/html; charset=utf-8",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 34,
+      "phase": "back-forward",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "4dc5ab55a53e",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    },
+    {
+      "id": 35,
+      "phase": "back-forward",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "1ea4acc72559",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    },
+    {
+      "id": 36,
+      "phase": "back-forward",
+      "origin": "same",
+      "path": "/",
+      "rsc": "c1494867916e",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 37,
+      "phase": "back-forward",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "4eeff4bf673b",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 38,
+      "phase": "back-forward",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "c1494867916e",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 39,
+      "phase": "back-forward",
+      "origin": "same",
+      "path": "/",
+      "rsc": "df2fd031fee2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 40,
+      "phase": "back-forward",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "df2fd031fee2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 41,
+      "phase": "back-forward",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "df2fd031fee2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    },
+    {
+      "id": 42,
+      "phase": "back-forward",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "df2fd031fee2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 43,
+      "phase": "client",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "bdfaa1309f2c",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    },
+    {
+      "id": 44,
+      "phase": "client",
+      "origin": "same",
+      "path": "/",
+      "rsc": "59a76ae83324",
+      "method": "GET",
+      "document": false,
+      "prefetch": null,
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 45,
+      "phase": "client",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "adc275826514",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "HIT",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "allowOrigin": "*"
+      }
+    },
+    {
+      "id": 46,
+      "phase": "client",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "7682b017a92c",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 47,
+      "phase": "client",
+      "origin": "same",
+      "path": "/",
+      "rsc": "7d20ed158bc8",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 48,
+      "phase": "client",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "7d20ed158bc8",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 49,
+      "phase": "client",
+      "origin": "same",
+      "path": "/p/react",
+      "rsc": "9c732739f3b0",
+      "method": "GET",
+      "document": false,
+      "prefetch": null,
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 50,
+      "phase": "client",
+      "origin": "same",
+      "path": "/p/react",
+      "rsc": "f2480ef9fa16",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 51,
+      "phase": "client",
+      "origin": "same",
+      "path": "/p/vue",
+      "rsc": "f2480ef9fa16",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 52,
+      "phase": "client",
+      "origin": "same",
+      "path": "/p/angular",
+      "rsc": "f2480ef9fa16",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 53,
+      "phase": "client",
+      "origin": "same",
+      "path": "/p/svelte",
+      "rsc": "f2480ef9fa16",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 54,
+      "phase": "client",
+      "origin": "same",
+      "path": "/p/react",
+      "rsc": "c775c522e20b",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 55,
+      "phase": "client",
+      "origin": "same",
+      "path": "/p/svelte",
+      "rsc": "50233b093973",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 56,
+      "phase": "client",
+      "origin": "same",
+      "path": "/p/angular",
+      "rsc": "4736d36c4c41",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 57,
+      "phase": "client",
+      "origin": "same",
+      "path": "/p/vue",
+      "rsc": "7e45787560ec",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 58,
+      "phase": "client",
+      "origin": "same",
+      "path": "/p/next",
+      "rsc": "8463bbf4c888",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 59,
+      "phase": "client",
+      "origin": "same",
+      "path": "/p/typescript",
+      "rsc": "6be87ea828e3",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 60,
+      "phase": "client",
+      "origin": "same",
+      "path": "/roadmap",
+      "rsc": "1974540413cb",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 61,
+      "phase": "client",
+      "origin": "same",
+      "path": "/p/react",
+      "rsc": "34ff51fbd46f",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 62,
+      "phase": "client",
+      "origin": "same",
+      "path": "/p/react",
+      "rsc": "34ff51fbd46f",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 63,
+      "phase": "client",
+      "origin": "same",
+      "path": "/api/v1/package/react/daily.csv",
+      "rsc": null,
+      "method": "GET",
+      "document": true,
+      "prefetch": null,
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/csv; charset=utf-8",
+        "cache": "MISS"
+      },
+      "failed": "canceled"
+    },
+    {
+      "id": 64,
+      "phase": "client",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "22610e445662",
+      "method": "GET",
+      "document": false,
+      "prefetch": null,
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 65,
+      "phase": "client",
+      "origin": "same",
+      "path": "/p/react",
+      "rsc": "ba6c522f0895",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 66,
+      "phase": "client",
+      "origin": "same",
+      "path": "/p/vue",
+      "rsc": "ba6c522f0895",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 67,
+      "phase": "client",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "ba6c522f0895",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 68,
+      "phase": "client",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "ba6c522f0895",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 69,
+      "phase": "client",
+      "origin": "same",
+      "path": "/",
+      "rsc": "d6d3e29b55b7",
+      "method": "GET",
+      "document": false,
+      "prefetch": null,
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/x-component",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 70,
+      "phase": "client",
+      "origin": "same",
+      "path": "/data",
+      "rsc": null,
+      "method": "GET",
+      "document": true,
+      "prefetch": null,
+      "segment": false,
+      "response": {
+        "status": 200,
+        "type": "text/html; charset=utf-8",
+        "cache": "MISS",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch"
+      }
+    },
+    {
+      "id": 71,
+      "phase": "client",
+      "origin": "same",
+      "path": "/",
+      "rsc": "df2fd031fee2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true
+    },
+    {
+      "id": 72,
+      "phase": "client",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "df2fd031fee2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true
+    },
+    {
+      "id": 73,
+      "phase": "client",
+      "origin": "same",
+      "path": "/about",
+      "rsc": "df2fd031fee2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true
+    },
+    {
+      "id": 74,
+      "phase": "client",
+      "origin": "same",
+      "path": "/compare",
+      "rsc": "df2fd031fee2",
+      "method": "GET",
+      "document": false,
+      "prefetch": "1",
+      "segment": true
+    }
+  ],
+  "errors": [],
+  "passed": true
+}

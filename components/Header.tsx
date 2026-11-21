@@ -8,11 +8,11 @@ const NAV_ACTION_CLASSES =
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-4 sm:gap-4 sm:px-6 lg:px-8">
+    <header id="site-header" className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--surface)]">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-2 py-2.5 sm:gap-4 sm:px-6 lg:px-8">
         <Logo size="sm" showText={true} />
-        
-        <nav className="flex items-center gap-0.5 sm:gap-2" aria-label="Main navigation">
+
+        <nav className="flex min-w-0 max-w-full flex-wrap items-center gap-0.5 sm:gap-2" aria-label="Main navigation">
           <Link
             href="/compare"
             className={NAV_ACTION_CLASSES}

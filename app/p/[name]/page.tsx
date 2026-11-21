@@ -32,32 +32,6 @@ function formatNumber(value: number | null) {
   return numberFormatter.format(value);
 }
 
-function formatUpdatedAt(iso: string) {
-  const ts = Date.parse(iso);
-  if (!Number.isFinite(ts)) return "Updated recently";
-  const diffMs = Date.now() - ts;
-  const minutes = Math.max(0, Math.round(diffMs / 60000));
-  if (minutes < 1) return "Updated just now";
-  if (minutes < 60) return `Updated ${minutes} min ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `Updated ${hours} hr ago`;
-  const days = Math.round(hours / 24);
-  return `Updated ${days} d ago`;
-}
-
-function formatUpdatedAtCompact(iso: string) {
-  const ts = Date.parse(iso);
-  if (!Number.isFinite(ts)) return "Updated recently";
-  const diffMs = Date.now() - ts;
-  const minutes = Math.max(0, Math.round(diffMs / 60000));
-  if (minutes < 1) return "Updated now";
-  if (minutes < 60) return `Updated ${minutes}m`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `Updated ${hours}h`;
-  const days = Math.round(hours / 24);
-  return `Updated ${days}d`;
-}
-
 export async function generateMetadata({
   params,
   searchParams,
@@ -68,7 +42,7 @@ export async function generateMetadata({
   if (!p?.name) {
     return {
       title: "npmtraffic",
-      description: "Daily npm download history in a GitHub-style table",
+      description: "Daily npm download observations with UTC coverage, charts, and auditable exports",
       alternates: { canonical: `${baseUrl}/` },
     };
   }
@@ -78,7 +52,7 @@ export async function generateMetadata({
   } catch {
     return {
       title: "npmtraffic",
-      description: "Daily npm download history in a GitHub-style table",
+      description: "Daily npm download observations with UTC coverage, charts, and auditable exports",
       alternates: { canonical: `${baseUrl}/` },
     };
   }
@@ -86,7 +60,7 @@ export async function generateMetadata({
   const canonical = buildPackageCanonical(baseUrl, name);
   const title = `${name} npm downloads (${days} days)`;
   const socialTitle = `${title} | npmtraffic`;
-  const description = `Daily npm download history for ${name} in a GitHub-style table`;
+  const description = `UTC-anchored npm download observations for ${name}, including coverage, charts, and reproducible exports`;
   // Some scrapers (notably WhatsApp) are more reliable when og:image URLs end with an image extension.
   // Use the dedicated /og/p route (supports "{days}" and "{days}.png") and keep a static fallback.
   const encodedPkg = encodePkg(name);
@@ -190,11 +164,9 @@ export default async function PackagePage({ params, searchParams }: Props) {
     }
   }
 
-  const updatedLabel = data ? formatUpdatedAt(data.meta.fetchedAt) : null;
   const [repoUrl, versionTimeline] = data
     ? await Promise.all([getPackageGithubRepo(name), getPackageVersionTimeline(name, data.range)])
     : [null, null];
-  const updatedLabelCompact = data ? formatUpdatedAtCompact(data.meta.fetchedAt) : null;
   const rangeSelector = (
     <RangeSelector
       currentDays={days}
@@ -229,13 +201,11 @@ export default async function PackagePage({ params, searchParams }: Props) {
     <div className="flex w-full flex-col gap-4">
       <PackageHeader
         name={name}
-        updatedLabel={updatedLabel}
-        updatedLabelCompact={updatedLabelCompact}
         repoUrl={repoUrl}
       />
 
       {/* Command bar: range left, export/share right */}
-      <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+      <div className="observatory-toolbar">
         <div className="min-w-0 sm:min-w-[230px]">{rangeSelector}</div>
         <div className="flex flex-shrink-0 items-center justify-start gap-2 sm:justify-end">
           {exportItems.length ? <ExportDropdown items={exportItems} /> : null}
@@ -251,7 +221,7 @@ export default async function PackagePage({ params, searchParams }: Props) {
 
   if (errorText || !data) {
     return (
-      <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 px-4 py-6">
+      <main className="observatory-page">
         {header}
         <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-4">
           <p className="text-sm text-[var(--foreground)]">{errorText ?? "We couldn't load this package right now."}</p>
@@ -266,32 +236,36 @@ export default async function PackagePage({ params, searchParams }: Props) {
   const traffic = data;
 
   return (
-    <main className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 px-4 py-6">
+    <main className="observatory-page">
       {header}
-      <DataQuality endDate={traffic.range.endDate} isStale={traffic.meta.isStale} coverage={traffic.coverage} />
+      <DataQuality range={traffic.range} fetchedAt={traffic.meta.fetchedAt} isStale={traffic.meta.isStale} coverage={traffic.coverage} />
       {traffic.meta.isStale ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
           <span>{traffic.warning ?? "Showing cached data (upstream error)."}</span>
           <RetryButton className="h-8 px-3 text-xs" label="Retry" />
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <div className="min-w-0 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
-          <p className="whitespace-nowrap text-xs font-medium text-[var(--foreground-secondary)]">
-            Total downloads ({traffic.coverage.includedDays}/{days} days)
-          </p>
-          <p className="mt-1 text-lg font-semibold tabular-nums text-[color:var(--foreground)] sm:text-xl">
-            {formatNumber(traffic.totals.sum)}
-          </p>
+      <dl className="observatory-totals" aria-label="Included-day download totals">
+        <div>
+          <dt>Total downloads ({traffic.coverage.includedDays}/{days} days)</dt>
+          <dd>{formatNumber(traffic.totals.sum)}</dd>
         </div>
-        <div className="min-w-0 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] p-3">
-          <p className="whitespace-nowrap text-xs font-medium text-[var(--foreground-secondary)]">Avg per available day</p>
-          <p className="mt-1 text-lg font-semibold tabular-nums text-[color:var(--foreground)] sm:text-xl">
-            {formatNumber(traffic.totals.avgPerDay)}
-          </p>
+        <div>
+          <dt>Average per available day</dt>
+          <dd>{formatNumber(traffic.totals.avgPerDay)}</dd>
         </div>
-      </div>
+      </dl>
+
+      <TrafficChart
+        series={traffic.series}
+        derived={traffic.derived}
+        pkgName={name}
+        days={days}
+        versionMarkers={versionTimeline?.markers}
+      />
+
+      <a href="#package-events" className="w-fit text-sm underline underline-offset-2">Events and releases</a>
 
       <PackageInsightsPanel series={traffic.series} derived={traffic.derived} days={days} />
 
@@ -311,19 +285,12 @@ export default async function PackagePage({ params, searchParams }: Props) {
         />
       ) : null}
 
-      <TrafficChart
-        series={traffic.series}
-        derived={traffic.derived}
-        pkgName={name}
-        days={days}
-        versionMarkers={versionTimeline?.markers}
-      />
-
       <DerivedSeriesTable series={traffic.series} derived={traffic.derived} pkgName={name} days={days} />
 
-      <EventsPanel key={`${name}:${sp.events ?? ""}`} pkgName={name} encoded={sp.events} releaseImports={versionTimeline?.releaseImports} />
+      <div id="package-events" className="scroll-mt-24">
+        <EventsPanel key={`${name}:${sp.events ?? ""}`} pkgName={name} encoded={sp.events} releaseImports={versionTimeline?.releaseImports} />
+      </div>
 
-      <p className="text-xs text-[var(--foreground-tertiary)]">Data from api.npmjs.org.</p>
     </main>
   );
 }

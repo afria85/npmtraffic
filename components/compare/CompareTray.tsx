@@ -126,7 +126,7 @@ export default function CompareTray({
 
   return (
     <div ref={trayRef} className="w-full py-3">
-      <div className="w-full sm:mx-auto sm:max-w-3xl sm:px-4" data-testid="compare-tray-container">
+      <div className="w-full sm:mx-auto sm:max-w-3xl sm:px-4" role="region" aria-label="Compare tray" data-testid="compare-tray-container">
         <div className="flex w-full flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-sm shadow-black/20 backdrop-blur">
           <div className="flex min-w-0 items-center gap-3">
             <div className="text-sm font-semibold text-[var(--foreground-secondary)]">Compare</div>

@@ -1,0 +1,762 @@
+{
+  "before": [
+    {
+      "key": "home",
+      "theme": "light",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".justify-between > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.inline-block > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.inline-block > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > .gap-1"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "package",
+      "theme": "light",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".py-2\\.5 > .min-h-10.gap-2\\.5.hover\\:opacity-80 > .inline-block.h-6.w-6 > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex > .min-h-10.gap-2\\.5.hover\\:opacity-80 > .inline-block.h-6.w-6 > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > nav"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "compare",
+      "theme": "light",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".py-2\\.5 > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.inline-block > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.inline-block > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > nav"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "about",
+      "theme": "light",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".justify-between > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.inline-block > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex.items-center > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.inline-block > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > .gap-1"
+            ]
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".font-semibold.text-sm.text-\\[var\\(--foreground-secondary\\)\\]"
+            ],
+            [
+              ".sm\\:flex-wrap > .text-\\[var\\(--foreground-tertiary\\)\\]"
+            ],
+            [
+              "a[data-compare-tray-action=\"compare\"]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "data",
+      "theme": "light",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".justify-between > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex.items-center > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > nav"
+            ]
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".font-semibold.text-sm.text-\\[var\\(--foreground-secondary\\)\\]"
+            ],
+            [
+              ".sm\\:flex-wrap > .text-\\[var\\(--foreground-tertiary\\)\\].text-sm"
+            ],
+            [
+              "a[data-compare-tray-action=\"compare\"]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "transparency",
+      "theme": "light",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".justify-between > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > nav"
+            ]
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".gap-3.min-w-0.flex > .font-semibold.text-sm"
+            ],
+            [
+              ".sm\\:flex-wrap > .text-\\[var\\(--foreground-tertiary\\)\\].text-sm"
+            ],
+            [
+              "a[data-compare-tray-action=\"compare\"]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "status",
+      "theme": "light",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".justify-between > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > nav"
+            ]
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".font-semibold.text-\\[var\\(--foreground-secondary\\)\\].text-sm"
+            ],
+            [
+              ".sm\\:flex-wrap > .text-\\[var\\(--foreground-tertiary\\)\\].text-sm"
+            ],
+            [
+              "a[data-compare-tray-action=\"compare\"]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "roadmap",
+      "theme": "light",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".justify-between > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > nav"
+            ]
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".gap-3.min-w-0.flex > .font-semibold.text-sm"
+            ],
+            [
+              ".sm\\:flex-wrap > .text-\\[var\\(--foreground-tertiary\\)\\].text-sm"
+            ],
+            [
+              "a[data-compare-tray-action=\"compare\"]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "donate",
+      "theme": "light",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".justify-between > .min-h-10.gap-2\\.5.transition-opacity > .relative.inline-block.h-6 > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex > .min-h-10.gap-2\\.5.transition-opacity > .relative.inline-block.h-6 > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > .gap-1"
+            ]
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".font-semibold.text-sm.text-\\[var\\(--foreground-secondary\\)\\]"
+            ],
+            [
+              ".sm\\:flex-wrap > .text-\\[var\\(--foreground-tertiary\\)\\].text-sm"
+            ],
+            [
+              "a[data-compare-tray-action=\"compare\"]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "home",
+      "theme": "dark",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".justify-between > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.inline-block > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.inline-block > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > .gap-1"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "package",
+      "theme": "dark",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".py-2\\.5 > .min-h-10.gap-2\\.5.hover\\:opacity-80 > .inline-block.h-6.w-6 > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex > .min-h-10.gap-2\\.5.hover\\:opacity-80 > .inline-block.h-6.w-6 > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > nav"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "compare",
+      "theme": "dark",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".py-2\\.5 > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.inline-block > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.inline-block > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > nav"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "about",
+      "theme": "dark",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".justify-between > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.inline-block > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex.items-center > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.inline-block > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > .gap-1"
+            ]
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".font-semibold.text-sm.text-\\[var\\(--foreground-secondary\\)\\]"
+            ],
+            [
+              ".sm\\:flex-wrap > .text-\\[var\\(--foreground-tertiary\\)\\]"
+            ],
+            [
+              "a[data-compare-tray-action=\"compare\"]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "data",
+      "theme": "dark",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".justify-between > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex.items-center > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > nav"
+            ]
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".font-semibold.text-sm.text-\\[var\\(--foreground-secondary\\)\\]"
+            ],
+            [
+              ".sm\\:flex-wrap > .text-\\[var\\(--foreground-tertiary\\)\\].text-sm"
+            ],
+            [
+              "a[data-compare-tray-action=\"compare\"]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "transparency",
+      "theme": "dark",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".justify-between > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > nav"
+            ]
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".gap-3.min-w-0.flex > .font-semibold.text-sm"
+            ],
+            [
+              ".sm\\:flex-wrap > .text-\\[var\\(--foreground-tertiary\\)\\].text-sm"
+            ],
+            [
+              "a[data-compare-tray-action=\"compare\"]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "status",
+      "theme": "dark",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".justify-between > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > nav"
+            ]
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".font-semibold.text-\\[var\\(--foreground-secondary\\)\\].text-sm"
+            ],
+            [
+              ".sm\\:flex-wrap > .text-\\[var\\(--foreground-tertiary\\)\\].text-sm"
+            ],
+            [
+              "a[data-compare-tray-action=\"compare\"]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "roadmap",
+      "theme": "dark",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".justify-between > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex > .min-h-10.gap-2\\.5.transition-opacity > .h-6.w-6.relative > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > nav"
+            ]
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".gap-3.min-w-0.flex > .font-semibold.text-sm"
+            ],
+            [
+              ".sm\\:flex-wrap > .text-\\[var\\(--foreground-tertiary\\)\\].text-sm"
+            ],
+            [
+              "a[data-compare-tray-action=\"compare\"]"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "donate",
+      "theme": "dark",
+      "violations": [
+        {
+          "id": "image-redundant-alt",
+          "impact": "minor",
+          "nodes": [
+            [
+              ".justify-between > .min-h-10.gap-2\\.5.transition-opacity > .relative.inline-block.h-6 > img"
+            ],
+            [
+              ".space-y-4:nth-child(1) > .gap-2.flex > .min-h-10.gap-2\\.5.transition-opacity > .relative.inline-block.h-6 > img"
+            ]
+          ]
+        },
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".space-y-4:nth-child(2) > .gap-1"
+            ]
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": [
+            [
+              ".font-semibold.text-sm.text-\\[var\\(--foreground-secondary\\)\\]"
+            ],
+            [
+              ".sm\\:flex-wrap > .text-\\[var\\(--foreground-tertiary\\)\\].text-sm"
+            ],
+            [
+              "a[data-compare-tray-action=\"compare\"]"
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "after": [
+    {
+      "key": "home",
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "package",
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "compare",
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "about",
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "data",
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "transparency",
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "status",
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "roadmap",
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "donate",
+      "theme": "light",
+      "violations": []
+    },
+    {
+      "key": "home",
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "package",
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "compare",
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "about",
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "data",
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "transparency",
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "status",
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "roadmap",
+      "theme": "dark",
+      "violations": []
+    },
+    {
+      "key": "donate",
+      "theme": "dark",
+      "violations": []
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 export const POPULAR_PACKAGES = [
   "react",
   "vue",
-  "angular",
+  "@angular/core",
   "svelte",
   "next",
   "typescript",

@@ -63,7 +63,7 @@ for (const days of [7, 30, 365]) {
       await page.keyboard.press("Tab");
       await expect(control).not.toBeFocused();
       await expect(tooltip).toHaveCount(0);
-      await expect(page.locator("tbody tr")).toHaveCount(days);
+      await expect(page.getByRole("table", { name: "Daily observations", exact: true }).locator("tbody tr")).toHaveCount(days);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
       expect(errors).toEqual([]);
     });

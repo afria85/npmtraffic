@@ -1,0 +1,92 @@
+[
+  {
+    "key": "home",
+    "theme": "light",
+    "violations": []
+  },
+  {
+    "key": "package",
+    "theme": "light",
+    "violations": []
+  },
+  {
+    "key": "compare",
+    "theme": "light",
+    "violations": []
+  },
+  {
+    "key": "about",
+    "theme": "light",
+    "violations": []
+  },
+  {
+    "key": "data",
+    "theme": "light",
+    "violations": []
+  },
+  {
+    "key": "transparency",
+    "theme": "light",
+    "violations": []
+  },
+  {
+    "key": "status",
+    "theme": "light",
+    "violations": []
+  },
+  {
+    "key": "roadmap",
+    "theme": "light",
+    "violations": []
+  },
+  {
+    "key": "donate",
+    "theme": "light",
+    "violations": []
+  },
+  {
+    "key": "home",
+    "theme": "dark",
+    "violations": []
+  },
+  {
+    "key": "package",
+    "theme": "dark",
+    "violations": []
+  },
+  {
+    "key": "compare",
+    "theme": "dark",
+    "violations": []
+  },
+  {
+    "key": "about",
+    "theme": "dark",
+    "violations": []
+  },
+  {
+    "key": "data",
+    "theme": "dark",
+    "violations": []
+  },
+  {
+    "key": "transparency",
+    "theme": "dark",
+    "violations": []
+  },
+  {
+    "key": "status",
+    "theme": "dark",
+    "violations": []
+  },
+  {
+    "key": "roadmap",
+    "theme": "dark",
+    "violations": []
+  },
+  {
+    "key": "donate",
+    "theme": "dark",
+    "violations": []
+  }
+]
