@@ -18,8 +18,25 @@ for (const [label, path, attachment] of [
       await expect(neighbor).toBeVisible();
       await trigger.focus();
       await expect(trigger).toBeFocused();
+      // Capture whether streaming/hydration replaced the focused trigger during native tabbing.
+      // Diagnostics only: the keyboard-order assertion below remains unchanged.
+      const focusProbe = await trigger.evaluate(element => {
+        (window as Window & { __exportFocusProbe?: Element }).__exportFocusProbe = element;
+        return { tag: element.tagName, id: element.id };
+      });
       await page.keyboard.press(key);
-      await expect(neighbor).toBeFocused();
+      const focusAfterTab = await page.evaluate(() => {
+        const probe = (window as Window & { __exportFocusProbe?: Element }).__exportFocusProbe;
+        const active = document.activeElement;
+        return {
+          originalTriggerConnected: probe?.isConnected ?? false,
+          originalTriggerStillFocused: active === probe,
+          activeTag: active?.tagName ?? null,
+          activeId: active?.id ?? null,
+          activeText: active?.textContent?.trim().slice(0, 80) ?? null,
+        };
+      });
+      await expect(neighbor, `Native ${key} focus after ${JSON.stringify(focusProbe)}: ${JSON.stringify(focusAfterTab)}`).toBeFocused();
       await trigger.press("Enter");
       await expect(first).toBeFocused();
       await page.keyboard.press(key);
