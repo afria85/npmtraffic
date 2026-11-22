@@ -7,7 +7,8 @@ import { registryFixture } from "./support/npm-observations";
 
 // M2: a rejected upstream request must still be shared by simultaneous callers.
 // This proves only same-process deduplication, NOT cross-instance admission control.
-test("deduplicates concurrent failed npm range requests and permits a later retry", async (t) => {
+for (const upstreamStatus of [429, 503]) {
+  test(`deduplicates concurrent ${upstreamStatus} npm range failures and permits a later retry`, async (t) => {
   const originalFetch = globalThis.fetch;
   const range = rangeForDays(7);
   const prefix = `https://api.npmjs.org/downloads/range/${range.startDate}:${range.endDate}/react`;
@@ -40,7 +41,7 @@ test("deduplicates concurrent failed npm range requests and permits a later retr
     return new Response("not found", { status: 404 });
   };
   t.after(() => {
-    for (const resolve of pending.splice(0)) resolve(new Response("unavailable", { status: 503 }));
+    for (const resolve of pending.splice(0)) resolve(new Response("unavailable", { status: upstreamStatus }));
     globalThis.fetch = originalFetch;
     cacheClear();
   });
@@ -50,7 +51,7 @@ test("deduplicates concurrent failed npm range requests and permits a later retr
   const second = fetchTraffic("react", 7);
   await firstUpstream;
   const callsWhilePending = rangeCalls;
-  for (const resolve of pending.splice(0)) resolve(new Response("unavailable", { status: 503 }));
+  for (const resolve of pending.splice(0)) resolve(new Response("unavailable", { status: upstreamStatus }));
   const results = await Promise.allSettled([first, second]);
 
   assert.equal(callsWhilePending, 1, "concurrent callers should share one range request");
@@ -67,7 +68,9 @@ test("deduplicates concurrent failed npm range requests and permits a later retr
   const retry = fetchTraffic("react", 7);
   await retryUpstream;
   const callsAfterRetry = rangeCalls;
-  for (const resolve of pending.splice(0)) resolve(new Response("unavailable", { status: 503 }));
+  for (const resolve of pending.splice(0)) resolve(new Response("unavailable", { status: upstreamStatus }));
   await assert.rejects(retry, (error: unknown) => error instanceof TrafficError && error.code === "UPSTREAM_UNAVAILABLE");
   assert.equal(callsAfterRetry, 2, "failed in-flight entry must be removed for retry");
-});
+  });
+}
+
