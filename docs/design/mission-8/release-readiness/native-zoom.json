@@ -1,0 +1,51 @@
+[
+  {
+    "route": "compare",
+    "factor": 1,
+    "actual": 1,
+    "width": 1264,
+    "client": 1264,
+    "scroll": 1264,
+    "dpr": 1,
+    "pass": true
+  },
+  {
+    "route": "compare",
+    "factor": 2,
+    "actual": 2,
+    "width": 632,
+    "client": 632,
+    "scroll": 632,
+    "dpr": 2,
+    "pass": true,
+    "legendPaging": true,
+    "actions": [
+      "series names",
+      "Indexed baseline",
+      "chart inspection"
+    ],
+    "legendFocusAfterIndexed": {
+      "name": "@angular/coresolid line@scope/long-scoped-fixture-with-a-readable-namedashed lineaxiosdotted linereactsolid linevuedashed line",
+      "top": 220.3203125,
+      "bottom": 260.3203125,
+      "headerBottom": 61
+    }
+  },
+  {
+    "route": "compare",
+    "factor": 4,
+    "actual": 3.9999999999999996,
+    "width": 316,
+    "client": 316,
+    "scroll": 316,
+    "dpr": 4,
+    "pass": true,
+    "legendPaging": true,
+    "legendFocusAfterIndexed": {
+      "name": "@angular/coresolid line@scope/long-scoped-fixture-with-a-readable-namedashed lineaxiosdotted linereactsolid linevuedashed line",
+      "top": 88.23828125,
+      "bottom": 128.23828125,
+      "headerBottom": 61
+    }
+  }
+]

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import BrandText from "@/components/BrandText";
 import { getBaseUrl } from "@/lib/base-url";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -35,10 +34,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function TransparencyPage() {
   return (
-    <main className="mx-auto min-h-full max-w-4xl px-6 py-16 sm:py-20">
+    <main className="observatory-reference mx-auto min-h-full max-w-4xl">
       <header className="mb-8">
-        <BrandText />
-        <h1 className="mt-2 text-4xl font-semibold text-[var(--foreground)]">Transparency</h1>
+        <h1 className="observatory-title">Transparency</h1>
         <p className="mt-2 text-sm text-[var(--foreground-tertiary)]">Infrastructure, data sources, caching, privacy, and sharing posture.</p>
       </header>
 
@@ -53,7 +51,7 @@ export default function TransparencyPage() {
         <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
           <h2 className="mb-3 text-lg font-semibold text-[var(--foreground)]">Data sources</h2>
           <p className="text-sm leading-6 text-[var(--foreground-secondary)]">
-            Download counts come from <code>api.npmjs.org</code>. Search, repository metadata, dist-tags, and publish/release markers come from <code>registry.npmjs.org</code>. npmtraffic normalizes date ranges to yesterday UTC because npm download counters lag the current day.
+            Download counts come from <code>api.npmjs.org</code>. Search, repository metadata, dist-tags, and publish/release markers come from <code>registry.npmjs.org</code>. npmtraffic normalizes date ranges to yesterday UTC because npm download counters lag the current day. Download counts measure package transfers, including CI and automated activity. They cannot identify unique users or confirm installations. Publish markers show when releases happened. Changes after a marker can have multiple causes. Compare totals use only dates with eligible observations for every included package.
           </p>
         </section>
 

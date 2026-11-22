@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { POPULAR_PACKAGES } from "@/lib/constants";
+import { buildPackageCanonical } from "@/lib/canonical";
 import { resolveBaseUrl } from "@/lib/base-url";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -31,7 +32,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${baseUrl}/data`,
     },
     ...POPULAR_PACKAGES.map((pkg) => ({
-      url: `${baseUrl}/p/${encodeURIComponent(pkg)}?days=30`,
+      url: buildPackageCanonical(baseUrl, pkg),
     })),
   ];
 }

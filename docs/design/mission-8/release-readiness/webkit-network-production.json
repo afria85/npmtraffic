@@ -1,0 +1,495 @@
+{
+  "name": "production",
+  "origin": "https://npmtraffic.com",
+  "access": "unauthenticated",
+  "steps": [
+    {
+      "phase": "probe",
+      "route": "/",
+      "status": 200,
+      "final": {
+        "origin": "same-origin",
+        "path": "/",
+        "rsc": false,
+        "ref": null
+      },
+      "protectedPage": false
+    },
+    {
+      "phase": "rapid-hard-navigation",
+      "route": "/p/react?days=30",
+      "status": 200,
+      "final": {
+        "origin": "same-origin",
+        "path": "/p/react",
+        "rsc": false,
+        "ref": null
+      },
+      "protectedPage": false
+    },
+    {
+      "phase": "rapid-hard-navigation",
+      "route": "/compare?packages=angular,axios,react,svelte,vue&days=30",
+      "status": 200,
+      "final": {
+        "origin": "same-origin",
+        "path": "/compare",
+        "rsc": false,
+        "ref": null
+      },
+      "protectedPage": false
+    },
+    {
+      "phase": "rapid-hard-navigation",
+      "route": "/status",
+      "status": 200,
+      "final": {
+        "origin": "same-origin",
+        "path": "/status",
+        "rsc": false,
+        "ref": null
+      },
+      "protectedPage": false
+    },
+    {
+      "phase": "client-navigation",
+      "actual": {
+        "origin": "same-origin",
+        "path": "/compare",
+        "rsc": false,
+        "ref": null
+      },
+      "compare": true
+    }
+  ],
+  "requests": [
+    {
+      "id": 1,
+      "phase": "probe",
+      "origin": "same-origin",
+      "path": "/",
+      "rsc": false,
+      "ref": null,
+      "fetch": "document",
+      "prefetch": null,
+      "segmentPrefetch": false
+    },
+    {
+      "id": 2,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/p/react",
+      "rsc": false,
+      "ref": null,
+      "fetch": "document",
+      "prefetch": null,
+      "segmentPrefetch": false
+    },
+    {
+      "id": 3,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/",
+      "rsc": true,
+      "ref": "1974540413",
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 4,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/compare",
+      "rsc": true,
+      "ref": "1974540413",
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 5,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/about",
+      "rsc": true,
+      "ref": "1974540413",
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 6,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/compare",
+      "rsc": false,
+      "ref": null,
+      "fetch": "document",
+      "prefetch": null,
+      "segmentPrefetch": false
+    },
+    {
+      "id": 7,
+      "phase": "rapid-hard-navigation",
+      "origin": "same-origin",
+      "path": "/status",
+      "rsc": false,
+      "ref": null,
+      "fetch": "document",
+      "prefetch": null,
+      "segmentPrefetch": false
+    },
+    {
+      "id": 8,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/",
+      "rsc": true,
+      "ref": "46e44b9611",
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 9,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/compare",
+      "rsc": true,
+      "ref": "46e44b9611",
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 10,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/about",
+      "rsc": true,
+      "ref": "46e44b9611",
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 11,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/transparency",
+      "rsc": true,
+      "ref": "46e44b9611",
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 12,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/compare",
+      "rsc": true,
+      "ref": "2d58b7ed82",
+      "fetch": "fetch",
+      "prefetch": null,
+      "segmentPrefetch": false
+    },
+    {
+      "id": 13,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/about",
+      "rsc": true,
+      "ref": "d2a75d5105",
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 14,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/about",
+      "rsc": true,
+      "ref": "09590cf57a",
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 15,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/compare",
+      "rsc": true,
+      "ref": "7756356ac8",
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": false
+    },
+    {
+      "id": 16,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/",
+      "rsc": true,
+      "ref": "397f35ed02",
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": false
+    },
+    {
+      "id": 17,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/transparency",
+      "rsc": true,
+      "ref": "397f35ed02",
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": false
+    },
+    {
+      "id": 18,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/roadmap",
+      "rsc": true,
+      "ref": "c03f57b196",
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 19,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/donate",
+      "rsc": true,
+      "ref": "c03f57b196",
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": true
+    },
+    {
+      "id": 20,
+      "phase": "client-navigation",
+      "origin": "same-origin",
+      "path": "/roadmap",
+      "rsc": true,
+      "ref": "ba6c522f08",
+      "fetch": "fetch",
+      "prefetch": "1",
+      "segmentPrefetch": false
+    }
+  ],
+  "responses": [
+    {
+      "id": 1,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/html; charset=utf-8",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 2,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/html; charset=utf-8",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 5,
+      "status": 200,
+      "cache": "HIT",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": "*",
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 6,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/html; charset=utf-8",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 7,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/html; charset=utf-8",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 10,
+      "status": 200,
+      "cache": "HIT",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": "*",
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 13,
+      "status": 200,
+      "cache": "HIT",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": "*",
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 9,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 12,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 14,
+      "status": 200,
+      "cache": "HIT",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": "*",
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 8,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 11,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 16,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 17,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 15,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 18,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 19,
+      "status": 200,
+      "cache": "HIT",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": "*",
+      "mitigation": null,
+      "vercelAuthHeader": false
+    },
+    {
+      "id": 20,
+      "status": 200,
+      "cache": "MISS",
+      "contentType": "text/x-component",
+      "location": null,
+      "allowOrigin": null,
+      "mitigation": null,
+      "vercelAuthHeader": false
+    }
+  ],
+  "failed": [
+    {
+      "id": 3,
+      "reason": "Load request cancelled"
+    },
+    {
+      "id": 4,
+      "reason": "Load request cancelled"
+    }
+  ],
+  "exceptions": [
+    {
+      "phase": "rapid-hard-navigation",
+      "kind": "access-control",
+      "matchingPath": "/about",
+      "ref": "230e1477b2",
+      "relatedRequests": []
+    },
+    {
+      "phase": "rapid-hard-navigation",
+      "kind": "access-control",
+      "matchingPath": "/about",
+      "ref": "41556d4b5e",
+      "relatedRequests": []
+    }
+  ]
+}

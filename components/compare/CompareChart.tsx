@@ -7,13 +7,23 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import ActionMenu from "@/components/ui/ActionMenu";
 import { IconChevronDown } from "@/components/ui/icons";
 import { computeLeftPad } from "@/components/charts/axis-padding";
+import { buildNiceYAxis, buildIndexedYAxis, findIndexedBaseline, indexedPoint, formatAxisTick } from "@/components/charts/scale-utils";
 import { toObservationPath } from "@/components/charts/observation-path";
 import { serializeChartSvg } from "@/components/charts/serialize-svg";
 import { TimelineAxis } from "@/components/charts/TimelineAxis";
 import ChartObservationControl, { describeDownloads, useChartInspection } from "@/components/charts/ChartObservationControl";
 import { useChartViewport } from "@/components/charts/use-chart-viewport";
+import {
+  defaultCompareColors, hydrateCompareChartSettings,
+  type CompareChartSettings, type PaletteKey, type LineStyleKey,
+} from "@/components/compare/compare-chart-settings";
 
 const CHART_BUTTON_CLASSES = "inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold leading-none text-[var(--foreground)] transition-colors hover:bg-[var(--surface-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]";
+const ACTIVE_SCALE_CLASSES = "!border-[var(--accent)] !bg-[var(--accent)] !text-[var(--accent-foreground)] hover:!bg-[var(--accent-hover)]";
+function scaleButtonClasses(active: boolean) {
+  return `${CHART_BUTTON_CLASSES} min-h-11 !transition-none disabled:cursor-not-allowed disabled:opacity-50 ${active ? ACTIVE_SCALE_CLASSES : ""}`;
+}
+
 
 type Props = {
   series: CompareSeriesRow[];
@@ -22,14 +32,6 @@ type Props = {
 };
 
 type Point = { x: number; y: number | null };
-
-type PaletteKey = "accent" | "slate" | "blue" | "emerald" | "violet" | "amber" | "orange" | "pink" | "cyan";
-type LineStyleKey = "solid" | "dashed" | "dotted";
-
-type CompareChartSettings = {
-  lineStyles: Record<string, LineStyleKey>;
-  colors: Record<string, PaletteKey>;
-};
 
 const numberFormatter = new Intl.NumberFormat("en-US");
 
@@ -201,21 +203,73 @@ async function svgToPngBlob(svgEl: SVGSVGElement, background: string) {
   return pngBlob;
 }
 
-function buildDefaultColors(packageNames: string[]) {
-  const order: PaletteKey[] = ["accent", "amber", "pink", "blue", "emerald", "violet", "cyan", "orange", "slate"];
-  const colors: Record<string, PaletteKey> = {};
-  packageNames.forEach((pkg, idx) => {
-    colors[pkg] = order[idx] ?? "slate";
-  });
-  return colors;
-}
+type LegendSeries = { name: string; color: string; style: LineStyleKey };
 
-function buildDefaultLineStyles(packageNames: string[]) {
-  const styles: Record<string, LineStyleKey> = {};
-  packageNames.forEach((pkg) => {
-    styles[pkg] = "solid";
-  });
-  return styles;
+function CompareChartLegend({ series }: { series: LegendSeries[] }) {
+  const viewport = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLUListElement>(null);
+  const [overflow, setOverflow] = useState(false);
+  const [atEnd, setAtEnd] = useState(false);
+  const viewportId = useId();
+
+  useLayoutEffect(() => {
+    const rail = viewport.current;
+    const entries = list.current;
+    const container = rail?.parentElement;
+    if (!rail || !entries || !container) return;
+
+    const measure = () => {
+      const maxScroll = rail.scrollWidth - rail.clientWidth;
+      setOverflow(entries.scrollWidth > container.clientWidth + 1);
+      setAtEnd(rail.scrollLeft >= maxScroll - 1);
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(rail);
+    observer.observe(entries);
+    rail.addEventListener("scroll", measure, { passive: true });
+    return () => {
+      observer.disconnect();
+      rail.removeEventListener("scroll", measure);
+    };
+  }, []);
+
+  return (
+    <div className="mt-2 flex min-h-8 items-center gap-1">
+      <div
+        ref={viewport}
+        id={viewportId}
+        role="region"
+        aria-label="Chart legend"
+        tabIndex={overflow ? 0 : undefined}
+        className="relative min-w-0 flex-1 overflow-x-auto rounded-sm [scrollbar-width:thin] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--ring)]"
+      >
+        <ul ref={list} role="list" aria-label="Chart series"
+          className="flex w-max items-center gap-3 py-1 text-xs leading-4 text-[var(--foreground-secondary)]">
+          {series.map(({ name, color, style }) => (
+            <li key={name} className="flex max-w-[min(18rem,calc(100vw-6rem))] items-center gap-1.5 font-mono">
+              <span aria-hidden="true" className="w-[1.375rem] shrink-0 border-t-2"
+                style={{ borderColor: color, borderTopStyle: style }} />
+              <span className="min-w-0 [overflow-wrap:anywhere]">{name}</span>
+              <span className="sr-only">{style} line</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {overflow ? (
+        <button type="button" aria-controls={viewportId}
+          aria-label={atEnd ? "Scroll legend left" : "Scroll legend right"}
+          className="flex size-8 shrink-0 items-center justify-center rounded-md border border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--surface-hover)] focus-visible:outline-2 focus-visible:outline-[var(--ring)]"
+          onClick={() => {
+            const rail = viewport.current;
+            if (rail) rail.scrollBy({ left: rail.clientWidth * (atEnd ? -0.8 : 0.8) });
+          }}>
+          <IconChevronDown className={atEnd ? "size-4 rotate-90" : "size-4 -rotate-90"} />
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 export default function CompareChart({ series, packageNames, days }: Props) {
@@ -225,19 +279,21 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   const tooltipRef = useRef<HTMLDivElement | null>(null);
 
   const settingsKey = `npmtraffic_chart_settings:compare:${packageNames.join("|")}`;
+  const defaultColors = useMemo(() => defaultCompareColors(packageNames), [packageNames]);
 
   const { hoverIndex, setHoverIndex, inspect, control, setControlIndex } = useChartInspection(svgRef, series.length);
   const [styleOpen, setStyleOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [scaleMode, setScaleMode] = useState<"absolute" | "indexed">("absolute");
   const [settings, setSettings] = useState<CompareChartSettings>(() => {
-    if (typeof window === "undefined") {
-      return { lineStyles: buildDefaultLineStyles(packageNames), colors: buildDefaultColors(packageNames) };
+    if (typeof window === "undefined") return hydrateCompareChartSettings(packageNames);
+    try {
+      return hydrateCompareChartSettings(
+        packageNames, safeParseSettings(window.localStorage.getItem(settingsKey)),
+      );
+    } catch {
+      return hydrateCompareChartSettings(packageNames);
     }
-    const saved = safeParseSettings(window.localStorage.getItem(settingsKey));
-    return {
-      lineStyles: { ...buildDefaultLineStyles(packageNames), ...(saved.lineStyles ?? {}) },
-      colors: { ...buildDefaultColors(packageNames), ...(saved.colors ?? {}) },
-    };
   });
 
   useEffect(() => {
@@ -278,23 +334,30 @@ export default function CompareChart({ series, packageNames, days }: Props) {
     };
   }, [styleOpen]);
 
-  const maxValue = useMemo(() => {
-    const values: number[] = [];
-    for (const row of series) {
-      for (const pkg of packageNames) {
-        const v = row.values[pkg]?.downloads;
-        if (typeof v === "number" && Number.isFinite(v)) values.push(v);
-      }
-    }
-    return Math.max(1, ...values);
-  }, [series, packageNames]);
+  const baseline = useMemo(() => findIndexedBaseline(series, packageNames), [series, packageNames]);
+  const indexed = scaleMode === "indexed" && baseline !== null;
 
+  const plotValues = useMemo(() => series.map((row) =>
+    Object.fromEntries(packageNames.map((pkg) => [
+      pkg,
+      indexed ? indexedPoint(row, pkg, baseline) : (row.values[pkg]?.downloads ?? null),
+    ])) as Record<string, number | null>
+  ), [series, packageNames, indexed, baseline]);
+
+  const observed = useMemo(() => plotValues.flatMap((row) => packageNames.flatMap((pkg) => {
+    const value = row[pkg];
+    return typeof value === "number" && Number.isFinite(value) ? [value] : [];
+  })), [plotValues, packageNames]);
+  const axis = useMemo(() => indexed
+    ? buildIndexedYAxis(observed)
+    : buildNiceYAxis(Math.max(1, ...observed)),
+  [observed, indexed]);
   const { width, height } = useChartViewport(svgRef);
   const axisFontSize = isMobile ? 13 : 12;
   const yLabelOffset = isMobile ? 10 : 8;
   const leftPad = useMemo(
-    () => computeLeftPad(numberFormatter.format(maxValue), axisFontSize),
-    [maxValue, axisFontSize]
+    () => computeLeftPad(axis.ticks[0].label, axisFontSize) + 12,
+    [axis, axisFontSize]
   );
   const pad = { l: leftPad, r: 20, t: 16, b: isMobile ? 48 : 40 };
   const innerW = width - pad.l - pad.r;
@@ -302,32 +365,22 @@ export default function CompareChart({ series, packageNames, days }: Props) {
 
   const pointsByPkg = useMemo(() => {
     const xFor = (i: number) => pad.l + innerW * (series.length <= 1 ? 0 : i / (series.length - 1));
-    const yFor = (v: number) => pad.t + innerH * (1 - v / maxValue);
+    const yFor = (v: number) => pad.t + innerH * (1 - (v - axis.minValue) / (axis.maxValue - axis.minValue));
 
-    const pointsByPkg = new Map<string, Point[]>();
+    const points = new Map<string, Point[]>();
     for (const pkg of packageNames) {
-      pointsByPkg.set(
-        pkg,
-        series.map((row, i) => {
-          const value = row.values[pkg]?.downloads;
-          return { x: xFor(i), y: value == null ? null : yFor(value) };
-        })
-      );
+      points.set(pkg, plotValues.map((row, i) => {
+        const value = row[pkg];
+        return { x: xFor(i), y: value == null ? null : yFor(value) };
+      }));
     }
-    return pointsByPkg;
-  }, [innerH, innerW, maxValue, packageNames, pad.l, pad.t, series]);
+    return points;
+  }, [innerH, innerW, axis.maxValue, axis.minValue, packageNames, pad.l, pad.t, plotValues, series.length]);
 
-  const yTicks = useMemo(() => {
-    const ticks = 4;
-    const values: { y: number; label: string }[] = [];
-    for (let i = 0; i <= ticks; i += 1) {
-      const ratio = i / ticks;
-      const value = Math.round(maxValue * (1 - ratio));
-      const y = pad.t + innerH * ratio;
-      values.push({ y, label: numberFormatter.format(value) });
-    }
-    return values;
-  }, [maxValue, innerH, pad.t]);
+  const yTicks = useMemo(() => axis.ticks.map((tick) => ({
+    y: pad.t + innerH * tick.ratio,
+    label: tick.label,
+  })), [axis, innerH, pad.t]);
 
   const hovered = hoverIndex == null ? null : series[hoverIndex];
 
@@ -408,7 +461,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           if (!svg) return;
           const bg = readCssVar("--surface");
           const blob = svgToBlob(svg, bg);
-          downloadBlob(blob, `compare-${packageNames.length}-packages.svg`);
+          downloadBlob(blob, `compare-${packageNames.length}-packages${indexed && baseline ? `-indexed-${baseline.date}` : ""}.svg`);
         },
       },
       {
@@ -419,11 +472,11 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           if (!svg) return;
           const bg = readCssVar("--surface");
           const blob = await svgToPngBlob(svg, bg);
-          downloadBlob(blob, `compare-${packageNames.length}-packages.png`);
+          downloadBlob(blob, `compare-${packageNames.length}-packages${indexed && baseline ? `-indexed-${baseline.date}` : ""}.png`);
         },
       },
     ],
-    [packageNames.length]
+    [packageNames.length, indexed, baseline]
   );
 
   const clientPointToSvgX = (clientX: number, clientY: number, svg: SVGSVGElement) => {
@@ -451,20 +504,41 @@ export default function CompareChart({ series, packageNames, days }: Props) {
   };
 
   return (
-    <section className="relative rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-[var(--foreground-secondary)]">
-          Daily downloads ({days ? `${days}d` : "range"})
-        </p>
+    <section className="observatory-chart">
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+        <h2 className="observatory-section-title">
+          {indexed ? "Indexed download trend" : "Daily downloads"} ({days ? `${days}d` : "range"})
+        </h2>
+        <div role="group" aria-label="Compare chart scale" className="flex flex-wrap items-center gap-2">
+          <button type="button" className={scaleButtonClasses(!indexed)} aria-pressed={!indexed}
+            onClick={() => setScaleMode("absolute")}>
+            Absolute
+          </button>
+          <button type="button" className={scaleButtonClasses(indexed)} aria-pressed={indexed}
+            disabled={!baseline} title={baseline ? "Compare each package to a common positive baseline day" : "No common day with positive observations for all packages"}
+            onClick={() => setScaleMode("indexed")}>
+            Indexed (base 100)
+          </button>
+        </div>
       </div>
+      <p className={indexed ? "mt-2 text-xs text-[var(--foreground-secondary)]" : "sr-only"} aria-live="polite">
+        {indexed && baseline
+          ? `Each package equals 100 on ${baseline.date} UTC; the y-axis shows relative change.`
+          : ""}
+      </p>
+      <CompareChartLegend series={packageNames.map(name => ({
+        name,
+        color: paletteValue(settings.colors[name] ?? defaultColors[name]),
+        style: settings.lineStyles[name] ?? "solid",
+      }))} />
 
-      <div ref={chartContainerRef} className="relative mt-4">
+      <div ref={chartContainerRef} className="relative mt-1">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${width} ${height}`}
           className="h-64 w-full touch-pan-y"
           role="img"
-          aria-label={`Compare daily downloads line chart${days ? ` (${days} days)` : ""}`}
+          aria-label={`Compare daily downloads line chart${days ? ` (${days} days)` : ""}${indexed && baseline ? `, indexed to 100 on ${baseline.date} UTC` : ", absolute counts"}`}
           onPointerDown={handlePointerEvent}
           onPointerMove={handlePointerEvent}
           onPointerLeave={(event) => {
@@ -488,12 +562,17 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           ))}
 
           <TimelineAxis series={series} left={pad.l} plotWidth={innerW} y={pad.t + innerH} fontSize={axisFontSize} />
+          {indexed && baseline ? (
+            <text data-chart-index-note x={pad.l} y={height - 7} fontSize={10} fill="var(--chart-axis)">
+              Index 100 = {baseline.date} UTC · relative change
+            </text>
+          ) : null}
 
           {packageNames.map((pkg) => {
             const points = pointsByPkg.get(pkg) ?? [];
             const path = toObservationPath(points);
             if (!path) return null;
-            const color = paletteValue(settings.colors[pkg] ?? "slate");
+            const color = paletteValue(settings.colors[pkg] ?? defaultColors[pkg]);
             const style = settings.lineStyles[pkg] ?? "solid";
             return (
               <path
@@ -520,25 +599,7 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           ) : null}
         </svg>
 
-        {/* Footer: legend on the left, actions on the right. Wraps safely on small screens. */}
-        <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
-          <div className="flex flex-wrap gap-2 text-xs text-[var(--foreground-secondary)]">
-            {packageNames.map((pkg) => (
-              <span
-                key={pkg}
-                className="inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1"
-              >
-                <span
-                  className="h-2.5 w-2.5 rounded-lg"
-                  style={{ background: paletteValue(settings.colors[pkg] ?? "slate") }}
-                />
-                <span className="min-w-0 max-w-[220px] truncate" title={pkg}>
-                  {pkg}
-                </span>
-              </span>
-            ))}
-          </div>
-
+        <div className="mt-3 flex justify-end">
           <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
             <button
               type="button"
@@ -590,11 +651,12 @@ export default function CompareChart({ series, packageNames, days }: Props) {
                         <ChartSelect
                           label="Color"
                           labelClassName="text-[11px] uppercase tracking-[0.35em] text-[var(--foreground-tertiary)]"
-                          value={settings.colors[pkg] ?? "slate"}
+                          value={settings.colors[pkg] ?? defaultColors[pkg]}
                           onChange={(value) =>
                             setSettings((prev) => ({
                               ...prev,
                               colors: { ...prev.colors, [pkg]: value as PaletteKey },
+                              customColors: [...new Set([...(prev.customColors ?? []), pkg])],
                             }))
                           }
                           options={PALETTE.map((p) => ({ label: p.label, value: p.key }))}
@@ -635,7 +697,14 @@ export default function CompareChart({ series, packageNames, days }: Props) {
                 const value = hovered.values[pkg];
                 return <div key={pkg} className="flex items-center justify-between gap-2">
                   <span className="min-w-0 [overflow-wrap:anywhere] text-[var(--foreground-tertiary)]">{pkg}</span>
-                  <span className="font-mono">{value?.downloads != null ? numberFormatter.format(value.downloads) : value?.status === "available" ? "Excluded" : value?.status === "unverified" ? "Unverified" : "Missing"}</span>
+                  <span className="font-mono text-right">
+                    {value?.downloads != null ? numberFormatter.format(value.downloads) : value?.status === "available" ? "Excluded" : value?.status === "unverified" ? "Unverified" : "Missing"}
+                    {indexed && value?.downloads != null ? (
+                      <span className="block text-[var(--foreground-secondary)]">
+                        Index {formatAxisTick(indexedPoint(hovered, pkg, baseline) ?? 0, "index")}
+                      </span>
+                    ) : null}
+                  </span>
                 </div>;
               })}
             </div>
@@ -652,11 +721,16 @@ export default function CompareChart({ series, packageNames, days }: Props) {
           const row = series[index];
           const values = packageNames.map(pkg => {
             const value = row.values[pkg];
-            return pkg + ": " + describeDownloads(value?.downloads ?? null, value?.status);
+            const normalized = indexed ? indexedPoint(row, pkg, baseline) : null;
+            return pkg + ": " + describeDownloads(value?.downloads ?? null, value?.status) +
+              (normalized == null ? "" : ", index " + normalized.toFixed(1));
           });
           return row.date + " UTC, " + values.join("; ");
         }}
       />
+      <p className="mt-2 text-xs text-[var(--foreground-secondary)]">
+        Shared-day totals and downloads exports use raw counts in both scales.
+      </p>
     </section>
   );
 }

@@ -1,0 +1,30 @@
+{
+  "start": "2025-11-17",
+  "end": "2026-11-16",
+  "out": [
+    {
+      "name": "react",
+      "status": 200,
+      "decodedBytes": 15278,
+      "rowCount": 365,
+      "encoding": "gzip",
+      "wireLength": null
+    },
+    {
+      "name": "@angular/core",
+      "status": 200,
+      "decodedBytes": 14751,
+      "rowCount": 365,
+      "encoding": "gzip",
+      "wireLength": null
+    },
+    {
+      "name": null,
+      "status": 200,
+      "decodedBytes": 16360,
+      "rowCount": 365,
+      "encoding": "gzip",
+      "wireLength": null
+    }
+  ]
+}

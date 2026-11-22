@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import BrandText from "@/components/BrandText";
 import { getBaseUrl } from "@/lib/base-url";
 import { getStatusOverview } from "@/lib/status";
 
@@ -71,10 +70,9 @@ export default async function StatusPage() {
   const lastError = formatUtc(health.lastErrorAt);
 
   return (
-    <main className="mx-auto min-h-full max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
+    <main className="observatory-reference mx-auto min-h-full max-w-4xl">
       <header className="mb-6">
-        <BrandText />
-        <h1 className="mt-2 text-4xl font-semibold">Status</h1>
+        <h1 className="observatory-title">Status</h1>
         <p className="mt-2 text-sm text-[var(--foreground-tertiary)]">Runtime snapshot, upstream health signals, and cache behavior.</p>
         <div className="mt-4 nt-note-warning text-xs">
           <p className="text-[inherit]">

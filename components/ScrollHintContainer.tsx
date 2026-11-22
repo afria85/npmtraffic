@@ -10,6 +10,7 @@ type Props = {
    * Useful when the first table column is sticky-left and would otherwise cover the hint.
    */
   leftHintOffset?: string;
+  horizontalScrollHints?: boolean;
   children: ReactNode;
 };
 
@@ -29,7 +30,7 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
   );
 }
 
-export default function ScrollHintContainer({ className, leftHintOffset, children }: Props) {
+export default function ScrollHintContainer({ className, leftHintOffset, horizontalScrollHints = true, children }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -43,6 +44,7 @@ export default function ScrollHintContainer({ className, leftHintOffset, childre
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!horizontalScrollHints) return;
     if (event.key === "ArrowLeft") {
       event.preventDefault();
       scrollByStep("left");
@@ -54,7 +56,7 @@ export default function ScrollHintContainer({ className, leftHintOffset, childre
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || !horizontalScrollHints) return;
 
     const update = () => {
       const max = el.scrollWidth - el.clientWidth;
@@ -77,11 +79,11 @@ export default function ScrollHintContainer({ className, leftHintOffset, childre
       el.removeEventListener("scroll", onScroll);
       ro.disconnect();
     };
-  }, []);
+  }, [horizontalScrollHints]);
 
   return (
     <div className="relative">
-      {canScrollLeft ? (
+      {horizontalScrollHints && canScrollLeft ? (
         <div
           className={SCROLL_HINT_OVERLAY_CLASSES}
           style={{ left: leftHintOffset ?? "0px" }}
@@ -102,7 +104,7 @@ export default function ScrollHintContainer({ className, leftHintOffset, childre
           </div>
         </div>
       ) : null}
-      {canScrollRight ? (
+      {horizontalScrollHints && canScrollRight ? (
         <div className={`${SCROLL_HINT_OVERLAY_CLASSES} right-0`}>
           <div
             aria-hidden="true"

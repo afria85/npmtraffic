@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import BrandText from "@/components/BrandText";
 import { getBaseUrl } from "@/lib/base-url";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -110,17 +108,10 @@ export default async function DataPage() {
   const compareCurl = `curl "${baseUrl}/api/v1/compare.json?packages=react,vue&days=30"`;
 
   return (
-    <main className="mx-auto min-h-full max-w-5xl px-4 py-12">
+    <main className="observatory-reference mx-auto min-h-full max-w-5xl">
       <header className="mb-6">
-        <Link
-          href="/"
-          className="inline-flex min-h-8 items-center"
-          aria-label="npmtraffic home"
-        >
-          <BrandText />
-        </Link>
-        <h1 className="mt-2 text-4xl font-semibold">Data</h1>
-        <p className="text-sm text-[var(--foreground-tertiary)]">
+        <h1 className="observatory-title">Data</h1>
+        <p className="mt-2 text-sm text-[var(--foreground-tertiary)]">
           API endpoints, exports, caching, and error explanations.
         </p>
       </header>
@@ -182,7 +173,7 @@ export default async function DataPage() {
           </p>
           <p>
             JSON exports include the normalized range with a <code>meta</code> block and an <code>export</code> block for traceability.
-            Derived metrics such as trailing MA3/MA7 and MAD-based outlier scores do not alter the raw counts.
+            Derived metrics such as trailing MA3/MA7 and global MAD scores do not alter the raw counts. MAD flags compare each available day with the overall median, without accounting for weekday or weekend patterns; a flagged day does not necessarily indicate an incident.
           </p>
           <p>
             Excel CSV uses semicolon delimiters and a <code>sep=;</code> prelude for spreadsheet imports. Chart SVG/PNG exports are generated client-side from the visible chart.

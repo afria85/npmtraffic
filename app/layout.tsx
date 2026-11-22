@@ -41,7 +41,6 @@ export const metadata: Metadata = {
 };
 
 import CompareTrayGate from "@/components/compare/CompareTrayGate";
-import { COMPARE_TRAY_SLOT_ID } from "@/lib/compare-ui";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 
@@ -94,7 +93,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <CompareTrayGate />
           </Suspense>
           <div className="flex-1">{children}</div>
-          <div id={COMPARE_TRAY_SLOT_ID} />
           <Footer projectGithubUrl={getProjectGithubUrl()} />
         </div>
         <Analytics />

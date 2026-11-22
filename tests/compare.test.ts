@@ -107,3 +107,57 @@ test("comparison totals and deltas use shared days and retain excluded raw value
   assert.equal(data.packages[0].total, 85);
   assert.equal(data.packages[1].total, 26);
 });
+
+
+test("disjoint available dates never manufacture a shared zero total, share, or Indexed baseline", async (t) => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const response = completeResponse(input);
+    const payload = await response.json();
+    if (payload.package === "react") {
+      payload.downloads = payload.downloads.filter((_: unknown, index: number) => index % 2 === 0);
+    } else if (payload.package === "vue") {
+      payload.downloads = payload.downloads.filter((_: unknown, index: number) => index % 2 === 1);
+    }
+    return Response.json(payload);
+  };
+  t.after(() => { globalThis.fetch = originalFetch; cacheClear(); });
+
+  const data = await buildCompareData(["react", "vue"], 7);
+  assert.equal(data.coverage.includedDays, 0);
+  assert.ok(data.series.every((row) => row.included === false));
+  assert.ok(data.series.every((row) =>
+    row.values.react.downloads === null && row.values.vue.downloads === null));
+  assert.deepEqual(data.packages.map(({ total, share }) => [total, share]), [
+    [null, null],
+    [null, null],
+  ]);
+  assert.ok(data.series.some((row) => row.values.react.upstreamDownloads !== null));
+  assert.ok(data.series.some((row) => row.values.vue.upstreamDownloads !== null));
+});
+
+test("shared verified-zero observations remain eligible while missing dates do not", async (t) => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const response = completeResponse(input);
+    const payload = await response.json();
+    // Keep the registry-wide daily total positive: a package-level zero is verified
+    // only when the registry-wide observation for that date remains nonzero.
+    if (payload.package === "react" || payload.package === "vue") {
+      payload.downloads[0].downloads = 0;
+    }
+    return Response.json(payload);
+  };
+  t.after(() => { globalThis.fetch = originalFetch; cacheClear(); });
+
+  const data = await buildCompareData(["react", "vue"], 7);
+  assert.equal(data.coverage.includedDays, 7);
+  assert.equal(data.series[0].included, true);
+  assert.equal(data.series[0].values.react.downloads, 0);
+  assert.equal(data.series[0].values.vue.downloads, 0);
+  assert.equal(data.series[0].values.react.status, "available");
+  assert.equal(data.series[1].values.react.delta, 15);
+  assert.equal(data.series[1].values.vue.delta, 4);
+  assert.equal(data.packages[0].total, 90);
+  assert.equal(data.packages[1].total, 24);
+});

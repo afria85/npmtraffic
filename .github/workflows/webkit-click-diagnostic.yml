@@ -1,0 +1,50 @@
+name: WebKit Click Diagnostic
+
+on:
+  pull_request:
+    paths:
+      - "scripts/diagnose-webkit-react-click.mjs"
+      - "scripts/verify-webkit-navigation-local.mjs"
+      - ".github/workflows/webkit-click-diagnostic.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  click-intent:
+    # The historical navigation miss occurred in Windows WebKit, while the
+    # initial diagnostic evidence was Ubuntu-only. Keep separate OS results.
+    name: WebKit and Chromium intent probe (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install Playwright and OS dependencies on Linux
+        if: runner.os == 'Linux'
+        run: npx playwright install --with-deps chromium webkit
+      - name: Install Playwright browsers on Windows
+        if: runner.os == 'Windows'
+        run: npx playwright install chromium webkit
+      - name: Record actual click and navigation behavior on isolated local fixture
+        run: node scripts/verify-webkit-navigation-local.mjs ./test-results/webkit-click-intent
+        env:
+          NPMTRAFFIC_NAVIGATION_PROBE: click
+      - name: Upload sanitized browser evidence even if a navigation misses
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: webkit-click-intent-${{ matrix.os }}-${{ github.run_id }}
+          path: test-results/webkit-click-intent/
+          if-no-files-found: warn
+          retention-days: 14

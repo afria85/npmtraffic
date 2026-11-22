@@ -3,27 +3,37 @@ import { getDonateLinks } from "@/lib/donate";
 import { config } from "@/lib/config";
 import { ACTION_BUTTON_CLASSES } from "@/components/ui/action-button";
 
+const donateDescription = "Support npmtraffic with optional donations that keep the project fast, free, and reliable.";
+
 export const metadata: Metadata = {
   title: "Donate",
-  description: "Support npmtraffic with optional donations that keep the project fast, free, and reliable.",
+  description: donateDescription,
+  alternates: { canonical: "/donate" },
+  openGraph: {
+    type: "website",
+    siteName: "npmtraffic",
+    title: "Donate | npmtraffic",
+    description: donateDescription,
+    url: "/donate",
+    images: [{ url: "/og.png", alt: "npmtraffic — npm download analytics" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Donate | npmtraffic",
+    description: donateDescription,
+    images: ["/og.png"],
+  },
 };
 
 export default function DonatePage() {
   const donateLinks = getDonateLinks();
   
   return (
-    <main className="mx-auto min-h-full max-w-3xl px-6 py-16 sm:py-20">
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
+    <main className="observatory-reference mx-auto min-h-full max-w-3xl">
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6">
         {/* Header */}
         <header className="mb-8 space-y-4 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-1.5 text-xs font-medium text-[var(--foreground-secondary)]">
-            <svg className="h-4 w-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-            Support
-          </div>
-          
-          <h1 className="text-4xl font-bold tracking-tight text-[var(--foreground)] sm:text-5xl">
+          <h1 className="observatory-title">
             Support npmtraffic
           </h1>
           
@@ -33,7 +43,7 @@ export default function DonatePage() {
         </header>
 
         {/* Benefits */}
-        <section className="mb-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 shadow-lg">
+        <section className="mb-12 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-lg sm:p-8">
           <h2 className="mb-6 text-xl font-semibold text-[var(--foreground)]">Your support helps:</h2>
           
           <div className="space-y-4">

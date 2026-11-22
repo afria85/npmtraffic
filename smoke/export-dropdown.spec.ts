@@ -11,12 +11,34 @@ for (const [label, path, attachment] of [
     const trigger = page.locator('button[id$="-export-toggle"]');
     const first = page.getByRole("menuitem", { name: /^CSV\b/ });
     const share = page.getByRole("button", { name: "Share", exact: true });
-    const more = page.getByRole("group", { name: /range selector/i }).getByRole("button", { name: "More" });
+    const more = page.getByRole("group", { name: /range selector/i }).getByRole("button", { name: /^(More|\d+d, current range)$/ });
 
     for (const [key, neighbor] of [["Tab", share], ["Shift+Tab", more]] as const) {
+      await expect(trigger).toBeVisible();
+      await expect(neighbor).toBeVisible();
       await trigger.focus();
+      await expect(trigger).toBeFocused();
+      // Capture whether streaming/hydration replaced the focused trigger during native tabbing.
+      // Diagnostics only: the keyboard-order assertion below remains unchanged.
+      const focusProbe = await trigger.evaluate(element => {
+        (window as Window & { __exportFocusProbe?: Element }).__exportFocusProbe = element;
+        return { tag: element.tagName, id: element.id };
+      });
       await page.keyboard.press(key);
-      await expect(neighbor).toBeFocused();
+      const focusAfterTab = await page.evaluate(() => {
+        const probe = (window as Window & { __exportFocusProbe?: Element }).__exportFocusProbe;
+        const active = document.activeElement;
+        return {
+          originalTriggerConnected: probe?.isConnected ?? false,
+          originalTriggerStillFocused: active === probe,
+          activeTag: active?.tagName ?? null,
+          activeId: active?.id ?? null,
+          activeText: active?.textContent?.trim().slice(0, 80) ?? null,
+        };
+      });
+      // A replaced trigger is an application focus-loss regression, not a valid tab-order result.
+      expect(focusAfterTab.originalTriggerConnected, `Export trigger remounted during ${key}: ${JSON.stringify(focusProbe)} -> ${JSON.stringify(focusAfterTab)}`).toBe(true);
+      await expect(neighbor, `Native ${key} focus after ${JSON.stringify(focusProbe)}: ${JSON.stringify(focusAfterTab)}`).toBeFocused();
       await trigger.press("Enter");
       await expect(first).toBeFocused();
       await page.keyboard.press(key);
