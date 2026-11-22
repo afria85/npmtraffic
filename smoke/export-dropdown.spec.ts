@@ -36,6 +36,8 @@ for (const [label, path, attachment] of [
           activeText: active?.textContent?.trim().slice(0, 80) ?? null,
         };
       });
+      // A replaced trigger is an application focus-loss regression, not a valid tab-order result.
+      expect(focusAfterTab.originalTriggerConnected, `Export trigger remounted during ${key}: ${JSON.stringify(focusProbe)} -> ${JSON.stringify(focusAfterTab)}`).toBe(true);
       await expect(neighbor, `Native ${key} focus after ${JSON.stringify(focusProbe)}: ${JSON.stringify(focusAfterTab)}`).toBeFocused();
       await trigger.press("Enter");
       await expect(first).toBeFocused();
