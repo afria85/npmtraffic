@@ -61,6 +61,8 @@ for (const upstreamStatus of [429, 503]) {
     if (result.status === "rejected") {
       assert.ok(result.reason instanceof TrafficError);
       assert.equal(result.reason.code, "UPSTREAM_UNAVAILABLE");
+      assert.equal(result.reason.status, 502, "client-facing status stays a gateway error");
+      assert.equal(result.reason.upstreamStatus, upstreamStatus, "retain exact upstream failure status for diagnostics");
     }
   }
 
@@ -69,7 +71,10 @@ for (const upstreamStatus of [429, 503]) {
   await retryUpstream;
   const callsAfterRetry = rangeCalls;
   for (const resolve of pending.splice(0)) resolve(new Response("unavailable", { status: upstreamStatus }));
-  await assert.rejects(retry, (error: unknown) => error instanceof TrafficError && error.code === "UPSTREAM_UNAVAILABLE");
+  await assert.rejects(retry, (error: unknown) => error instanceof TrafficError
+    && error.code === "UPSTREAM_UNAVAILABLE"
+    && error.status === 502
+    && error.upstreamStatus === upstreamStatus);
   assert.equal(callsAfterRetry, 2, "failed in-flight entry must be removed for retry");
   });
 }
