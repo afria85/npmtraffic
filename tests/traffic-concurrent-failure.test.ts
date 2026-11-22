@@ -79,3 +79,50 @@ for (const upstreamStatus of [429, 503]) {
   });
 }
 
+
+test("recovers with fresh observations after a transient 503 without caching the failure", async (t) => {
+  const originalFetch = globalThis.fetch;
+  const range = rangeForDays(7);
+  const endpoint = `https://api.npmjs.org/downloads/range/${range.startDate}:${range.endDate}/react`;
+  let calls = 0;
+  cacheClear();
+  globalThis.fetch = async (input) => {
+    const registry = registryFixture(input);
+    if (registry) return registry;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    if (url.startsWith(endpoint)) {
+      calls += 1;
+      if (calls === 1) return new Response("temporarily unavailable", { status: 503 });
+      return Response.json({
+        start: range.startDate,
+        end: range.endDate,
+        package: "react",
+        downloads: Array.from({ length: range.days }, (_, index) => ({
+          day: new Date(Date.parse(`${range.startDate}T00:00:00Z`) + index * 86_400_000)
+            .toISOString().slice(0, 10),
+          downloads: index + 1,
+        })),
+      });
+    }
+    return new Response("not found", { status: 404 });
+  };
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+    cacheClear();
+  });
+
+  await assert.rejects(
+    fetchTraffic("react", 7),
+    (error: unknown) => error instanceof TrafficError
+      && error.status === 502 && error.upstreamStatus === 503
+  );
+  const recovered = await fetchTraffic("react", 7);
+  assert.equal(recovered.meta.cacheStatus, "MISS");
+  assert.equal(recovered.meta.isStale, false);
+  assert.equal(recovered.totals.sum, range.days * (range.days + 1) / 2);
+  assert.equal(calls, 2, "the recovery must make a fresh upstream request");
+
+  const cached = await fetchTraffic("react", 7);
+  assert.equal(cached.meta.cacheStatus, "HIT");
+  assert.equal(calls, 2, "successful recovery should be cached");
+});
